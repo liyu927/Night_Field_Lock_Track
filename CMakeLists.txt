@@ -38,7 +38,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         lvgl/lv_conf.h
         lvgl/lv_version.h
         lvgl/lvgl.h
-        lvgl/lvgl_private.h)
+        lvgl/lvgl_private.h
+        Core/interface/FT6336.c)
 
 #添加文件夹
 file(GLOB_RECURSE LVGL_SOURCES CONFIGURE_DEPENDS
