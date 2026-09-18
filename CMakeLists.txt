@@ -40,10 +40,10 @@ add_executable(${CMAKE_PROJECT_NAME}
         lvgl/lvgl.h
         lvgl/lvgl_private.h)
 
+#添加文件夹
 file(GLOB_RECURSE LVGL_SOURCES CONFIGURE_DEPENDS
         "${CMAKE_CURRENT_SOURCE_DIR}/lvgl/*.c"
 )
-target_sources(${CMAKE_PROJECT_NAME} PRIVATE ${LVGL_SOURCES})
 
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
@@ -53,20 +53,23 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined library search paths
 )
 
+#添加单个.c文件或者遍历文件夹的.c文件
 # Add sources to executable
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
+        PRIVATE ${LVGL_SOURCES}
 )
 
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
+        ${CMAKE_CURRENT_SOURCE_DIR}/lvgl
 )
 
 # Add project symbols (macros)
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined symbols
-        ${CMAKE_CURRENT_SOURCE_DIR}/lvgl
+
 )
 
 # Remove wrong libob.a library dependency when using cpp files
