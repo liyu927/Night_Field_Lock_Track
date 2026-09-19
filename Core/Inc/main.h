@@ -83,6 +83,7 @@ void Error_Handler(void);
 #define TIM8_EN_GPIO_Port GPIOE
 #define CTP_INT_Pin GPIO_PIN_15
 #define CTP_INT_GPIO_Port GPIOE
+#define CTP_INT_EXTI_IRQn EXTI15_10_IRQn
 #define CTP_RST_Pin GPIO_PIN_12
 #define CTP_RST_GPIO_Port GPIOB
 

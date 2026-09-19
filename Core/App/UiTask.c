@@ -14,8 +14,6 @@ void StartUiTask(void *argument)
         //######################### LVGL ##############################
         // LVGL 主循环负责刷新显示、读取触摸和运行动画。
         uint32_t delay_ms = lv_timer_handler();
-        if(delay_ms > 20U) delay_ms = 20U;
-        if(delay_ms < 1U) delay_ms = 1U;
         osDelay(delay_ms);
         //######################### LVGL ##############################
     }

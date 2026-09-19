@@ -47,12 +47,19 @@
 /* USER CODE BEGIN Variables */
 
 /* USER CODE END Variables */
-/* Definitions for defaultTask */
-osThreadId_t defaultTaskHandle;
-const osThreadAttr_t defaultTask_attributes = {
-  .name = "defaultTask",
+/* Definitions for DebugTask */
+osThreadId_t DebugTaskHandle;
+const osThreadAttr_t DebugTask_attributes = {
+  .name = "DebugTask",
   .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
+  .priority = (osPriority_t) osPriorityLow,
+};
+/* Definitions for UiTask */
+osThreadId_t UiTaskHandle;
+const osThreadAttr_t UiTask_attributes = {
+  .name = "UiTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -60,7 +67,8 @@ const osThreadAttr_t defaultTask_attributes = {
 
 /* USER CODE END FunctionPrototypes */
 
-void StartDefaultTask(void *argument);
+void StartDebugTask(void *argument);
+void StartUiTask(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -91,8 +99,11 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
-  /* creation of defaultTask */
-  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+  /* creation of DebugTask */
+  DebugTaskHandle = osThreadNew(StartDebugTask, NULL, &DebugTask_attributes);
+
+  /* creation of UiTask */
+  UiTaskHandle = osThreadNew(StartUiTask, NULL, &UiTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -104,22 +115,40 @@ void MX_FREERTOS_Init(void) {
 
 }
 
-/* USER CODE BEGIN Header_StartDefaultTask */
+/* USER CODE BEGIN Header_StartDebugTask */
 /**
-  * @brief  Function implementing the defaultTask thread.
+  * @brief  Function implementing the DebugTask thread.
   * @param  argument: Not used
   * @retval None
   */
-/* USER CODE END Header_StartDefaultTask */
-void StartDefaultTask(void *argument)
+/* USER CODE END Header_StartDebugTask */
+__weak void StartDebugTask(void *argument)
 {
-  /* USER CODE BEGIN StartDefaultTask */
+  /* USER CODE BEGIN StartDebugTask */
   /* Infinite loop */
   for(;;)
   {
     osDelay(1);
   }
-  /* USER CODE END StartDefaultTask */
+  /* USER CODE END StartDebugTask */
+}
+
+/* USER CODE BEGIN Header_StartUiTask */
+/**
+* @brief Function implementing the UiTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartUiTask */
+__weak void StartUiTask(void *argument)
+{
+  /* USER CODE BEGIN StartUiTask */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END StartUiTask */
 }
 
 /* Private application code --------------------------------------------------*/
