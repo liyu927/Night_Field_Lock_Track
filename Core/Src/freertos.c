@@ -58,7 +58,7 @@ const osThreadAttr_t DebugTask_attributes = {
 osThreadId_t UiTaskHandle;
 const osThreadAttr_t UiTask_attributes = {
   .name = "UiTask",
-  .stack_size = 128 * 4,
+  .stack_size = 512 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
 

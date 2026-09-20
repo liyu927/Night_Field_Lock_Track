@@ -9,7 +9,7 @@ void StartDebugTask(void *argument)
     /* Infinite loop */
     for(;;)
     {
-        osDelay(1);
+        osDelay(100);
     }
     /* USER CODE END StartDebugTask */
 }

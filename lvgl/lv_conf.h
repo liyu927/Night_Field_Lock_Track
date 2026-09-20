@@ -106,7 +106,7 @@
  */
 //congcongcong:默认的操作系统，这里使用none，即不使用操作系统
 //裸机：LV_OS_NONE， 自己移植的freertos：LV_OS_FREERTOS, cubemx移植：LV_OS_CMSIS_RTOS2
-#define LV_USE_OS LV_OS_NONE
+#define LV_USE_OS LV_OS_CMSIS_RTOS2
 
 #if LV_USE_OS == LV_OS_CUSTOM
 /** Custom OS include header */
@@ -701,7 +701,7 @@
 
 /** Enable log module */
 //congcongcong:查看 LVGL 运行时的内存分配、刷新频率等内部状态
-#define LV_USE_LOG 1
+#define LV_USE_LOG 0
 
 #if LV_USE_LOG
 /** Specify how important log should be added.
@@ -776,10 +776,10 @@
 #endif /*LV_USE_THEME_DEFAULT*/
 
 /** A very simple theme that is a good starting point for a custom theme */
-#define LV_USE_THEME_SIMPLE 1
+#define LV_USE_THEME_SIMPLE 0
 
 /** A theme designed for monochrome displays */
-#define LV_USE_THEME_MONO 1
+#define LV_USE_THEME_MONO 0
 
 
 
@@ -791,7 +791,7 @@
 #define LV_USE_FLEX 1
 
 /** A layout similar to Grid in CSS. */
-#define LV_USE_GRID 1
+#define LV_USE_GRID 0
 
 
 
@@ -1150,13 +1150,13 @@
 #endif /*LV_DRAW_HAS_3D_SUPPORT*/
 
 /** Anim image */
-#define LV_USE_ANIMIMG 1
+#define LV_USE_ANIMIMG 0
 
 /** Arc */
-#define LV_USE_ARC 1
+#define LV_USE_ARC 0
 
 /** Arc Label */
-#define LV_USE_ARCLABEL 1
+#define LV_USE_ARCLABEL 0
 
 /** Bar */
 #define LV_USE_BAR 1
@@ -1171,10 +1171,10 @@
 #define LV_USE_BUTTON 1
 
 /** Button matrix */
-#define LV_USE_BUTTONMATRIX 1
+#define LV_USE_BUTTONMATRIX 0
 
 /** Calendar */
-#define LV_USE_CALENDAR 1
+#define LV_USE_CALENDAR 0
 
 #if LV_USE_CALENDAR
 /** Calendar week starts monday */
@@ -1252,13 +1252,13 @@
  *
  *  Enable: LV_USE_IMAGE
  */
-#define LV_USE_CANVAS 1
+#define LV_USE_CANVAS 0
 
 /** Chart */
-#define LV_USE_CHART 1
+#define LV_USE_CHART 0
 
 /** Check Box */
-#define LV_USE_CHECKBOX 1
+#define LV_USE_CHECKBOX 0
 
 /** Drop down list
  *
@@ -1320,10 +1320,10 @@
  *
  *  Enable: LV_USE_LABEL
  */
-#define LV_USE_IMAGE 1
+#define LV_USE_IMAGE 0
 
 /** ImageButton */
-#define LV_USE_IMAGEBUTTON 1
+#define LV_USE_IMAGEBUTTON 0
 
 /** Enable Pinyin input method
  *
@@ -1352,7 +1352,7 @@
 #endif /*LV_USE_IME_PINYIN*/
 
 /** Keyboard */
-#define LV_USE_KEYBOARD 1
+#define LV_USE_KEYBOARD 0
 
 /** Label */
 #define LV_USE_LABEL 1
@@ -1370,13 +1370,13 @@
 #endif /*LV_USE_LABEL*/
 
 /** LED */
-#define LV_USE_LED 1
+#define LV_USE_LED 0
 
 /** Line */
-#define LV_USE_LINE 1
+#define LV_USE_LINE 0
 
 /** List */
-#define LV_USE_LIST 1
+#define LV_USE_LIST 0
 
 #if LV_DRAW_HAS_VECTOR_SUPPORT
 #if LV_USE_THORVG
@@ -1390,10 +1390,10 @@
 #endif /*LV_DRAW_HAS_VECTOR_SUPPORT*/
 
 /** Menu */
-#define LV_USE_MENU 1
+#define LV_USE_MENU 0
 
 /** Msgbox */
-#define LV_USE_MSGBOX 1
+#define LV_USE_MSGBOX 0
 
 /** QR code library
  *
@@ -1408,10 +1408,10 @@
  *
  *  Enable: LV_USE_LABEL
  */
-#define LV_USE_ROLLER 1
+#define LV_USE_ROLLER 0
 
 /** Scale */
-#define LV_USE_SCALE 1
+#define LV_USE_SCALE 0
 
 /** Slider
  *
@@ -1420,7 +1420,7 @@
 #define LV_USE_SLIDER 1
 
 /** Span */
-#define LV_USE_SPAN 1
+#define LV_USE_SPAN 0
 
 #if LV_USE_SPAN
 /** Maximum number of span descriptor */
@@ -1429,19 +1429,19 @@
 #endif /*LV_USE_SPAN*/
 
 /** Spinbox */
-#define LV_USE_SPINBOX 1
+#define LV_USE_SPINBOX 0
 
 /** Spinner */
-#define LV_USE_SPINNER 1
+#define LV_USE_SPINNER 0
 
 /** Switch */
-#define LV_USE_SWITCH 1
+#define LV_USE_SWITCH 0
 
 /** Text area
  *
  *  Enable: LV_USE_LABEL
  */
-#define LV_USE_TEXTAREA 1
+#define LV_USE_TEXTAREA 0
 
 #if LV_USE_TEXTAREA
 /** Text area def. pwd show time [ms] */
@@ -1450,16 +1450,16 @@
 #endif /*LV_USE_TEXTAREA*/
 
 /** Table */
-#define LV_USE_TABLE 1
+#define LV_USE_TABLE 0
 
 /** Tabview */
 #define LV_USE_TABVIEW 1
 
 /** Tileview */
-#define LV_USE_TILEVIEW 1
+#define LV_USE_TILEVIEW 0
 
 /** Win */
-#define LV_USE_WIN 1
+#define LV_USE_WIN 0
 
 
 
@@ -1973,7 +1973,7 @@
  *============================================================================*/
 
 /** Enable system monitor component */
-#define LV_USE_SYSMON 1
+#define LV_USE_SYSMON 0
 
 #if LV_USE_SYSMON
 /** Enable process idle measurement */
@@ -1981,7 +1981,7 @@
 
 /** Show CPU usage and FPS count */
 //congcongcong:帧率显示打开
-#define LV_USE_PERF_MONITOR 1
+#define LV_USE_PERF_MONITOR 0
 
 #if LV_USE_PERF_MONITOR
 /** Performance monitor position
@@ -2006,7 +2006,7 @@
 #if LV_USE_STDLIB_MALLOC == LV_STDLIB_BUILTIN
 /** Show the used memory and the memory fragmentation */
 //congcongcong:内存显示打开
-#define LV_USE_MEM_MONITOR 1
+#define LV_USE_MEM_MONITOR 0
 
 #endif /*LV_USE_STDLIB_MALLOC == LV_STDLIB_BUILTIN*/
 
@@ -2414,7 +2414,7 @@
 
 /** Build the demos */
 //congcongcong:使用demo构建
-#define LV_BUILD_DEMOS 1
+#define LV_BUILD_DEMOS 0
 
 #if LV_BUILD_DEMOS
 /** Benchmark your system
@@ -2478,7 +2478,7 @@
 #endif /*LV_DRAW_HAS_VECTOR_SUPPORT*/
 
 /** Show-case LVGL widgets */
-#define LV_USE_DEMO_WIDGETS 1
+#define LV_USE_DEMO_WIDGETS 0
 
 /** Flex layout previewer */
 #define LV_USE_DEMO_FLEX_LAYOUT 0
