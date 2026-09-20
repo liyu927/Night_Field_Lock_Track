@@ -58,7 +58,13 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 # Add sources to executable
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
-        PRIVATE ${LVGL_SOURCES}
+        Core/App/UiTask.c
+        Core/App/DebugTask.c
+        Core/ui/ui.c
+        Core/ui/user_home.c
+        Core/ui/mylist.c
+        Core/ui/noto_sans_sc_16.c
+        ${LVGL_SOURCES}
 )
 
 # Add include paths
