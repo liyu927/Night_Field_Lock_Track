@@ -33,6 +33,7 @@
 #include "lv_port_indev.h"
 #include "lv_port_lcd_stm32.h"
 #include "user_home.h"
+#include "SimpleFOC_Motor.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -105,6 +106,8 @@ int main(void)
   MX_TIM8_Init();
   MX_ADC1_Init();
   MX_SPI2_Init();
+  MX_I2C1_Init();
+  MX_I2C3_Init();
   /* USER CODE BEGIN 2 */
 
   //############################### LVGL #####################################

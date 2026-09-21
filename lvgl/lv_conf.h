@@ -106,7 +106,7 @@
  */
 //congcongcong:默认的操作系统，这里使用none，即不使用操作系统
 //裸机：LV_OS_NONE， 自己移植的freertos：LV_OS_FREERTOS, cubemx移植：LV_OS_CMSIS_RTOS2
-#define LV_USE_OS LV_OS_CMSIS_RTOS2
+#define LV_USE_OS LV_OS_FREERTOS
 
 #if LV_USE_OS == LV_OS_CUSTOM
 /** Custom OS include header */
@@ -234,34 +234,34 @@
 #define LV_DRAW_SW_SUPPORT_RGB565 1
 
 /** Enable support for RGB565 swapped color format */
-#define LV_DRAW_SW_SUPPORT_RGB565_SWAPPED 1
+#define LV_DRAW_SW_SUPPORT_RGB565_SWAPPED 0
 
 /** Enable support for RGB565A8 color format */
-#define LV_DRAW_SW_SUPPORT_RGB565A8 1
+#define LV_DRAW_SW_SUPPORT_RGB565A8 0
 
 /** Enable support for RGB888 color format */
-#define LV_DRAW_SW_SUPPORT_RGB888 1
+#define LV_DRAW_SW_SUPPORT_RGB888 0
 
 /** Enable support for XRGB8888 color format */
-#define LV_DRAW_SW_SUPPORT_XRGB8888 1
+#define LV_DRAW_SW_SUPPORT_XRGB8888 0
 
 /** Enable support for ARGB8888 color format */
-#define LV_DRAW_SW_SUPPORT_ARGB8888 1
+#define LV_DRAW_SW_SUPPORT_ARGB8888 0
 
 /** Enable support for ARGB8888 premultiplied color format */
-#define LV_DRAW_SW_SUPPORT_ARGB8888_PREMULTIPLIED 1
+#define LV_DRAW_SW_SUPPORT_ARGB8888_PREMULTIPLIED 0
 
 /** Enable support for L8 color format */
-#define LV_DRAW_SW_SUPPORT_L8 1
+#define LV_DRAW_SW_SUPPORT_L8 0
 
 /** Enable support for AL88 color format */
-#define LV_DRAW_SW_SUPPORT_AL88 1
+#define LV_DRAW_SW_SUPPORT_AL88 0
 
 /** Enable support for A8 color format */
-#define LV_DRAW_SW_SUPPORT_A8 1
+#define LV_DRAW_SW_SUPPORT_A8 0
 
 /** Enable support for I1 color format */
-#define LV_DRAW_SW_SUPPORT_I1 1
+#define LV_DRAW_SW_SUPPORT_I1 0
 
 #if LV_DRAW_SW_SUPPORT_I1
 /** Luminance threshold for a pixel to be active */
@@ -929,37 +929,37 @@
 #define LV_FONT_MONTSERRAT_10 0
 
 /** Enable Montserrat 12 */
-#define LV_FONT_MONTSERRAT_12 1
+#define LV_FONT_MONTSERRAT_12 0
 
 /** Enable Montserrat 14 */
-#define LV_FONT_MONTSERRAT_14 1
+#define LV_FONT_MONTSERRAT_14 0
 
 /** Enable Montserrat 16 */
 #define LV_FONT_MONTSERRAT_16 1
 
 /** Enable Montserrat 18 */
-#define LV_FONT_MONTSERRAT_18 1
+#define LV_FONT_MONTSERRAT_18 0
 
 /** Enable Montserrat 20 */
-#define LV_FONT_MONTSERRAT_20 1
+#define LV_FONT_MONTSERRAT_20 0
 
 /** Enable Montserrat 22 */
-#define LV_FONT_MONTSERRAT_22 1
+#define LV_FONT_MONTSERRAT_22 0
 
 /** Enable Montserrat 24 */
-#define LV_FONT_MONTSERRAT_24 1
+#define LV_FONT_MONTSERRAT_24 0
 
 /** Enable Montserrat 26 */
-#define LV_FONT_MONTSERRAT_26 1
+#define LV_FONT_MONTSERRAT_26 0
 
 /** Enable Montserrat 28 */
-#define LV_FONT_MONTSERRAT_28 1
+#define LV_FONT_MONTSERRAT_28 0
 
 /** Enable Montserrat 30 */
-#define LV_FONT_MONTSERRAT_30 1
+#define LV_FONT_MONTSERRAT_30 0
 
 /** Enable Montserrat 32 */
-#define LV_FONT_MONTSERRAT_32 1
+#define LV_FONT_MONTSERRAT_32 0
 
 /** Enable Montserrat 34 */
 #define LV_FONT_MONTSERRAT_34 0
