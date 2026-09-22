@@ -110,6 +110,15 @@ int main(void)
   MX_I2C3_Init();
   /* USER CODE BEGIN 2 */
 
+  /*
+   * 只初始化两组定时器 PWM，不在这里使能电机。
+   * SimpleFOC_Motor_Init() 会把六路 PWM 设为约 50%，并保持两个 EN 为关闭电平。
+   */
+  if (SimpleFOC_Motor_Init() != HAL_OK)
+  {
+    Error_Handler();
+  }
+
   //############################### LVGL #####################################
   //LVGL_0:初始准备:
   //SPI要用DMA

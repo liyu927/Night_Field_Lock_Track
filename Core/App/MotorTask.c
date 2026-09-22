@@ -1,10 +1,22 @@
 #include "SimpleFOC_Motor.h"
+#include "cmsis_os2.h"
 
 /*
- * 电机任务只负责按固定周期更新两个轴的 AS5600 角度和位置闭环。
- * 具体的 PWM、校准和故障保护逻辑集中在 SimpleFOC_Motor.c。
+ * 当前阶段只完成无刷电机驱动初始化，任务入口故意不执行实际控制：
+ * 1. 不读取 AS5600；
+ * 2. 不使能上下轴或左右轴；
+ * 3. 不修改三相 PWM；
+ * 4. 不调用 Clarke、Park、逆 Park 和 SVPWM。
+ *
+ * 保留任务入口是为了不破坏现有 FreeRTOS 任务创建结构，后续完成控制策略后
+ * 再把采样、变换、控制器和占空比更新放入这里。
  */
 void StartMotorTask(void *argument)
 {
-    SimpleFOC_Motor_Task(argument);
+    (void)argument;
+
+    for (;;)
+    {
+        osDelay(1U);
+    }
 }
