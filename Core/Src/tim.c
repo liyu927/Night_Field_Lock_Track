@@ -91,13 +91,7 @@ void MX_TIM1_Init(void)
   sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
   sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
   sBreakDeadTimeConfig.LockLevel = TIM_LOCKLEVEL_OFF;
-  /*
-   * 设置上下桥臂切换时的硬件死区时间。
-   * 死区用于保证一个桥臂关断后，另一个桥臂才允许导通，避免上下管同时导通造成直通。
-   * 当前定时器时钟为 168 MHz，DeadTime=34 对应约 202 ns。
-   * 该值需要结合实际电调功率管和驱动器参数继续校准。
-   */
-  sBreakDeadTimeConfig.DeadTime = 34U;
+  sBreakDeadTimeConfig.DeadTime = 0;
   sBreakDeadTimeConfig.BreakState = TIM_BREAK_DISABLE;
   sBreakDeadTimeConfig.BreakPolarity = TIM_BREAKPOLARITY_HIGH;
   sBreakDeadTimeConfig.AutomaticOutput = TIM_AUTOMATICOUTPUT_DISABLE;
@@ -175,11 +169,7 @@ void MX_TIM8_Init(void)
   sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
   sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
   sBreakDeadTimeConfig.LockLevel = TIM_LOCKLEVEL_OFF;
-  /*
-   * TIM8 与 TIM1 使用相同的硬件死区时间，防止水平轴三相桥臂发生上下管直通。
-   * 当前定时器时钟为 168 MHz，DeadTime=34 对应约 202 ns。
-   */
-  sBreakDeadTimeConfig.DeadTime = 34U;
+  sBreakDeadTimeConfig.DeadTime = 0;
   sBreakDeadTimeConfig.BreakState = TIM_BREAK_DISABLE;
   sBreakDeadTimeConfig.BreakPolarity = TIM_BREAKPOLARITY_HIGH;
   sBreakDeadTimeConfig.AutomaticOutput = TIM_AUTOMATICOUTPUT_DISABLE;
