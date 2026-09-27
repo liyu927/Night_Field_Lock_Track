@@ -105,17 +105,17 @@ static void sfoc_set_neutral_pwm(const SFOC_AxisHardware *axis)
 
 /*
  * 关闭指定电机轴的电调输出。
- * 本工程 EN 为低电平有效，因此写入高电平后电调处于禁止工作状态。
+ * 本工程 EN 为高电平有效，因此写入低电平后电调处于禁止工作状态。
  *
  * axis：需要关闭的电机轴硬件配置。
  */
 static void sfoc_disable_axis(const SFOC_AxisHardware *axis)
 {
     /*
-     * 本工程的 EN 是低电平有效：高电平表示电调关闭，低电平表示电调允许工作。
-     * 这里统一写高电平，确保初始化失败或用户主动 Disable 时不会驱动电机。
+     * 本工程的 EN 是高电平有效：低电平表示电调关闭，高电平表示电调允许工作。
+     * 这里统一写低电平，确保初始化失败或用户主动 Disable 时不会驱动电机。
      */
-    HAL_GPIO_WritePin(axis->en_port, axis->en_pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(axis->en_port, axis->en_pin, GPIO_PIN_RESET);
 }
 
 /*
@@ -203,7 +203,7 @@ HAL_StatusTypeDef SimpleFOC_Motor_Init(void)
 
 /*
  * 允许指定电机轴的电调工作。
- * 由于 EN 为低电平有效，写入低电平后电调才会响应 PWM；
+ * 由于 EN 为高电平有效，写入高电平后电调才会响应 PWM；
  * 调用者应当只在控制任务已经准备好输出数据后调用此函数。
  *
  * axis：需要使能的电机轴。
@@ -214,7 +214,7 @@ void SimpleFOC_Motor_Enable(SimpleFOC_MotorAxis axis)
     const SFOC_AxisHardware *hardware = sfoc_get_axis(axis);
 
     /* 只有后续真正的控制任务明确调用此函数时，才允许电调工作。 */
-    HAL_GPIO_WritePin(hardware->en_port, hardware->en_pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(hardware->en_port, hardware->en_pin, GPIO_PIN_SET);
 }
 
 /*

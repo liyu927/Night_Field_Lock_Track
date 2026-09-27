@@ -34,7 +34,7 @@ typedef struct
  */
 HAL_StatusTypeDef SimpleFOC_Motor_Init(void);
 
-/* 按轴控制低电平有效的电机使能引脚。 */
+/* 按轴控制高电平有效的电机使能引脚。 */
 void SimpleFOC_Motor_Enable(SimpleFOC_MotorAxis axis);
 void SimpleFOC_Motor_Disable(SimpleFOC_MotorAxis axis);
 
