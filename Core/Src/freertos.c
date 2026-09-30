@@ -26,6 +26,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "SimpleFOC_Motor.h"
+#include "LightSamplingTypes.h"
 
 /* USER CODE END Includes */
 
@@ -69,6 +70,13 @@ const osThreadAttr_t MotorTask_attributes = {
   .stack_size = 512 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
+/* Definitions for LightSampleTask */
+osThreadId_t LightSampleTaskHandle;
+const osThreadAttr_t LightSampleTask_attributes = {
+  .name = "LightSampleTask",
+  .stack_size = 256 * 4,
+  .priority = (osPriority_t) osPriorityAboveNormal,
+};
 /* Definitions for LightSampling */
 osMessageQueueId_t LightSamplingHandle;
 const osMessageQueueAttr_t LightSampling_attributes = {
@@ -83,6 +91,7 @@ const osMessageQueueAttr_t LightSampling_attributes = {
 void StartDebugTask(void *argument);
 void StartUiTask(void *argument);
 void StartMotorTask(void *argument);
+void StartLightSampleTask(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -125,6 +134,9 @@ void MX_FREERTOS_Init(void) {
 
   /* creation of MotorTask */
   MotorTaskHandle = osThreadNew(StartMotorTask, NULL, &MotorTask_attributes);
+
+  /* creation of LightSampleTask */
+  LightSampleTaskHandle = osThreadNew(StartLightSampleTask, NULL, &LightSampleTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */

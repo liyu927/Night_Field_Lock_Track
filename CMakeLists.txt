@@ -102,6 +102,8 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
         Core/App/UiTask.c
         Core/App/DebugTask.c
         Core/App/MotorTask.c
+        Core/App/LightSampleTask.c
+        Core/common/filter.c
         Core/ui/user_home.c
         Core/ui/noto_sans_sc_16.c
         lvgl/porting/lv_port_lcd_stm32.c
@@ -118,6 +120,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/Core/interface
         ${CMAKE_CURRENT_SOURCE_DIR}/Core/App
         ${CMAKE_CURRENT_SOURCE_DIR}/Core/common
+        ${CMAKE_CURRENT_SOURCE_DIR}/Core/Types
 )
 
 # Add project symbols (macros)

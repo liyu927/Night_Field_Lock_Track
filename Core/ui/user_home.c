@@ -1,5 +1,6 @@
 #include "user_home.h"
-#include "adc.h"
+#include "cmsis_os2.h"
+#include "LightSamplingTypes.h"
 
 lv_subject_t temp_subject;
 
@@ -7,16 +8,23 @@ lv_subject_t temp_subject;
 static lv_subject_t adc_subject[4];      /* PA0~PA3 各自的主题 */
 static const char *adc_fmt[4] = {"PA0:%d", "PA1:%d", "PA2:%d", "PA3:%d"};
 
+extern osMessageQueueId_t LightSamplingHandle;
+
 /**
- * @brief LVGL 定时器回调：把 DMA 缓存里的 ADC 原始值(0~4095)写入各主题
- * @note  值变化时自动刷新绑定的 label（观察者模式），运行在 UiTask 上下文，线程安全
+ * @brief LVGL 定时器回调：把光照采样队列中的最新滤波值写入各主题
+ * @note  值变化时自动刷新绑定的 label，运行在 UiTask 上下文
  */
 static void adc_display_timer_cb(lv_timer_t *timer)
 {
+    LightData_t light_data;
+
     (void)timer;
-    for (uint8_t i = 0; i < 4; i++)
+    while (osMessageQueueGet(LightSamplingHandle, &light_data, NULL, 0U) == osOK)
     {
-        lv_subject_set_int(&adc_subject[i], adc1_dma_buf[i]);
+        lv_subject_set_int(&adc_subject[0], light_data.left_top);
+        lv_subject_set_int(&adc_subject[1], light_data.left_bottom);
+        lv_subject_set_int(&adc_subject[2], light_data.right_top);
+        lv_subject_set_int(&adc_subject[3], light_data.right_bottom);
     }
 }
 
