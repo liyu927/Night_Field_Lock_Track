@@ -82,7 +82,7 @@ void lv_port_disp_init(void)
     /* Create the LVGL display object and the ST7789 LCD display driver */
     lcd_disp = lv_st7789_create(MY_DISP_HOR_RES, MY_DISP_VER_RES, LV_LCD_FLAG_NONE, lcd_send_cmd, lcd_send_color);
     lv_display_set_rotation(lcd_disp, LV_DISPLAY_ROTATION_0);     /* set landscape orientation */
-    lv_lcd_generic_mipi_set_invert(lcd_disp, true);
+    lv_lcd_generic_mipi_set_invert(lcd_disp, false);
     /* Example: two dynamically allocated buffers for partial rendering */
     // uint8_t * buf1 = NULL;
     // uint8_t * buf2 = NULL;
