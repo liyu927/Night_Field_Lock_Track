@@ -41,7 +41,8 @@ extern ADC_HandleTypeDef hadc1;
 void MX_ADC1_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-
+extern uint16_t adc1_dma_buf[4];   /* PA0~PA3 原始 ADC 值，DMA 循环刷新 */
+void ADC1_DMA_Start(void);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

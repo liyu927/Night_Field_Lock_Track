@@ -180,4 +180,19 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* adcHandle)
 
 /* USER CODE BEGIN 1 */
 
+/* ADC1 DMA 循环采样缓存，顺序对应 PA0~PA3 (ADC1_IN0~IN3)，12bit 原始值 0~4095 */
+uint16_t adc1_dma_buf[4];
+
+/**
+ * @brief  启动 ADC1 多通道 DMA 循环采样（PA0~PA3）
+ * @note   调用一次即可，DMA 循环模式下 adc1_dma_buf 会被硬件持续刷新
+ */
+void ADC1_DMA_Start(void)
+{
+  if (HAL_ADC_Start_DMA(&hadc1, (uint32_t *)adc1_dma_buf, 4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+}
+
 /* USER CODE END 1 */

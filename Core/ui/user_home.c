@@ -1,6 +1,24 @@
 #include "user_home.h"
+#include "adc.h"
 
 lv_subject_t temp_subject;
+
+/*==================== ADC 电压显示（观察者模式） ====================*/
+static lv_subject_t adc_subject[4];      /* PA0~PA3 各自的主题 */
+static const char *adc_fmt[4] = {"PA0:%d", "PA1:%d", "PA2:%d", "PA3:%d"};
+
+/**
+ * @brief LVGL 定时器回调：把 DMA 缓存里的 ADC 原始值(0~4095)写入各主题
+ * @note  值变化时自动刷新绑定的 label（观察者模式），运行在 UiTask 上下文，线程安全
+ */
+static void adc_display_timer_cb(lv_timer_t *timer)
+{
+    (void)timer;
+    for (uint8_t i = 0; i < 4; i++)
+    {
+        lv_subject_set_int(&adc_subject[i], adc1_dma_buf[i]);
+    }
+}
 
 //(1)：observer参数:同一个回调函数可以应用到多个观察者，通过东西一个参数的地址来表示当前触发回调的是哪个观察者,其值就是lv_subject_add_observer返回的值
 //(2)：subject参数：：添加观察者的主题 =》 对应观察的对象（跟平常的回调函数那个参数一样）
@@ -225,6 +243,22 @@ void user_home_create(void)
     lv_slider_set_range(slider, -100, 100);
     lv_slider_set_value(slider, 50, LV_ANIM_OFF);
     lv_slider_bind_value(slider,&temp_subject);//双向绑定
+
+    //滑块和标签都可以绑定观察者模式
+
+    //2.5在观察者页面顶部空白区域显示PA0~PA3的ADC原始值(0~4095)
+    //每个通道一个主题，label绑定主题后，主题值变化时自动刷新文本
+    for (uint8_t i = 0; i < 4; i++)
+    {
+        lv_subject_init_int(&adc_subject[i], 0);
+
+        lv_obj_t *adc_label = lv_label_create(obs_table);
+        lv_label_bind_text(adc_label, &adc_subject[i], adc_fmt[i]);//格式串里的%d绑定主题的int值
+        lv_obj_align(adc_label, LV_ALIGN_TOP_LEFT, 10, 8 + i * 20);//顶部空白区域纵向排列
+    }
+
+    //2.6创建定时器 =》周期性把DMA缓存中的ADC值写入主题，触发观察者刷新label
+    lv_timer_create(adc_display_timer_cb, 200, NULL);//200ms刷新一次
 
     //在翻译页面中添加对应的下拉菜单  切换语言
     lv_obj_t *dropdown = lv_dropdown_create(translation);

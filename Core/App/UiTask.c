@@ -8,6 +8,7 @@
 #include "lv_port_lcd_stm32.h"
 #include "task.h"
 #include "user_home.h"
+#include "adc.h"
 
 void StartUiTask(void *argument)
 {
@@ -34,6 +35,9 @@ void StartUiTask(void *argument)
     //LVGL_5.创建UI界面（注意不要占满flash）
     //lv_demo_widgets();这个demo占满flash了，跑不动
     user_home_create();
+
+    //启动ADC1多通道DMA循环采样（PA0~PA3），DMA会持续刷新adc1_dma_buf
+    ADC1_DMA_Start();
 
     //############################### LVGL #####################################
     /* Infinite loop */
