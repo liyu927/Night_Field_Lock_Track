@@ -11,10 +11,13 @@
  *********************/
 #include "lv_port_indev.h"
 #include "FT6336.h"
-
+#include "lv_port_lcd_stm32.h"
 /*********************
  *      DEFINES
  *********************/
+//congcong
+#define MY_DISP_HOR_RES 240
+#define MY_DISP_VER_RES 320
 
 /**********************
  *      TYPEDEFS
@@ -197,7 +200,7 @@ static void touchpad_read(lv_indev_t * indev_drv, lv_indev_data_t * data)
     }
 
     /*Set the last pressed coordinates*/
-    data->point.x = last_x;
+    data->point.x = MY_DISP_HOR_RES - 1 - last_x;;
     data->point.y = last_y;
 }
 
