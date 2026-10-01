@@ -70,10 +70,17 @@ const osThreadAttr_t MotorTask_attributes = {
   .stack_size = 512 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
-/* Definitions for LightSampling */
+/* Definitions for LightSmaplingTa */
+osThreadId_t LightSmaplingTaHandle;
+const osThreadAttr_t LightSmaplingTa_attributes = {
+  .name = "LightSmaplingTa",
+  .stack_size = 512 * 4,
+  .priority = (osPriority_t) osPriorityAboveNormal,
+};
+/* 光照采样队列：采样任务写入滤波后的四路数据，UI 任务只读取该队列。 */
 osMessageQueueId_t LightSamplingHandle;
 const osMessageQueueAttr_t LightSampling_attributes = {
-  .name = "LightSampling"
+  .name = "LightSampling" /* 供 RTOS 调试器显示的队列名称。 */
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -84,6 +91,8 @@ const osMessageQueueAttr_t LightSampling_attributes = {
 void StartDebugTask(void *argument);
 void StartUiTask(void *argument);
 void StartMotorTask(void *argument);
+void StartLightSmaplingTask(void *argument);
+void StartLightSampleTask(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -110,7 +119,7 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END RTOS_TIMERS */
 
   /* Create the queue(s) */
-  /* creation of LightSampling */
+  /* 创建 16 个元素的光照数据队列，每个元素保存一帧完整的四路滤波结果。 */
   LightSamplingHandle = osMessageQueueNew (16, sizeof(LightData_t), &LightSampling_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
@@ -126,6 +135,9 @@ void MX_FREERTOS_Init(void) {
 
   /* creation of MotorTask */
   MotorTaskHandle = osThreadNew(StartMotorTask, NULL, &MotorTask_attributes);
+
+  /* 创建 CubeMX 生成的光照采样任务，入口会转调业务层的 StartLightSampleTask。 */
+  LightSmaplingTaHandle = osThreadNew(StartLightSmaplingTask, NULL, &LightSmaplingTa_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -189,6 +201,19 @@ __weak void StartMotorTask(void *argument)
     osDelay(1);
   }
   /* USER CODE END StartMotorTask */
+}
+
+/* USER CODE BEGIN Header_StartLightSmaplingTask */
+/**
+* @brief Function implementing the LightSmaplingTa thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartLightSmaplingTask */
+void StartLightSmaplingTask(void *argument)
+{
+  /* CubeMX 任务名保留不变，实际采样、滤波与队列发布逻辑统一放在业务层文件。 */
+  StartLightSampleTask(argument);
 }
 
 /* Private application code --------------------------------------------------*/

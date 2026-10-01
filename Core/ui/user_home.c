@@ -8,6 +8,7 @@ lv_subject_t temp_subject;
 static lv_subject_t adc_subject[4];      /* PA0~PA3 各自的主题 */
 static const char *adc_fmt[4] = {"PA0:%d", "PA1:%d", "PA2:%d", "PA3:%d"};
 
+/* 光照采样任务写入此队列，UI 定时器仅读取其中的滤波结果。 */
 extern osMessageQueueId_t LightSamplingHandle;
 
 /**
@@ -16,15 +17,16 @@ extern osMessageQueueId_t LightSamplingHandle;
  */
 static void adc_display_timer_cb(lv_timer_t *timer)
 {
-    LightData_t light_data;
+    LightData_t light_data; /* 保存每次从队列取出的完整四路滤波数据。 */
 
-    (void)timer;
+    (void)timer; /* 当前回调不需要使用 LVGL 传入的定时器对象。 */
+    /* 连续读取直到队列为空，确保屏幕显示的是当前可获取的最新一帧。 */
     while (osMessageQueueGet(LightSamplingHandle, &light_data, NULL, 0U) == osOK)
     {
-        lv_subject_set_int(&adc_subject[0], light_data.left_top);
-        lv_subject_set_int(&adc_subject[1], light_data.left_bottom);
-        lv_subject_set_int(&adc_subject[2], light_data.right_top);
-        lv_subject_set_int(&adc_subject[3], light_data.right_bottom);
+        lv_subject_set_int(&adc_subject[0], light_data.left_top); /* 更新 PA0 左上通道显示主题。 */
+        lv_subject_set_int(&adc_subject[1], light_data.left_bottom); /* 更新 PA1 左下通道显示主题。 */
+        lv_subject_set_int(&adc_subject[2], light_data.right_top); /* 更新 PA2 右上通道显示主题。 */
+        lv_subject_set_int(&adc_subject[3], light_data.right_bottom); /* 更新 PA3 右下通道显示主题。 */
     }
 }
 
