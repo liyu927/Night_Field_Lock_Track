@@ -26,7 +26,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "SimpleFOC_Motor.h"
-#include "LightSamplingTypes.h"
+#include "SmaplingTypes.h"
 
 /* USER CODE END Includes */
 
@@ -70,17 +70,17 @@ const osThreadAttr_t MotorTask_attributes = {
   .stack_size = 512 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
-/* Definitions for LightSmaplingTa */
-osThreadId_t LightSmaplingTaHandle;
-const osThreadAttr_t LightSmaplingTa_attributes = {
-  .name = "LightSmaplingTa",
+/* Definitions for SmaplingTask */
+osThreadId_t SmaplingTaskHandle;
+const osThreadAttr_t SmaplingTask_attributes = {
+  .name = "SmaplingTask",
   .stack_size = 512 * 4,
-  .priority = (osPriority_t) osPriorityAboveNormal,
+  .priority = (osPriority_t) osPriorityNormal,
 };
-/* 光照采样队列：采样任务写入滤波后的四路数据，UI 任务只读取该队列。 */
-osMessageQueueId_t LightSamplingHandle;
-const osMessageQueueAttr_t LightSampling_attributes = {
-  .name = "LightSampling" /* 供 RTOS 调试器显示的队列名称。 */
+/* Definitions for Smapling */
+osMessageQueueId_t SmaplingHandle;
+const osMessageQueueAttr_t Smapling_attributes = {
+  .name = "Smapling"
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -91,8 +91,7 @@ const osMessageQueueAttr_t LightSampling_attributes = {
 void StartDebugTask(void *argument);
 void StartUiTask(void *argument);
 void StartMotorTask(void *argument);
-void StartLightSmaplingTask(void *argument);
-void StartLightSampleTask(void *argument);
+void StartSmaplingTask(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -119,8 +118,8 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END RTOS_TIMERS */
 
   /* Create the queue(s) */
-  /* 创建 16 个元素的光照数据队列，每个元素保存一帧完整的四路滤波结果。 */
-  LightSamplingHandle = osMessageQueueNew (16, sizeof(LightData_t), &LightSampling_attributes);
+  /* creation of Smapling */
+  SmaplingHandle = osMessageQueueNew (16, sizeof(SmaplingData_t), &Smapling_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -136,8 +135,8 @@ void MX_FREERTOS_Init(void) {
   /* creation of MotorTask */
   MotorTaskHandle = osThreadNew(StartMotorTask, NULL, &MotorTask_attributes);
 
-  /* 创建 CubeMX 生成的光照采样任务，入口会转调业务层的 StartLightSampleTask。 */
-  LightSmaplingTaHandle = osThreadNew(StartLightSmaplingTask, NULL, &LightSmaplingTa_attributes);
+  /* creation of SmaplingTask */
+  SmaplingTaskHandle = osThreadNew(StartSmaplingTask, NULL, &SmaplingTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -203,17 +202,22 @@ __weak void StartMotorTask(void *argument)
   /* USER CODE END StartMotorTask */
 }
 
-/* USER CODE BEGIN Header_StartLightSmaplingTask */
+/* USER CODE BEGIN Header_StartSmaplingTask */
 /**
-* @brief Function implementing the LightSmaplingTa thread.
+* @brief Function implementing the SmaplingTa thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_StartLightSmaplingTask */
-void StartLightSmaplingTask(void *argument)
+/* USER CODE END Header_StartSmaplingTask */
+__weak void StartSmaplingTask(void *argument)
 {
-  /* CubeMX 任务名保留不变，实际采样、滤波与队列发布逻辑统一放在业务层文件。 */
-  StartLightSampleTask(argument);
+  /* USER CODE BEGIN StartSmaplingTask */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END StartSmaplingTask */
 }
 
 /* Private application code --------------------------------------------------*/
