@@ -12,8 +12,8 @@ static const char *adc_fmt[4] = {"PA0:%d", "PA1:%d", "PA2:%d", "PA3:%d"};
 extern osMessageQueueId_t SmaplingHandle;
 
 /**
- * @brief LVGL 定时器回调：把光照采样队列中的最新滤波值写入各主题
- * @note  值变化时自动刷新绑定的 label，运行在 UiTask 上下文
+ * @brief LVGL 定时器回调：更新光照采样数据的观察者主题。
+ * @note  回调运行在 UiTask 上下文，不能从 EXTI 中断内直接调用。
  */
 static void adc_display_timer_cb(lv_timer_t *timer)
 {
@@ -28,6 +28,7 @@ static void adc_display_timer_cb(lv_timer_t *timer)
         lv_subject_set_int(&adc_subject[2], smapling_data.right_top); /* 更新 PA2 右上通道显示主题。 */
         lv_subject_set_int(&adc_subject[3], smapling_data.right_bottom); /* 更新 PA3 右下通道显示主题。 */
     }
+
 }
 
 //(1)：observer参数:同一个回调函数可以应用到多个观察者，通过东西一个参数的地址来表示当前触发回调的是哪个观察者,其值就是lv_subject_add_observer返回的值

@@ -9,8 +9,11 @@
 #define FT6336_LCD_WIDTH         240U
 #define FT6336_LCD_HEIGHT        320U
 
-static uint8_t touch_count;
+static uint8_t touch_count;                    /* 当前 I2C 轮询得到的有效触摸点数量。 */
 
+/**
+ * @brief 复位触摸控制器并清空轮询触摸状态。
+ */
 void FT6336_Init(void)
 {
     HAL_GPIO_WritePin(CTP_RST_GPIO_Port, CTP_RST_Pin, GPIO_PIN_RESET);
@@ -20,6 +23,10 @@ void FT6336_Init(void)
     touch_count = 0;
 }
 
+/**
+ * @brief 轮询 FT6336 的触摸点数量寄存器。
+ * @note 此函数保持原有轮询机制，用于向 LVGL 提供实时触摸状态。
+ */
 bool FT6336_IsTouched(void)
 {
     uint8_t count = 0;
@@ -34,6 +41,9 @@ bool FT6336_IsTouched(void)
     return touch_count > 0U && touch_count <= 5U;
 }
 
+/**
+ * @brief 读取 FT6336 的第一个触摸点并转换为显示坐标。
+ */
 bool FT6336_Read(uint16_t *x, uint16_t *y)
 {
     uint8_t buf[4];
@@ -63,4 +73,17 @@ bool FT6336_Read(uint16_t *x, uint16_t *y)
     *x = raw_x >= FT6336_LCD_WIDTH ? 0U : FT6336_LCD_WIDTH - 1U - raw_x;
     *y = raw_y >= FT6336_LCD_HEIGHT ? FT6336_LCD_HEIGHT - 1U : raw_y;
     return true;
+}
+
+/**
+ * @brief HAL 的 GPIO EXTI 回调，运行在 EXTI15_10 中断上下文。
+ * @param GPIO_Pin 本次产生外部中断的 GPIO 引脚号。
+ * @note 当前仅保留触摸中断入口，不调用 I2C、FreeRTOS 或 LVGL 接口。
+ */
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+    if (GPIO_Pin == CTP_INT_Pin)
+    {
+        /* 已确认触摸控制器中断能够进入此处，后续低功耗唤醒逻辑可在此扩展。 */
+    }
 }
