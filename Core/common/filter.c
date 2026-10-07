@@ -73,3 +73,25 @@ uint16_t Filter_Median3(uint16_t sample1, uint16_t sample2, uint16_t sample3)
     }
     return sample2; /* 排序后的中间值即为滤波结果。 */
 }
+
+/**
+ * @brief 更新三点历史样本，并对最近三个样本执行中值滤波。
+ * @note 第一个样本会同时写入三个历史位置，避免启动阶段出现人为的零值尖峰。
+ */
+uint16_t Filter_Median3Update(Median3Filter_t *filter, uint16_t input)
+{
+    /* 首次采样时没有历史数据，因此以当前真实值填充全部三个位置。 */
+    if (filter->initialized == 0U)
+    {
+        filter->samples[0] = input;  /* 最早样本初始化为当前值。 */
+        filter->samples[1] = input;  /* 中间样本初始化为当前值。 */
+        filter->samples[2] = input;  /* 最新样本初始化为当前值。 */
+        filter->initialized = 1U;    /* 标记历史样本已可用于后续滚动更新。 */
+        return input;                /* 三个样本相同，中值就是当前输入。 */
+    }
+
+    filter->samples[0] = filter->samples[1]; /* 丢弃最早样本，将原中间样本前移。 */
+    filter->samples[1] = filter->samples[2]; /* 将原最新样本移到中间位置。 */
+    filter->samples[2] = input;              /* 保存本周期最新 ADC 原始值。 */
+    return Filter_Median3(filter->samples[0], filter->samples[1], filter->samples[2]); /* 返回最近三个样本的中值。 */
+}

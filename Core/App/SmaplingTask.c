@@ -17,6 +17,10 @@ extern osMessageQueueId_t SmaplingHandle;
 void StartSmaplingTask(void *argument)
 {
     SmaplingData_t smapling_data;               /* 本周期完成滤波后准备发布的四路光照快照。 */
+    Median3Filter_t left_top_median = {0};      /* PA0 左上通道的三点中值滤波状态。 */
+    Median3Filter_t left_bottom_median = {0};   /* PA1 左下通道的三点中值滤波状态。 */
+    Median3Filter_t right_top_median = {0};     /* PA2 右上通道的三点中值滤波状态。 */
+    Median3Filter_t right_bottom_median = {0};  /* PA3 右下通道的三点中值滤波状态。 */
     LowPassFilter_t left_top_filter = {0};     /* PA0 左上通道的一阶低通状态。 */
     LowPassFilter_t left_bottom_filter = {0};  /* PA1 左下通道的一阶低通状态。 */
     LowPassFilter_t right_top_filter = {0};    /* PA2 右上通道的一阶低通状态。 */
@@ -28,14 +32,14 @@ void StartSmaplingTask(void *argument)
 
     for (;;)
     {
-        /* DMA 持续刷新缓冲区，此处读取 PA0 的左上原始值并完成一阶低通。 */
-        smapling_data.left_top = Filter_LowPass(&left_top_filter, adc1_dma_buf[0], LIGHT_LOW_PASS_SHIFT);
-        /* 读取 PA1 的左下原始值并完成一阶低通。 */
-        smapling_data.left_bottom = Filter_LowPass(&left_bottom_filter, adc1_dma_buf[1], LIGHT_LOW_PASS_SHIFT);
-        /* 读取 PA2 的右上原始值并完成一阶低通。 */
-        smapling_data.right_top = Filter_LowPass(&right_top_filter, adc1_dma_buf[2], LIGHT_LOW_PASS_SHIFT);
-        /* 读取 PA3 的右下原始值并完成一阶低通。 */
-        smapling_data.right_bottom = Filter_LowPass(&right_bottom_filter, adc1_dma_buf[3], LIGHT_LOW_PASS_SHIFT);
+        /* PA0 左上原始值先经三点中值滤波去除尖峰，再经一阶低通滤波平滑输出。 */
+        smapling_data.left_top = Filter_LowPass(&left_top_filter, Filter_Median3Update(&left_top_median, adc1_dma_buf[0]), LIGHT_LOW_PASS_SHIFT);
+        /* PA1 左下原始值先经三点中值滤波去除尖峰，再经一阶低通滤波平滑输出。 */
+        smapling_data.left_bottom = Filter_LowPass(&left_bottom_filter, Filter_Median3Update(&left_bottom_median, adc1_dma_buf[1]), LIGHT_LOW_PASS_SHIFT);
+        /* PA2 右上原始值先经三点中值滤波去除尖峰，再经一阶低通滤波平滑输出。 */
+        smapling_data.right_top = Filter_LowPass(&right_top_filter, Filter_Median3Update(&right_top_median, adc1_dma_buf[2]), LIGHT_LOW_PASS_SHIFT);
+        /* PA3 右下原始值先经三点中值滤波去除尖峰，再经一阶低通滤波平滑输出。 */
+        smapling_data.right_bottom = Filter_LowPass(&right_bottom_filter, Filter_Median3Update(&right_bottom_median, adc1_dma_buf[3]), LIGHT_LOW_PASS_SHIFT);
 
         (void)osMessageQueuePut(SmaplingHandle, &smapling_data, 0U, 0U); /* 非阻塞发布，队列满时不延误下一次采样。 */
         osDelay(LIGHT_SAMPLE_PERIOD_MS); /* 让出 CPU，保持固定的采样与发布周期。 */
