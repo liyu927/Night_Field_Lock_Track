@@ -45,7 +45,7 @@ float Filter_Kalman(KalmanFilter_t *filter, float measurement)
 }
 
 /**
- * @brief 通过三次相邻比较求出三个无符号样本中的中位数。
+ * @brief 通过三次相邻比较求出三个无符号样本中的中位数(中值滤波)。
  * @note 中位数能剔除一个异常尖峰，且不需要保存跨周期状态。
  */
 uint16_t Filter_Median3(uint16_t sample1, uint16_t sample2, uint16_t sample3)

@@ -104,74 +104,6 @@ void user_home_create(void)
 {
 
 
-    /*观察者模式
-    lv_obj_t *scr = lv_screen_active();
-    //1.创建一个标签视图
-    lv_obj_t *tabview = lv_tabview_create(scr);
-    //1.1设置标签视图的样式
-    lv_obj_set_size(tabview, LV_PCT(100), LV_PCT(100));
-
-    //1.2创建一个标签页
-    lv_obj_t *obs_table = lv_tabview_add_tab(tabview, "Obs");//观察者页面
-    lv_obj_t *translation = lv_tabview_add_tab(tabview, "translation");//翻译页面
-
-    //添加对应的组件到obs里面
-
-    //2.1外部参数的观察者模式
-
-    //2.1.1初始化一个主题 =》 选择正确的类型和初始值
-    lv_subject_init_int(&temp_subject,10);
-
-    //2.1.2添加外部参数的观察者(回调)
-    lv_subject_add_observer(&temp_subject,temp_obs_cb,NULL);//回调触发：当参数值（lv_subject_init_int的第二个值）改变时会触发
-
-
-    //2.2创建按钮 =》 调整温度
-
-    //加温度值
-    lv_obj_t *btn1 = lv_btn_create(obs_table);
-    lv_obj_set_size(btn1, 50, 50);
-    lv_obj_align(btn1, LV_ALIGN_CENTER, 50, 0);
-    lv_obj_add_event_cb(btn1, btn1_event_cb, LV_EVENT_CLICKED, &temp_subject);
-
-
-    //减温度值
-    lv_obj_t *btn2 = lv_btn_create(obs_table);
-    lv_obj_set_size(btn2, 50, 50);
-    lv_obj_align(btn2, LV_ALIGN_CENTER, -50, 0);
-    lv_obj_add_event_cb(btn2, btn2_event_cb, LV_EVENT_CLICKED, &temp_subject);
-
-
-    //2.2.1创建标签 =》 显示加号减号
-    lv_obj_t *label = lv_label_create(btn1);
-    lv_label_set_text(label, LV_SYMBOL_PLUS);
-    lv_obj_center(label);
-
-    lv_obj_t *label2 = lv_label_create(btn2);
-    lv_label_set_text(label2, LV_SYMBOL_MINUS);
-    lv_obj_center(label2);
-
-    //2.3创建标签 =》 显示当前的温度值
-    lv_obj_t *label3 = lv_label_create(obs_table);
-    //lv_label_set_text_fmt(label3, "temp:%d",lv_subject_get_int(&temp_subject));不可用于观察者模式
-    //代替：绑定观察者模式：
-    lv_label_bind_text(label3,&temp_subject,"temp:%d");//%d绑定的是temp_subject的那个参数10
-    lv_obj_align(label3, LV_ALIGN_CENTER, 0, 50);
-
-
-    //2.4创建滑块 =》实现双向绑定(滑块和按钮都能控制温度值改变)
-    lv_obj_t *slider = lv_slider_create(obs_table);
-    lv_obj_set_size(slider, 200,20);
-    lv_obj_align(slider, LV_ALIGN_BOTTOM_MID, 0, -50);
-    lv_slider_set_range(slider, -100, 100);
-    lv_slider_set_value(slider, 50, LV_ANIM_OFF);
-    lv_slider_bind_value(slider,&temp_subject);//双向绑定
-
-    //滑块和标签都可以绑定观察者模式
-
-    */
-
-
     //观察者模式和翻译（中英切换）
 
     //开启静态翻译功能
@@ -244,7 +176,7 @@ void user_home_create(void)
     //lv_label_set_text_fmt(label3, "temp:%d",lv_subject_get_int(&temp_subject));不可用于观察者模式
     //代替：绑定观察者模式：
     lv_label_bind_text(label3,&temp_subject,"temp:%d");//%d绑定的是temp_subject的那个参数10
-    lv_obj_align(label3, LV_ALIGN_CENTER, 0, 50);
+    lv_obj_align(label3, LV_ALIGN_CENTER, 0, 80);
 
 
     //2.4创建滑块 =》实现双向绑定(滑块和按钮都能控制温度值改变)
