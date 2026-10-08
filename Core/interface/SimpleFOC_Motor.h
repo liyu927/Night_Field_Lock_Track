@@ -10,8 +10,8 @@ extern "C" {
 /* 双轴电机枚举仅用于选择对应的使能引脚。 */
 typedef enum
 {
-    SIMPLEFOC_AXIS_VERTICAL = 0,
-    SIMPLEFOC_AXIS_HORIZONTAL
+    SIMPLEFOC_AXIS_VERTICAL = 0,//竖直轴，使用TIM1
+    SIMPLEFOC_AXIS_HORIZONTAL   //水平轴，使用TIM8
 } SimpleFOC_MotorAxis;
 
 /* Clarke 变换后的两相静止坐标。 */
@@ -38,7 +38,7 @@ typedef struct
 {
     /* 目标机械转速，单位为转/秒，必须填写非负数。 */
     float mechanical_speed_rps;
-    /* q 轴电压幅值，单位为伏特，决定电机产生的平均转矩。 */
+    /* q 轴电压幅值，单位为伏特，决定电机产生的平均转矩。d轴固定为 0V */
     float voltage;
     /* 电机极对数，例如 14 极电机通常填写 7。 */
     uint8_t pole_pairs;

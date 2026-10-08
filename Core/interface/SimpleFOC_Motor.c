@@ -158,12 +158,12 @@ static void sfoc_set_phase_voltage(const SFOC_AxisHardware *axis,
                                    float voltage_q,
                                    float electrical_angle)
 {
-    SimpleFOC_DirectQuadrature direct_quadrature = {0.0f, voltage_q};
-    SimpleFOC_AlphaBeta alpha_beta = {0.0f, 0.0f};
-    float duty_a;
-    float duty_b;
-    float duty_c;
-    uint32_t period;
+    SimpleFOC_DirectQuadrature direct_quadrature = {0.0f, voltage_q}; /* d 轴固定为零，q 轴使用调用者给定的电压。 */
+    SimpleFOC_AlphaBeta alpha_beta = {0.0f, 0.0f};                    /* 保存逆 Park 变换得到的 alpha/beta 两相电压。 */
+    float duty_a;                                                      /* 保存 A 相 PWM 占空比，范围为 0.0 到 1.0。 */
+    float duty_b;                                                      /* 保存 B 相 PWM 占空比，范围为 0.0 到 1.0。 */
+    float duty_c;                                                      /* 保存 C 相 PWM 占空比，范围为 0.0 到 1.0。 */
+    uint32_t period;                                                   /* 保存定时器完整 PWM 周期对应的计数值。 */
 
     /* 先做逆 Park，再由 SVPWM 生成三相占空比。 */
     SimpleFOC_InvPark(&direct_quadrature, electrical_angle, &alpha_beta);
@@ -316,14 +316,14 @@ HAL_StatusTypeDef SimpleFOC_Motor_OpenLoopStart(SimpleFOC_MotorAxis axis,
         return HAL_ERROR;
     }
 
-    hardware = sfoc_get_axis(axis);
-    state_index = sfoc_get_axis_index(axis);
-    state = &g_open_loop_state[state_index];
-    state->config = *config;
-    state->electrical_angle = 0.0f;
-    state->current_speed_rps = 0.0f;
-    state->last_update_tick = HAL_GetTick();
-    state->active = 1U;
+    hardware = sfoc_get_axis(axis);                     /* 根据轴编号获取对应的定时器、PWM 通道和使能引脚。 */
+    state_index = sfoc_get_axis_index(axis);            /* 将轴编号转换为开环状态数组下标。 */
+    state = &g_open_loop_state[state_index];            /* 获取当前轴专属的开环运行状态。 */
+    state->config = *config;                             /* 保存调用者传入的开环参数副本。 */
+    state->electrical_angle = 0.0f;                      /* 从零电角度开始生成旋转磁场。 */
+    state->current_speed_rps = 0.0f;                     /* 从静止开始，后续按斜坡逐步加速。 */
+    state->last_update_tick = HAL_GetTick();             /* 记录首次更新的时间基准。 */
+    state->active = 1U;                                  /* 标记当前轴已启动，允许周期任务刷新 PWM。 */
 
     /* 先写入初始电压，再拉高 EN，避免电调使能时三相输出尚未准备好。 */
     /*
@@ -459,7 +459,7 @@ void SimpleFOC_Motor_Disable(SimpleFOC_MotorAxis axis)
     const SFOC_AxisHardware *hardware = sfoc_get_axis(axis);
 
     sfoc_disable_axis(hardware);
-    sfoc_set_neutral_pwm(hardware);
+    sfoc_set_neutral_pwm(hardware);//设置50%占空比
 }
 
 /*
@@ -596,6 +596,9 @@ void SimpleFOC_SVPWM(const SimpleFOC_AlphaBeta *input,
     /* 最小三相电压在 phase_voltage 数组中的下标，DSP 函数会同时输出。 */
     uint32_t minimum_index;
 
+    //初始化必须保证三者都在一个安全值
+    //三相都是 50% 时，三相平均电压相同，电机绕组之间没有有效线电压
+    //因此通常不会产生旋转转矩
     if (duty_a != NULL)
     {
         *duty_a = SFOC_HALF;
@@ -618,6 +621,9 @@ void SimpleFOC_SVPWM(const SimpleFOC_AlphaBeta *input,
     /*
      * alpha/beta 是二维电压，先投影成三相电压参考 Ua、Ub、Uc。
      * 三个参考值的共同偏置不会改变线电压，却可以更充分利用直流母线电压。
+     * Ua = Uα
+     * Ub = -½Uα + (√3 / 2)Uβ
+     * Uc = -½Uα - (√3 / 2)Uβ
      */
     phase_voltage[0] = input->alpha;
     phase_voltage[1] = -SFOC_HALF * input->alpha
