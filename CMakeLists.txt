@@ -40,6 +40,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         lvgl/lvgl.h
         lvgl/lvgl_private.h
         Core/interface/FT6336.c
+        Core/interface/AS5600.c
+        Core/interface/AS5600.h
         Core/interface/SimpleFOC_Motor.c
         Core/interface/SimpleFOC_Motor.h
         Middlewares/ST/ARM/DSP/Inc/arm_math.h)
@@ -104,6 +106,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
         Core/App/MotorTask.c
         Core/App/SmaplingTask.c
         Core/common/filter.c
+        Core/common/pid.c
         Core/ui/user_home.c
         Core/ui/noto_sans_sc_16.c
         lvgl/porting/lv_port_lcd_stm32.c
