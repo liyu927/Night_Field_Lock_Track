@@ -5,7 +5,7 @@
 ## 目录职责
 
 - `Core/common`：可复用的软件算法。目前有滤波器 `filter.c/.h` 和本次新增的 PID 算法 `pid.c/.h`。
-- `Core/interface`：底层硬件接口。本次新增 AS5600 的 I2C 读取接口 `AS5600.c/.h`，并将 `SimpleFOC_Motor.c/.h` 改为闭环 FOC 所需的三相 PWM、电角度、逆 Park 与 SVPWM 输出接口。
+- `Core/interface`：底层硬件接口。包含 AS5600 的 I2C 读取接口和闭环 FOC 所需的三相 PWM 接口。
 - `Core/App`：FreeRTOS 任务。本次更新 `MotorTask.c`，在任务中运行自动校准、位置环和速度环。
 - `Core/Types`：RTOS 队列、消息和任务之间传递数据所需的枚举、结构体。目前包含光照队列的 `SmaplingTypes.h`。
 
@@ -84,6 +84,62 @@ SimpleFOC_Motor_SetPhaseVoltage(control->axis, 0.0f, q_voltage,
 - `Core/common/pid.c`：带输出限幅和积分抗饱和的 PID 实现。
 
 位置 PID 输出速度目标，速度 PID 输出 q 轴电压。所有需要实机调节的电机参数集中在 `Core/App/MotorTask.c` 顶部的宏中，包括极对数、母线电压、校准电压、PID 输出限制和演示速度。
+
+## VOFA+ FireWater 波形接口
+
+VOFA+ FireWater 发送接口位于 `Core/common/com_Debug.c/.h`，用于通过 USART1 向 VOFA+ 发送文本数据帧。接口只负责组织并发送波形数据，目前没有在任何业务任务中调用。
+
+USART1 沿用 CubeMX 的现有配置：115200 波特率、8 位数据位、1 位停止位、无校验和无硬件流控。FireWater 使用 ASCII 文本传输，同一采样时刻的多个通道以逗号分隔，整帧以换行符结束：
+
+```text
+通道0,通道1,通道2\n
+```
+
+通用发送接口为：
+
+```c
+HAL_StatusTypeDef VOFA_SendValues(const float *values, uint16_t count);
+```
+
+`values` 中的数组顺序就是 VOFA+ 的通道顺序。例如同时观察 PID 的 P、I、D 三项：
+
+```c
+#include "com_Debug.h"
+
+float pid_wave[3] = {
+    pid_p,
+    pid_i,
+    pid_d
+};
+
+if (VOFA_SendValues(pid_wave, 3U) != HAL_OK)
+{
+    /* 根据任务需求处理串口发送失败。 */
+}
+```
+
+假设三个值分别为 `1.2`、`0.35` 和 `-0.08`，USART1 实际发送的完整帧为：
+
+```text
+1.200000,0.350000,-0.080000\n
+```
+
+VOFA+ 会将第一个、第二个和第三个数值分别解析为通道 0、通道 1 和通道 2，可在上位机中将它们重命名为 `P`、`I` 和 `D`。必须将同一采样时刻的所有通道放在一次 `VOFA_SendValues` 调用中；分别发送三个带换行符的数值会被识别成同一通道的三个连续采样点。
+
+接口会先用 `snprintf` 在 RAM 中生成完整文本帧，再通过一次 `HAL_UART_Transmit` 阻塞发送。它会拒绝空指针、零通道和超过最大数量的通道，并检查格式化失败及缓冲区截断。调用者可通过返回的 `HAL_OK`、`HAL_ERROR`、`HAL_BUSY` 或 `HAL_TIMEOUT` 判断结果。
+
+可在 `Core/common/com_Debug.h` 中调整以下参数：
+
+- `VOFA_FIREWATER_DECIMAL_PLACES`：每个浮点数保留的小数位数，默认 6 位；
+- `VOFA_MAX_CHANNEL_COUNT`：单帧最大通道数量，默认 8 路；
+- `VOFA_VALUE_TEXT_SIZE`：每个通道预留的最大文本空间；
+- `VOFA_UART_TIMEOUT_MS`：USART1 阻塞发送超时时间，默认 100 ms。
+
+`VOFA_DEBUG` 是 VOFA+ 调试总开关：设为 `1` 时正常格式化并发送 FireWater 数据；设为 `0` 时 `VOFA_SendValues` 保留为空实现并直接返回 `HAL_OK`，无需删除任何调用代码。
+
+工程使用 Newlib Nano，因此 `CMakeLists.txt` 已添加 `-u _printf_float`，确保 `snprintf` 支持 `%f` 浮点格式。该选项会增加一定的 Flash 占用。由于格式化和串口发送均有运行开销，建议在普通 FreeRTOS 任务中按固定周期调用，不要在高频中断服务函数中调用。
+
+新增 VOFA 源文件已经加入 CMake 构建目标，并通过宿主 GCC 语法检查和 `git diff --check`。当前机器的完整交叉编译验证被 `arm-none-eabi-gcc` 启动时的 Windows 系统 DLL 重定位错误阻断；错误在编译原有源文件时已经出现，与 VOFA 源码无关，仍需在工具链恢复后执行完整构建及上板验证。
 
 ## 光照采样
 
