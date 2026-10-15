@@ -1,6 +1,7 @@
 #include "user_home.h"
 #include "cmsis_os2.h"
 #include "SmaplingTypes.h"
+#include "com_Debug.h"
 
 lv_subject_t temp_subject;
 

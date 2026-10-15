@@ -1,4 +1,5 @@
 #include "ui.h"
+#include "com_Debug.h"
 
 //按钮回调函数
 static void btn_callback(lv_event_t * e)

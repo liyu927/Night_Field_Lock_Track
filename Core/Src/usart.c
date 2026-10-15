@@ -110,32 +110,5 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
 }
 
 /* USER CODE BEGIN 1 */
-/**
- * @brief  printf 重定向到 USART1（GCC/CLion 编译器）
- * @param  file: 文件指针（未使用）
- * @param  ptr:  数据缓冲区指针
- * @param  len:  数据长度
- * @retval 实际写入的字节数
- */
-#ifdef __GNUC__
-int _write(int file, char *ptr, int len)
-{
-  HAL_UART_Transmit(&huart1, (uint8_t *)ptr, len, HAL_MAX_DELAY);
-  return len;
-}
-#endif
 
-/**
- * @brief  printf 重定向到 USART1（Keil/IAR 编译器）
- * @param  ch:   要发送的字符
- * @param  f:    文件指针（未使用）
- * @retval 发送的字符
- */
-#if defined(__CC_ARM) || defined(__ICCARM__)
-int fputc(int ch, FILE *f)
-{
-  HAL_UART_Transmit(&huart1, (uint8_t *)&ch, 1, HAL_MAX_DELAY);
-  return ch;
-}
-#endif
 /* USER CODE END 1 */

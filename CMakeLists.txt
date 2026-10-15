@@ -44,7 +44,9 @@ add_executable(${CMAKE_PROJECT_NAME}
         Core/interface/AS5600.h
         Core/interface/SimpleFOC_Motor.c
         Core/interface/SimpleFOC_Motor.h
-        Middlewares/ST/ARM/DSP/Inc/arm_math.h)
+        Middlewares/ST/ARM/DSP/Inc/arm_math.h
+        Core/common/com_Debug.c
+        Core/common/com_Debug.h)
 
 # 只编译当前屏幕、触摸和 user_home 页面实际需要的 LVGL 模块。
 # 不再递归编译 demos、测试、PC 平台驱动以及未使用的控件，减少 Flash 占用。
