@@ -44,6 +44,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         Core/interface/AS5600.h
         Core/interface/SimpleFOC_Motor.c
         Core/interface/SimpleFOC_Motor.h
+        Core/interface/vofa.c
+        Core/interface/vofa.h
         Middlewares/ST/ARM/DSP/Inc/arm_math.h
         Core/common/com_Debug.c
         Core/common/com_Debug.h)
@@ -133,6 +135,9 @@ target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined symbols
 
 )
+
+# VOFA FireWater 使用 snprintf 格式化浮点数。
+target_link_options(${CMAKE_PROJECT_NAME} PRIVATE -u _printf_float)
 
 # Remove wrong libob.a library dependency when using cpp files
 list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
