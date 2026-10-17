@@ -82,6 +82,11 @@ osMessageQueueId_t SmaplingHandle;
 const osMessageQueueAttr_t Smapling_attributes = {
   .name = "Smapling"
 };
+/* Definitions for SmapToVofa */
+osMessageQueueId_t SmapToVofaHandle;
+const osMessageQueueAttr_t SmapToVofa_attributes = {
+  .name = "SmapToVofa"
+};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -120,6 +125,9 @@ void MX_FREERTOS_Init(void) {
   /* Create the queue(s) */
   /* creation of Smapling */
   SmaplingHandle = osMessageQueueNew (16, sizeof(SmaplingData_t), &Smapling_attributes);
+
+  /* creation of SmapToVofa */
+  SmapToVofaHandle = osMessageQueueNew (16, sizeof(SmaplingData_t), &SmapToVofa_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
