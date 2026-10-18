@@ -7,8 +7,9 @@
 #define LIGHT_SAMPLE_PERIOD_MS 20U /* 光照任务周期，符合设计文档的 20 ms 发布周期。 */
 #define LIGHT_LOW_PASS_SHIFT    3U /* 一阶低通右移位数，等价于使用 1/8 的滤波系数。 */
 
-/* 由 FreeRTOS 初始化函数创建，供 SmaplingTask 写入、UI 任务读取。 */
+/* 由 FreeRTOS 初始化函数创建，供 SmaplingTask 发布滤波后的光照快照。 */
 extern osMessageQueueId_t SmaplingHandle;
+extern osMessageQueueId_t SmapToVofaHandle;
 
 /**
  * @brief 启动 ADC1 DMA，周期性滤波四路光照数据并写入消息队列。
@@ -42,6 +43,7 @@ void StartSmaplingTask(void *argument)
         smapling_data.right_bottom = Filter_LowPass(&right_bottom_filter, Filter_Median3Update(&right_bottom_median, adc1_dma_buf[3]), LIGHT_LOW_PASS_SHIFT);
 
         (void)osMessageQueuePut(SmaplingHandle, &smapling_data, 0U, 0U); /* 非阻塞发布，队列满时不延误下一次采样。 */
+        (void)osMessageQueuePut(SmapToVofaHandle, &smapling_data, 0U, 0U); /* 将同一份滤波快照发送给 VOFA+ 调试任务。 */
         osDelay(LIGHT_SAMPLE_PERIOD_MS); /* 让出 CPU，保持固定的采样与发布周期。 */
     }
 }

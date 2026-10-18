@@ -87,7 +87,7 @@ SimpleFOC_Motor_SetPhaseVoltage(control->axis, 0.0f, q_voltage,
 
 ## VOFA+ FireWater 波形接口
 
-VOFA+ FireWater 发送接口位于 `Core/common/com_Debug.c/.h`，用于通过 USART1 向 VOFA+ 发送文本数据帧。接口只负责组织并发送波形数据，目前没有在任何业务任务中调用。
+VOFA+ FireWater 发送接口位于 `Core/common/com_Debug.c/.h`，用于通过 USART1 向 VOFA+ 发送文本数据帧。`SmaplingTask` 会将滤波后的四路光照快照写入 `SmapToVofa` 队列，`DebugTask` 从该队列读取后一次发送四路数据。
 
 USART1 沿用 CubeMX 的现有配置：115200 波特率、8 位数据位、1 位停止位、无校验和无硬件流控。FireWater 使用 ASCII 文本传输，同一采样时刻的多个通道以逗号分隔，整帧以换行符结束：
 
@@ -144,7 +144,8 @@ VOFA+ 会将第一个、第二个和第三个数值分别解析为通道 0、通
 ## 光照采样
 
 - `SmaplingTask` 使用 ADC1 的 PA0~PA3 DMA 循环采集四路光敏电阻；
-- 每 20 ms 经一阶低通后，将 `SmaplingData_t` 写入 `Smapling` 消息队列；
+- 每 20 ms 经一阶低通后，将 `SmaplingData_t` 同时写入 `Smapling`（UI）和 `SmapToVofa`（VOFA+）消息队列；
+- `DebugTask` 阻塞读取 `SmapToVofa`，并依次将 PA0、PA1、PA2、PA3 的滤波值发送为 VOFA+ 四通道波形；
 - UI 每 200 ms 读取最新数据，避免显示积压；
 - `Core/common/filter.c/.h` 提供一阶低通、标量卡尔曼、三点中值滤波。
 
