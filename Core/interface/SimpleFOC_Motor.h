@@ -72,6 +72,13 @@ void SimpleFOC_SVPWM(const SimpleFOC_AlphaBeta *input,
                      float *duty_b,
                      float *duty_c);
 
+/* 从调用时的实际位置再转 delta_deg；新调用立即覆盖未完成的旧目标。正数顺时针，负数逆时针。 */
+/* 返回 1 表示接收；未完成上电对齐、传感器故障或参数超限时返回 0。仅在任务上下文调用。 */
+uint8_t MotorPosition_SetTargetDegrees(float delta_deg);
+
+/* 电机任务入口调用；应用层无需直接调用。 */
+void SimpleFOC_Motor_RunPositionTask(void *argument);
+
 #ifdef __cplusplus
 }
 #endif
