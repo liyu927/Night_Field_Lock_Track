@@ -9,7 +9,7 @@ extern "C" {
 
 /* AS5600 的 7 位 I2C 地址和机械角度寄存器。 */
 #define AS5600_I2C_ADDRESS          0x36U
-#define AS5600_RAW_ANGLE_REGISTER   0x0EU
+#define AS5600_RAW_ANGLE_REGISTER   0x0CU
 #define AS5600_ANGLE_RESOLUTION     4096.0f
 
 /* 一个 AS5600 实例对应一条 I2C 总线。 */
