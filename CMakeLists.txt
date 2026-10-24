@@ -42,6 +42,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         Core/interface/FT6336.c
         Core/interface/AS5600.c
         Core/interface/AS5600.h
+        Core/interface/W25Q64.c
+        Core/interface/W25Q64.h
         Core/interface/SimpleFOC_Motor.c
         Core/interface/SimpleFOC_Motor.h
         Middlewares/ST/ARM/DSP/Inc/arm_math.h

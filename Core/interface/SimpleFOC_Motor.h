@@ -76,6 +76,11 @@ void SimpleFOC_SVPWM(const SimpleFOC_AlphaBeta *input,
 /* 返回 1 表示接收；未完成上电对齐、传感器故障或参数超限时返回 0。仅在任务上下文调用。 */
 uint8_t MotorPosition_SetTargetDegrees(float delta_deg);
 
+/* TIM8 上电保持禁用；每次上电准备转动前在任务上下文调用此函数。 */
+/* 首次无偏移量时会锁转子对齐一次并保存双备份；以后只恢复偏移和位置原点。 */
+/* 返回 HAL_OK 后才能启动 TIM8 的闭环转动；函数本身不下发转动目标。 */
+HAL_StatusTypeDef SimpleFOC_Motor_PrepareTIM8(void);
+
 /* 电机任务入口调用；应用层无需直接调用。 */
 void SimpleFOC_Motor_RunPositionTask(void *argument);
 

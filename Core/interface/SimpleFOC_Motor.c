@@ -3,6 +3,7 @@
 #include "arm_math.h"
 #include "tim.h"
 #include "AS5600.h"
+#include "W25Q64.h"
 #include "cmsis_os2.h"
 #include "i2c.h"
 #include "pid.h"
@@ -259,8 +260,11 @@ void SimpleFOC_SVPWM(const SimpleFOC_AlphaBeta *input,
 #define MOTOR_ALIGNMENT_VOLTAGE          1.0f
 #define MOTOR_ALIGNMENT_TIME_MS          800U
 #define MOTOR_ALIGNMENT_ANGLE_RAD        0.0f
-/* TIM8 当前必须静止；机械安全后改为 1U 可在启动时执行同样的零位校准。 */
-#define TIM8_AUTO_CALIBRATE_ON_BOOT      0U
+/* 角度源改为 0x0E 后更新记录版本，旧偏移量需重新测量。 */
+#define MOTOR_OFFSET_SIGNATURE          0x32464F43UL
+#define MOTOR_OFFSET_CONFIG             ((MOTOR_POLE_PAIRS << 8) | (MOTOR_DIRECTION_CLOCKWISE & 0xFF))
+#define MOTOR_OFFSET_TIM1_VALID         0x01U
+#define MOTOR_OFFSET_TIM8_VALID         0x02U
 
 /* D32/D33 实测有效的双闭环参数；力矩环不测电流，只限制 q 轴电压。 */
 #define MOTOR_POSITION_KP                2.0f
@@ -292,6 +296,18 @@ typedef struct
 
 static MotorControl_t g_tim1_control;
 static MotorControl_t g_tim8_control;
+/* TIM8 只记住偏移量是否有效；上电加载不会启动 PWM。 */
+static uint8_t g_tim8_offset_valid;
+/* 两轴共用一个参数包，由 W25Q64 驱动在原有两个扇区做双备份。 */
+typedef struct
+{
+    uint32_t signature;    /* 数据格式版本。 */
+    uint32_t config;       /* 极对数与方向，避免误用其他电机配置的偏移量。 */
+    uint32_t valid_flags;  /* 分别标记 TIM1、TIM8 是否已完成校准。 */
+    float tim1_offset;
+    float tim8_offset;
+} MotorOffsetRecord;
+
 typedef struct
 {
     float target_deg;
@@ -437,6 +453,56 @@ static HAL_StatusTypeDef motor_auto_calibrate(MotorControl_t *control)
     return HAL_OK;
 }
 
+/* 每次上电首次使用 TIM8 前调用；已有有效偏移时只建立当前位置。 */
+/* 尚未校准时才短暂使能 TIM8 对齐，校准成功后立即关闭并保存双备份。 */
+HAL_StatusTypeDef SimpleFOC_Motor_PrepareTIM8(void)
+{
+    MotorOffsetRecord record;
+    HAL_StatusTypeDef status;
+
+    if (g_motor_state.ready == 0U || g_motor_state.fault != 0U)
+        return HAL_BUSY;
+    if (g_tim8_offset_valid != 0U)
+    {
+        /* 从 Flash 恢复偏移后，还需读取本次上电的机械角度作为位置原点。 */
+        if (g_tim8_control.feedback_initialized != 0U) return HAL_OK;
+        status = motor_update_feedback(&g_tim8_control, 0.005f);
+        if (status == HAL_OK)
+            g_tim8_control.mechanical_origin = g_tim8_control.mechanical_position;
+        return status;
+    }
+
+    /* 再读一次整包，保存 TIM8 时保留原有的 TIM1 偏移量。 */
+    status = W25Q64_LoadParameters(&record, sizeof(record));
+    if (status != HAL_OK) return status;
+    if (record.signature != MOTOR_OFFSET_SIGNATURE
+        || record.config != MOTOR_OFFSET_CONFIG
+        || (record.valid_flags & MOTOR_OFFSET_TIM1_VALID) == 0U)
+        return HAL_ERROR;
+    if ((record.valid_flags & MOTOR_OFFSET_TIM8_VALID) != 0U
+        && isfinite(record.tim8_offset)
+        && record.tim8_offset >= 0.0f
+        && record.tim8_offset < MOTOR_TWO_PI)
+    {
+        /* 处理上一次保存中途断电但已有一份新记录的情况。 */
+        g_tim8_control.electrical_offset = record.tim8_offset;
+        g_tim8_offset_valid = 1U;
+        status = motor_update_feedback(&g_tim8_control, 0.005f);
+        if (status == HAL_OK)
+            g_tim8_control.mechanical_origin = g_tim8_control.mechanical_position;
+        return status;
+    }
+
+    /* 首次显式准备时才会真正对齐，启动任务本身绝不调用这里。 */
+    status = motor_auto_calibrate(&g_tim8_control);
+    if (status != HAL_OK) return status;
+    record.tim8_offset = g_tim8_control.electrical_offset;
+    record.valid_flags |= MOTOR_OFFSET_TIM8_VALID;
+    status = W25Q64_SaveParameters(&record, sizeof(record));
+    if (status == HAL_OK) g_tim8_offset_valid = 1U;
+    return status;
+}
+
 /* 执行位置环、速度环并把 q 轴电压指令输出到三相 PWM。 */
 static void motor_run_closed_loop(MotorControl_t *control,
                                   float target_position,
@@ -483,6 +549,8 @@ static void motor_run_closed_loop(MotorControl_t *control,
 
 void SimpleFOC_Motor_RunPositionTask(void *argument)
 {
+    MotorOffsetRecord offset_record = {0};
+    HAL_StatusTypeDef storage_status;
     uint32_t next_wake_tick;
     uint32_t previous_tick;
     uint32_t elapsed_ms;
@@ -496,18 +564,62 @@ void SimpleFOC_Motor_RunPositionTask(void *argument)
 
     (void)argument;
 
-    /* I2C1/TIM1 与 I2C3/TIM8 都建立完整控制对象；TIM8 不做校准和使能，因此不会转动。 */
+    /* 两轴建立控制对象；TIM8 只读取已保存的偏移量，不使能电机。 */
     motor_control_init(&g_tim1_control, SIMPLEFOC_AXIS_VERTICAL, &hi2c1);
     motor_control_init(&g_tim8_control, SIMPLEFOC_AXIS_HORIZONTAL, &hi2c3);
     SimpleFOC_Motor_Disable(SIMPLEFOC_AXIS_HORIZONTAL);
 
-    if ((TIM8_AUTO_CALIBRATE_ON_BOOT != 0U)
-        && (motor_auto_calibrate(&g_tim8_control) != HAL_OK))
+    /* 先校验双备份；旧版 0x0C 偏移量不适用于现在的 0x0E 角度源。 */
+    storage_status = W25Q64_Init();
+    if (storage_status == HAL_OK)
+        storage_status = W25Q64_LoadParameters(&offset_record, sizeof(offset_record));
+    if (storage_status == HAL_BUSY || (storage_status == HAL_OK
+        && (offset_record.signature != MOTOR_OFFSET_SIGNATURE
+            || offset_record.config != MOTOR_OFFSET_CONFIG)))
     {
-        SimpleFOC_Motor_Disable(SIMPLEFOC_AXIS_HORIZONTAL);
+        /* 新芯片或记录版本不匹配：建立空记录，后面只校准 TIM1。 */
+        offset_record.signature = MOTOR_OFFSET_SIGNATURE;
+        offset_record.config = MOTOR_OFFSET_CONFIG;
+        offset_record.valid_flags = 0U;
+        storage_status = HAL_OK;
     }
 
-    if (motor_auto_calibrate(&g_tim1_control) != HAL_OK)
+    /* TIM8 只载入偏移量，不读传感器、不使能驱动，也不发转动目标。 */
+    if (storage_status == HAL_OK
+        && (offset_record.valid_flags & MOTOR_OFFSET_TIM8_VALID) != 0U
+        && isfinite(offset_record.tim8_offset)
+        && offset_record.tim8_offset >= 0.0f
+        && offset_record.tim8_offset < MOTOR_TWO_PI)
+    {
+        g_tim8_control.electrical_offset = offset_record.tim8_offset;
+        g_tim8_offset_valid = 1U;
+    }
+
+    /* TIM1 有有效偏移时用当前 AS5600 角度建立位置原点，跳过锁转子。 */
+    if (storage_status == HAL_OK
+        && (offset_record.valid_flags & MOTOR_OFFSET_TIM1_VALID) != 0U
+        && isfinite(offset_record.tim1_offset)
+        && offset_record.tim1_offset >= 0.0f
+        && offset_record.tim1_offset < MOTOR_TWO_PI)
+    {
+        g_tim1_control.electrical_offset = offset_record.tim1_offset;
+        storage_status = motor_update_feedback(&g_tim1_control, 0.005f);
+        g_tim1_control.mechanical_origin = g_tim1_control.mechanical_position;
+    }
+    else if (storage_status == HAL_OK)
+    {
+        /* 只有 TIM1 没有可用偏移时才执行一次对齐并写入参数包。 */
+        storage_status = motor_auto_calibrate(&g_tim1_control);
+        if (storage_status == HAL_OK)
+        {
+            offset_record.tim1_offset = g_tim1_control.electrical_offset;
+            offset_record.valid_flags |= MOTOR_OFFSET_TIM1_VALID;
+            storage_status = W25Q64_SaveParameters(&offset_record, sizeof(offset_record));
+        }
+    }
+
+    /* 读写 Flash、传感器或校准失败时保持驱动关闭，避免错误电角度输出。 */
+    if (storage_status != HAL_OK)
     {
         SimpleFOC_Motor_Disable(SIMPLEFOC_AXIS_VERTICAL);
         taskENTER_CRITICAL();
@@ -523,6 +635,8 @@ void SimpleFOC_Motor_RunPositionTask(void *argument)
     taskENTER_CRITICAL();
     g_motor_state.ready = 1U;
     taskEXIT_CRITICAL();
+    /* 保留原来的上电测试动作：TIM1 从当前机械位置顺时针转 180 度。 */
+    (void)MotorPosition_SetTargetDegrees(180.0f);
     next_wake_tick = osKernelGetTickCount();
     previous_tick = next_wake_tick;
 
