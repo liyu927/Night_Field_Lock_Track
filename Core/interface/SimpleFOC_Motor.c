@@ -17,6 +17,87 @@
 #define SFOC_HALF                  0.5f
 #define SFOC_SQRT3_BY_TWO          0.86602540378443864676f
 
+
+
+//************************************************************************************************
+
+#define MOTOR_PI                         3.14159265358979323846f
+#define MOTOR_TWO_PI                     (2.0f * MOTOR_PI)
+#define MOTOR_TASK_PERIOD_MS             5U
+
+/* 两个电机的已确认硬件参数。 */
+#define MOTOR_POLE_PAIRS                 7U
+#define MOTOR_SUPPLY_VOLTAGE             12.0f
+#define MOTOR_DIRECTION_CLOCKWISE        1
+
+/* 自动电角零位校准参数：低 d 轴电压锁定转子后读取 AS5600。 */
+#define MOTOR_ALIGNMENT_VOLTAGE          1.0f
+#define MOTOR_ALIGNMENT_TIME_MS          800U
+#define MOTOR_ALIGNMENT_ANGLE_RAD        0.0f
+/* 角度源改为 0x0E 后更新记录版本，旧偏移量需重新测量。 */
+#define MOTOR_OFFSET_SIGNATURE          0x32464F43UL
+#define MOTOR_OFFSET_CONFIG             ((MOTOR_POLE_PAIRS << 8) | (MOTOR_DIRECTION_CLOCKWISE & 0xFF))
+#define MOTOR_OFFSET_TIM1_VALID         0x01U
+#define MOTOR_OFFSET_TIM8_VALID         0x02U
+
+/* 实测确定的双闭环参数；力矩环不测电流，只限制 q 轴电压。 */
+#define MOTOR_POSITION_KP                2.5f   /* 位置误差转为目标角速度的比例系数，单位 1/s。 */
+#define MOTOR_MAX_SPEED_DPS             180.0f  /* 目标机械角速度上限，单位度/秒，不保证实际能达到。 */
+#define MOTOR_SPEED_KP                   0.18f  /* 速度误差生成 q 轴电压的比例系数。 */
+#define MOTOR_SPEED_KI                   4.47f  /* 速度误差的积分系数，用于减小稳态速度误差。 */
+#define MOTOR_SPEED_FILTER_S             0.02f  /* 速度反馈低通滤波时间常数，单位秒；越大越平稳但滞后越大。 */
+#define MOTOR_MAX_Q_VOLTAGE              1.5f   /* q 轴电压指令的绝对值上限，单位伏；不是电流上限。 */
+#define MOTOR_Q_SLEW_VPS                 10.0f   /* q 轴电压指令每秒允许变化的最大值，单位伏/秒。 */
+#define MOTOR_MAX_STEP_DEG               8.0f   /* 相邻两次传感器读数允许的最大角度变化，超出则故障停机。 */
+#define MOTOR_MAX_OVERSHOOT_DEG         10.0f   /* 沿指令方向越过目标角度的容许量，超出则故障停机。 */
+#define MOTOR_MAX_COMMAND_DEG          360.0f   /* 单次相对转角指令的绝对值上限，超出则拒绝指令。 */
+
+/* 一个轴的 AS5600 反馈、闭环状态和 PID 控制器。 */
+typedef struct
+{
+    SimpleFOC_MotorAxis axis;
+    AS5600_Handle_t encoder;
+    PID_Controller_t position_pid;
+    PID_Controller_t speed_pid;
+    float electrical_offset;
+    float raw_angle;
+    float mechanical_origin;
+    float mechanical_position;
+    float mechanical_speed;
+    float applied_q_voltage;
+    uint8_t feedback_initialized;
+} MotorControl_t;
+
+static MotorControl_t g_tim1_control;
+static MotorControl_t g_tim8_control;
+/* TIM8 只记住偏移量是否有效；上电加载不会启动 PWM。 */
+static uint8_t g_tim8_offset_valid;
+/* 两轴共用一个参数包，由 W25Q64 驱动在原有两个扇区做双备份。 */
+typedef struct
+{
+    uint32_t signature;    /* 数据格式版本。 */
+    uint32_t config;       /* 极对数与方向，避免误用其他电机配置的偏移量。 */
+    uint32_t valid_flags;  /* 分别标记 TIM1、TIM8 是否已完成校准。 */
+    float tim1_offset;
+    float tim8_offset;
+} MotorOffsetRecord;
+
+typedef struct
+{
+    float target_deg;
+    float actual_deg;
+    uint8_t ready;
+    uint8_t fault;
+} MotorPositionState;
+
+static MotorPositionState g_motor_state;
+static float g_command_start_deg;
+static uint8_t g_command_valid;
+
+//*******************************************************************************************************
+
+
+
 /* 一个电机轴所使用的定时器、使能引脚和三相 PWM 映射。 */
 typedef struct
 {
@@ -247,78 +328,6 @@ void SimpleFOC_SVPWM(const SimpleFOC_AlphaBeta *input,
                          0.0f, 1.0f);
 }
 
-#define MOTOR_PI                         3.14159265358979323846f
-#define MOTOR_TWO_PI                     (2.0f * MOTOR_PI)
-#define MOTOR_TASK_PERIOD_MS             5U
-
-/* 两个电机的已确认硬件参数。 */
-#define MOTOR_POLE_PAIRS                 7U
-#define MOTOR_SUPPLY_VOLTAGE             12.0f
-#define MOTOR_DIRECTION_CLOCKWISE        1
-
-/* 自动电角零位校准参数：低 d 轴电压锁定转子后读取 AS5600。 */
-#define MOTOR_ALIGNMENT_VOLTAGE          1.0f
-#define MOTOR_ALIGNMENT_TIME_MS          800U
-#define MOTOR_ALIGNMENT_ANGLE_RAD        0.0f
-/* 角度源改为 0x0E 后更新记录版本，旧偏移量需重新测量。 */
-#define MOTOR_OFFSET_SIGNATURE          0x32464F43UL
-#define MOTOR_OFFSET_CONFIG             ((MOTOR_POLE_PAIRS << 8) | (MOTOR_DIRECTION_CLOCKWISE & 0xFF))
-#define MOTOR_OFFSET_TIM1_VALID         0x01U
-#define MOTOR_OFFSET_TIM8_VALID         0x02U
-
-/* D32/D33 实测有效的双闭环参数；力矩环不测电流，只限制 q 轴电压。 */
-#define MOTOR_POSITION_KP                2.0f
-#define MOTOR_MAX_SPEED_DPS              20.0f
-#define MOTOR_SPEED_KP                   2.5f
-#define MOTOR_SPEED_KI                   5.0f
-#define MOTOR_SPEED_FILTER_S             0.08f
-#define MOTOR_MAX_Q_VOLTAGE              1.5f
-#define MOTOR_Q_SLEW_VPS                 5.0f
-#define MOTOR_MAX_STEP_DEG               8.0f
-#define MOTOR_MAX_OVERSHOOT_DEG         10.0f
-#define MOTOR_MAX_COMMAND_DEG          180.0f
-
-/* 一个轴的 AS5600 反馈、闭环状态和 PID 控制器。 */
-typedef struct
-{
-    SimpleFOC_MotorAxis axis;
-    AS5600_Handle_t encoder;
-    PID_Controller_t position_pid;
-    PID_Controller_t speed_pid;
-    float electrical_offset;
-    float raw_angle;
-    float mechanical_origin;
-    float mechanical_position;
-    float mechanical_speed;
-    float applied_q_voltage;
-    uint8_t feedback_initialized;
-} MotorControl_t;
-
-static MotorControl_t g_tim1_control;
-static MotorControl_t g_tim8_control;
-/* TIM8 只记住偏移量是否有效；上电加载不会启动 PWM。 */
-static uint8_t g_tim8_offset_valid;
-/* 两轴共用一个参数包，由 W25Q64 驱动在原有两个扇区做双备份。 */
-typedef struct
-{
-    uint32_t signature;    /* 数据格式版本。 */
-    uint32_t config;       /* 极对数与方向，避免误用其他电机配置的偏移量。 */
-    uint32_t valid_flags;  /* 分别标记 TIM1、TIM8 是否已完成校准。 */
-    float tim1_offset;
-    float tim8_offset;
-} MotorOffsetRecord;
-
-typedef struct
-{
-    float target_deg;
-    float actual_deg;
-    uint8_t ready;
-    uint8_t fault;
-} MotorPositionState;
-
-static MotorPositionState g_motor_state;
-static float g_command_start_deg;
-static uint8_t g_command_valid;
 
 uint8_t MotorPosition_SetTargetDegrees(float delta_deg)
 {
@@ -608,7 +617,7 @@ void SimpleFOC_Motor_RunPositionTask(void *argument)
     }
     else if (storage_status == HAL_OK)
     {
-        /* 只有 TIM1 没有可用偏移时才执行一次对齐并写入参数包。 */
+        /* 只有 TIM1 没有可用偏移时才对齐一次，并写入双备份参数包。 */
         storage_status = motor_auto_calibrate(&g_tim1_control);
         if (storage_status == HAL_OK)
         {
@@ -635,8 +644,8 @@ void SimpleFOC_Motor_RunPositionTask(void *argument)
     taskENTER_CRITICAL();
     g_motor_state.ready = 1U;
     taskEXIT_CRITICAL();
-    /* 保留原来的上电测试动作：TIM1 从当前机械位置顺时针转 180 度。 */
-    (void)MotorPosition_SetTargetDegrees(180.0f);
+    /* 上电后 TIM1 从当前位置顺时针转动一整圈。 */
+    (void)MotorPosition_SetTargetDegrees(360.0f);
     next_wake_tick = osKernelGetTickCount();
     previous_tick = next_wake_tick;
 

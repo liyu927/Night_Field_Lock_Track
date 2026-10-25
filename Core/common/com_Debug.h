@@ -16,20 +16,28 @@
 #define DEBUG_UART_TIMEOUT 1000U
 #endif
 
-/* VOFA+ FireWater 波形输出总开关：1 为正常发送，0 为关闭输出。 */
+/* VOFA+ 接口总开关；需要调试时改为 1。 */
 #ifndef VOFA_DEBUG
 #define VOFA_DEBUG 1
 #endif
 
+#if VOFA_DEBUG
 /* FireWater 数据格式配置。 */
-#define VOFA_FIREWATER_DECIMAL_PLACES    6
+#define VOFA_FIREWATER_DECIMAL_PLACES    4
 #define VOFA_MAX_CHANNEL_COUNT           8U
 #define VOFA_VALUE_TEXT_SIZE             48U
 #define VOFA_TX_BUFFER_SIZE              ((VOFA_MAX_CHANNEL_COUNT * VOFA_VALUE_TEXT_SIZE) + 1U)
 #define VOFA_UART_TIMEOUT_MS             100U
+#define VOFA_COMMAND_LENGTH               48U
 
 /* 将同一采样时刻的多通道数据按 FireWater 格式发送到 VOFA+。 */
 HAL_StatusTypeDef VOFA_SendValues(const float *values, uint16_t count);
+
+/* 启动 USART1 单字节中断接收；完整文本命令以换行结束。 */
+HAL_StatusTypeDef VOFA_StartReceive(void);
+/* 从接收队列取出一条命令；返回 1 表示取到，0 表示暂时没有。 */
+uint8_t VOFA_GetCommand(char *command, uint16_t size);
+#endif
 
 #if DEBUG_LOG_ENABLE
 

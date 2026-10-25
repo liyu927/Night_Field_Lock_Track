@@ -22,6 +22,7 @@
 #include "stm32f4xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "com_Debug.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -248,5 +249,14 @@ void DMA2_Stream5_IRQHandler(void)
 }
 
 /* USER CODE BEGIN 1 */
+
+#if VOFA_DEBUG
+/* 启用 VOFA+ 接口时处理 USART1 接收中断。 */
+void USART1_IRQHandler(void)
+{
+  extern UART_HandleTypeDef huart1;
+  HAL_UART_IRQHandler(&huart1);
+}
+#endif
 
 /* USER CODE END 1 */
