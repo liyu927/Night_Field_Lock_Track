@@ -1,215 +1,361 @@
 #include "user_home.h"
 #include "cmsis_os2.h"
 #include "SmaplingTypes.h"
-#include "com_Debug.h"
+#include <stdint.h>
 
-lv_subject_t temp_subject;
+#define UI_SCREEN_W          240
+#define UI_CONTENT_H         260
+#define UI_FOOTER_H          60
+#define UI_ADC_REFRESH_MS    200
+#define UI_PAGE_STACK_DEPTH  4
+#define UI_PARAM_COUNT       5
+#define UI_DEMO_PARAM_MIN    0
+#define UI_DEMO_PARAM_MAX    9999
 
-/*==================== ADC 电压显示（观察者模式） ====================*/
-static lv_subject_t adc_subject[4];      /* PA0~PA3 各自的主题 */
-static const char *adc_fmt[4] = {"PA0:%d", "PA1:%d", "PA2:%d", "PA3:%d"};
-
-/* SmaplingTask 写入 Smapling 队列，UI 定时器仅读取其中的滤波结果。 */
 extern osMessageQueueId_t SmaplingHandle;
 
-/**
- * @brief LVGL 定时器回调：更新光照采样数据的观察者主题。
- * @note  回调运行在 UiTask 上下文，不能从 EXTI 中断内直接调用。
- */
-static void adc_display_timer_cb(lv_timer_t *timer)
-{
-    SmaplingData_t smapling_data; /* 保存每次从队列取出的完整四路滤波数据。 */
+typedef enum {
+    UI_PAGE_MAIN,
+    UI_PAGE_CONTROL,
+    UI_PAGE_PARAMS,
+    UI_PAGE_ABOUT,
+    UI_PAGE_APP
+} UiPage;
 
-    (void)timer; /* 当前回调不需要使用 LVGL 传入的定时器对象。 */
-    /* 连续读取直到队列为空，确保屏幕显示的是当前可获取的最新一帧。 */
-    while (osMessageQueueGet(SmaplingHandle, &smapling_data, NULL, 0U) == osOK)
-    {
-        lv_subject_set_int(&adc_subject[0], smapling_data.left_top); /* 更新 PA0 左上通道显示主题。 */
-        lv_subject_set_int(&adc_subject[1], smapling_data.left_bottom); /* 更新 PA1 左下通道显示主题。 */
-        lv_subject_set_int(&adc_subject[2], smapling_data.right_top); /* 更新 PA2 右上通道显示主题。 */
-        lv_subject_set_int(&adc_subject[3], smapling_data.right_bottom); /* 更新 PA3 右下通道显示主题。 */
+static lv_obj_t *tileview;
+static lv_obj_t *manual_tile;
+static lv_obj_t *pages[UI_PAGE_APP + 1];
+static lv_obj_t *adc_labels[3];
+static lv_obj_t *auto_avg_label;
+static lv_obj_t *auto_diff_label;
+static lv_obj_t *direction_label;
+static lv_obj_t *param_labels[UI_PARAM_COUNT];
+static lv_obj_t *dialog_layer;
+static lv_obj_t *dialog;
+static lv_obj_t *dialog_text;
+static lv_obj_t *dialog_buttons[3];
+static UiPage page_stack[UI_PAGE_STACK_DEPTH];
+static uint8_t page_stack_size;
+static UiPage current_page;
+static int32_t demo_params[UI_PARAM_COUNT];
+static int32_t entry_params[UI_PARAM_COUNT];
+static bool params_dirty;
+static bool save_then_back;
+
+static const char *const param_names[UI_PARAM_COUNT] = {
+    "光照最小差异", "光照唤醒阈值", "光照最低阈值",
+    "手动基础速度", "自动基础速度"
+};
+
+static lv_obj_t *ui_label(lv_obj_t *parent, const char *text,
+                          int32_t x, int32_t y, int32_t width)
+{
+    lv_obj_t *label = lv_label_create(parent);
+    lv_obj_set_pos(label, x, y);
+    lv_obj_set_width(label, width);
+    lv_label_set_text(label, text);
+    return label;
+}
+
+static lv_obj_t *ui_button(lv_obj_t *parent, const char *text,
+                           int32_t x, int32_t y, int32_t width, int32_t height,
+                           lv_event_cb_t callback, void *user_data)
+{
+    lv_obj_t *button = lv_button_create(parent);
+    lv_obj_set_pos(button, x, y);
+    lv_obj_set_size(button, width, height);
+    if (callback != NULL) {
+        lv_obj_add_event_cb(button, callback, LV_EVENT_CLICKED, user_data);
     }
-
+    lv_obj_t *label = lv_label_create(button);
+    lv_label_set_text(label, text);
+    lv_obj_center(label);
+    return button;
 }
 
-//(1)：observer参数:同一个回调函数可以应用到多个观察者，通过东西一个参数的地址来表示当前触发回调的是哪个观察者,其值就是lv_subject_add_observer返回的值
-//(2)：subject参数：：添加观察者的主题 =》 对应观察的对象（跟平常的回调函数那个参数一样）
-void temp_obs_cb(lv_observer_t * observer, lv_subject_t *subject)
+static lv_obj_t *ui_subpage(const char *title)
 {
-    int32_t pre_value = lv_subject_get_previous_int(subject);//获取上一次的值
-    int32_t cur_value = lv_subject_get_int(subject);//获取当前的值
-    printf("pre_value: %d, cur_value: %d\n", pre_value, cur_value);
-
+    lv_obj_t *page = lv_obj_create(lv_screen_active());
+    lv_obj_set_pos(page, 0, 0);
+    lv_obj_set_size(page, UI_SCREEN_W, UI_CONTENT_H);
+    lv_obj_set_style_pad_all(page, 0, 0);
+    lv_obj_set_scrollable(page, false);
+    lv_obj_set_hidden(page, true);
+    ui_label(page, title, 8, 8, 164);
+    return page;
 }
 
-void btn1_event_cb(lv_event_t *e)
+static void ui_show_page(UiPage page)
 {
-    lv_subject_t *subject = lv_event_get_user_data(e);
-    int32_t cur_value = lv_subject_get_int(subject);
-    lv_subject_set_int(subject, cur_value + 1);
-}
-
-void btn2_event_cb(lv_event_t *e)
-{
-    lv_subject_t *subject = lv_event_get_user_data(e);
-    int32_t cur_value = lv_subject_get_int(subject);
-    lv_subject_set_int(subject, cur_value - 1);
-
-}
-
-
-
-
-static const char * const languages[] = {"en", "chinese", NULL};//支持语言
-static const char * const tags[] = {"obs", "translation", NULL};//标签页
-static const char * const translations[] = {
-    //LVGL规定字符串只能写成UTF-8的形式，不然LVGL无法识别
-    //keil编译器中若使用GBK，会出现不定期的乱码然后报错
-    //可以在下面的字符串前后加空格解决，例如：" 观察者 "
-    "obs",        " 观察者 ",   /* tag "obs":         [en, chinese] */
-    "translation", "翻译"};   /* tag "translation": [en, chinese] */
-
-void dropdown_event_cb(lv_event_t *e)
-{
-    //1.获取下拉菜单组件
-    lv_obj_t *dropdown = lv_event_get_user_data(e);
-
-    //2.获取当前选项下标
-    uint16_t selected_index = lv_dropdown_get_selected(dropdown);
-    printf("selected_index:%d\n",selected_index);
-    if(selected_index == 0)
-    {
-        lv_translation_set_language("chinese");
+    lv_obj_set_hidden(tileview, true);
+    if (current_page != UI_PAGE_MAIN) {
+        lv_obj_set_hidden(pages[current_page], true);
     }
-    else if(selected_index == 1)
-    {
-        lv_translation_set_language("en");
+    current_page = page;
+    if (page == UI_PAGE_MAIN) {
+        lv_obj_set_hidden(tileview, false);
+    } else {
+        lv_obj_set_hidden(pages[page], false);
     }
-
 }
 
-
-void language_change_event_cb(lv_event_t *e)
+static void ui_push_page(UiPage page)
 {
-    lv_obj_t *label = lv_event_get_target_obj(e);//返回label0或label1
-    const char *tag = lv_event_get_user_data(e);//返回tag对应的那个值
-    lv_label_set_text(label,lv_tr(tag));//对标签对应的值切换语言
-
+    if (page_stack_size >= UI_PAGE_STACK_DEPTH) return;
+    page_stack[page_stack_size++] = current_page;
+    if (page == UI_PAGE_PARAMS && !params_dirty) {
+        for (uint8_t i = 0; i < UI_PARAM_COUNT; i++) {
+            entry_params[i] = demo_params[i];
+        }
+    }
+    ui_show_page(page);
 }
 
-/**
- * @brief 观察者模式和翻译
- *
- */
+static void ui_go_back(void)
+{
+    if (current_page == UI_PAGE_CONTROL) {
+        lv_label_set_text(direction_label, "方向：未按下（仅界面演示）");
+    }
+    ui_show_page(page_stack_size ? page_stack[--page_stack_size] : UI_PAGE_MAIN);
+}
+
+static void ui_dialog_hide(void)
+{
+    lv_obj_set_hidden(dialog_layer, true);
+}
+
+static void ui_dialog_show(const char *text, bool confirm)
+{
+    lv_label_set_text(dialog_text, text);
+    for (uint8_t i = 0; i < 2; i++) {
+        if (confirm) lv_obj_set_hidden(dialog_buttons[i], false);
+        else lv_obj_set_hidden(dialog_buttons[i], true);
+    }
+    lv_obj_set_pos(dialog_buttons[2], confirm ? 149 : 77, 100);
+    lv_obj_t *close_label = lv_obj_get_child(dialog_buttons[2], 0);
+    lv_label_set_text(close_label, confirm ? "取消" : "关闭");
+    lv_obj_set_hidden(dialog_layer, false);
+    lv_obj_move_foreground(dialog_layer);
+}
+
+static void ui_close_dialog_cb(lv_event_t *event)
+{
+    (void)event;
+    ui_dialog_hide();
+}
+
+static void ui_back_cb(lv_event_t *event)
+{
+    (void)event;
+    if (current_page == UI_PAGE_PARAMS && params_dirty) {
+        save_then_back = true;
+        ui_dialog_show("是否保存修改？", true);
+    } else {
+        ui_go_back();
+    }
+}
+
+static void ui_open_cb(lv_event_t *event)
+{
+    UiPage page = (UiPage)(uintptr_t)lv_event_get_user_data(event);
+    ui_push_page(page);
+}
+
+static void ui_direction_cb(lv_event_t *event)
+{
+    lv_event_code_t code = lv_event_get_code(event);
+    if (code == LV_EVENT_PRESSED) {
+        const char *direction = lv_event_get_user_data(event);
+        lv_label_set_text_fmt(direction_label, "方向：%s（仅界面演示）", direction);
+    } else if (code == LV_EVENT_RELEASED || code == LV_EVENT_PRESS_LOST) {
+        lv_label_set_text(direction_label, "方向：未按下（仅界面演示）");
+    }
+}
+
+static void ui_param_refresh(uint8_t index)
+{
+    lv_label_set_text_fmt(param_labels[index], "%ld", (long)demo_params[index]);
+}
+
+static void ui_param_change_cb(lv_event_t *event)
+{
+    uintptr_t code = (uintptr_t)lv_event_get_user_data(event);
+    uint8_t index = (uint8_t)(code / 2U);
+    int32_t delta = (code & 1U) ? 1 : -1;
+    int32_t value = demo_params[index] + delta;
+    if (value < UI_DEMO_PARAM_MIN) value = UI_DEMO_PARAM_MIN;
+    if (value > UI_DEMO_PARAM_MAX) value = UI_DEMO_PARAM_MAX;
+    demo_params[index] = value;
+    params_dirty = true;
+    ui_param_refresh(index);
+}
+
+static void ui_save_preview(void)
+{
+    params_dirty = false;
+    for (uint8_t i = 0; i < UI_PARAM_COUNT; i++) {
+        entry_params[i] = demo_params[i];
+    }
+    if (save_then_back) {
+        ui_go_back();
+        save_then_back = false;
+    }
+    ui_dialog_show("保存成功（界面演示，未写入 Flash）", false);
+}
+
+static void ui_save_cb(lv_event_t *event)
+{
+    (void)event;
+    save_then_back = false;
+    ui_save_preview();
+}
+
+static void ui_confirm_save_cb(lv_event_t *event)
+{
+    (void)event;
+    ui_save_preview();
+}
+
+static void ui_discard_cb(lv_event_t *event)
+{
+    (void)event;
+    for (uint8_t i = 0; i < UI_PARAM_COUNT; i++) {
+        demo_params[i] = entry_params[i];
+        ui_param_refresh(i);
+    }
+    params_dirty = false;
+    save_then_back = false;
+    ui_dialog_hide();
+    ui_go_back();
+}
+
+static void ui_error_preview_cb(lv_event_t *event)
+{
+    (void)event;
+    ui_dialog_show("设备异常（弹窗预览）", false);
+}
+
+static void ui_adc_timer_cb(lv_timer_t *timer)
+{
+    SmaplingData_t sample;
+    bool received = false;
+    (void)timer;
+    if (SmaplingHandle == NULL) return;
+    while (osMessageQueueGet(SmaplingHandle, &sample, NULL, 0U) == osOK) {
+        received = true;
+    }
+    if (!received) return;
+
+    uint16_t max = sample.left_top;
+    uint16_t min = sample.left_top;
+    uint16_t values[4] = {sample.left_top, sample.left_bottom,
+                          sample.right_top, sample.right_bottom};
+    uint32_t sum = 0;
+    for (uint8_t i = 0; i < 4; i++) {
+        if (values[i] > max) max = values[i];
+        if (values[i] < min) min = values[i];
+        sum += values[i];
+    }
+    lv_label_set_text_fmt(adc_labels[0], "左上:%u  左下:%u", (unsigned int)values[0], (unsigned int)values[1]);
+    lv_label_set_text_fmt(adc_labels[1], "右上:%u  右下:%u", (unsigned int)values[2], (unsigned int)values[3]);
+    lv_label_set_text_fmt(adc_labels[2], "平均:%lu  总差:%u", (unsigned long)(sum / 4U), (unsigned int)(max - min));
+    lv_label_set_text_fmt(auto_avg_label, "平均光照：%lu", (unsigned long)(sum / 4U));
+    lv_label_set_text_fmt(auto_diff_label, "光照总差：%u", (unsigned int)(max - min));
+}
+
 void user_home_create(void)
 {
+    lv_obj_t *screen = lv_screen_active();
+    lv_obj_clean(screen);
 
+    tileview = lv_tileview_create(screen);
+    lv_obj_set_pos(tileview, 0, 0);
+    lv_obj_set_size(tileview, UI_SCREEN_W, UI_CONTENT_H);
+    manual_tile = lv_tileview_add_tile(tileview, 0, 0, LV_DIR_BOTTOM);
+    lv_obj_t *auto_tile = lv_tileview_add_tile(tileview, 0, 1, LV_DIR_TOP);
+    lv_obj_set_style_pad_all(manual_tile, 0, 0);
+    lv_obj_set_style_pad_all(auto_tile, 0, 0);
+    lv_obj_set_scrollable(manual_tile, false);
+    lv_obj_set_scrollable(auto_tile, false);
+    ui_label(manual_tile, "手动模式  上滑切换自动", 8, 9, 224);
+    ui_button(manual_tile, "手动控制", 16, 42, 208, 40, ui_open_cb, (void *)(uintptr_t)UI_PAGE_CONTROL);
+    ui_button(manual_tile, "参数调节", 16, 90, 208, 40, ui_open_cb, (void *)(uintptr_t)UI_PAGE_PARAMS);
+    ui_button(manual_tile, "产品说明", 16, 138, 208, 40, ui_open_cb, (void *)(uintptr_t)UI_PAGE_ABOUT);
+    ui_button(manual_tile, "手机 App 观测", 16, 186, 208, 40, ui_open_cb, (void *)(uintptr_t)UI_PAGE_APP);
 
-    //观察者模式和翻译（中英切换）
+    ui_label(auto_tile, "自动模式  下滑返回手动", 8, 9, 224);
+    auto_avg_label = ui_label(auto_tile, "平均光照：--", 12, 48, 216);
+    auto_diff_label = ui_label(auto_tile, "光照总差：--", 12, 78, 216);
+    ui_label(auto_tile, "当前状态：待接入状态机\n进入倒计时：-- s\n低光倒计时：-- s", 12, 120, 216);
+    ui_label(auto_tile, "仅显示采样数据，不执行追光", 12, 225, 216);
 
-    //开启静态翻译功能
-    lv_translation_add_static(languages, tags, translations);
-
-    //设置当前的语言为英语
-    //在lv_conf.h文件中要先设置LV_FONT_DEFAULT &noto_sans_sc_16才能正确显示中文
-    lv_translation_set_language("chinese");
-
-    lv_obj_t *scr = lv_screen_active();
-    //1.创建一个标签视图
-    lv_obj_t *tabview = lv_tabview_create(scr);
-    //1.1设置标签视图的样式
-    lv_obj_set_size(tabview, LV_PCT(100), LV_PCT(100));
-
-    //1.2创建一个标签页(创建时把 "obs" 转成 "观察者" 写死进 label，后续直接通过下拉菜单函数修改也改不了)
-    lv_obj_t *obs_table = lv_tabview_add_tab(tabview, lv_tr("obs"));//观察者页面
-    lv_obj_t *translation = lv_tabview_add_tab(tabview, lv_tr("translation"));//翻译页面
-
-    //添加接收翻译修改的事件回调函数
-    //(1):获取table bar
-    lv_obj_t *table_bar = lv_tabview_get_tab_bar(tabview);//标签栏
-    //(2):循环调用多个按钮
-    for(uint8_t i = 0;i < 2;i++)
-    {
-        lv_obj_t *btn = lv_obj_get_child(table_bar,i);//获取标签栏的第i个按钮
-        lv_obj_t *label = lv_obj_get_child(btn,0);//获取按钮上的标签文字
-        //添加语言变更的回调
-        lv_obj_add_event_cb(label,language_change_event_cb,LV_EVENT_TRANSLATION_LANGUAGE_CHANGED,(void *)tags[i]);//LV_EVENT_TRANSLATION_LANGUAGE_CHANGED:翻译语言变更事件
+    pages[UI_PAGE_CONTROL] = ui_subpage("手动控制");
+    ui_button(pages[UI_PAGE_CONTROL], "返回", 180, 5, 52, 29, ui_back_cb, NULL);
+    ui_label(pages[UI_PAGE_CONTROL], "按键仅演示触摸效果", 20, 48, 200);
+    lv_obj_t *directions[4];
+    directions[0] = ui_button(pages[UI_PAGE_CONTROL], "上", 94, 78, 52, 42, NULL, NULL);
+    directions[1] = ui_button(pages[UI_PAGE_CONTROL], "下", 94, 174, 52, 42, NULL, NULL);
+    directions[2] = ui_button(pages[UI_PAGE_CONTROL], "左", 28, 126, 52, 42, NULL, NULL);
+    directions[3] = ui_button(pages[UI_PAGE_CONTROL], "右", 160, 126, 52, 42, NULL, NULL);
+    static const char *const direction_names[4] = {"上", "下", "左", "右"};
+    for (uint8_t i = 0; i < 4; i++) {
+        lv_obj_add_event_cb(directions[i], ui_direction_cb, LV_EVENT_PRESSED, (void *)direction_names[i]);
+        lv_obj_add_event_cb(directions[i], ui_direction_cb, LV_EVENT_RELEASED, NULL);
+        lv_obj_add_event_cb(directions[i], ui_direction_cb, LV_EVENT_PRESS_LOST, NULL);
     }
+    direction_label = ui_label(pages[UI_PAGE_CONTROL], "方向：未按下（仅界面演示）", 8, 230, 224);
 
-    //添加对应的组件到obs里面
-
-    //2.1外部参数的观察者模式
-
-    //2.1.1初始化一个主题 =》 选择正确的类型和初始值
-    lv_subject_init_int(&temp_subject,10);
-
-    //2.1.2添加外部参数的观察者(回调)
-    lv_subject_add_observer(&temp_subject,temp_obs_cb,NULL);//回调触发：当参数值（lv_subject_init_int的第二个值）改变时会触发
-
-
-    //2.2创建按钮 =》 调整温度
-
-    //加温度值
-    lv_obj_t *btn1 = lv_btn_create(obs_table);
-    lv_obj_set_size(btn1, 50, 50);
-    lv_obj_align(btn1, LV_ALIGN_CENTER, 50, 0);
-    lv_obj_add_event_cb(btn1, btn1_event_cb, LV_EVENT_CLICKED, &temp_subject);
-
-
-    //减温度值
-    lv_obj_t *btn2 = lv_btn_create(obs_table);
-    lv_obj_set_size(btn2, 50, 50);
-    lv_obj_align(btn2, LV_ALIGN_CENTER, -50, 0);
-    lv_obj_add_event_cb(btn2, btn2_event_cb, LV_EVENT_CLICKED, &temp_subject);
-
-
-    //2.2.1创建标签 =》 显示加号减号
-    lv_obj_t *label = lv_label_create(btn1);
-    lv_label_set_text(label, LV_SYMBOL_PLUS);
-    lv_obj_center(label);
-
-    lv_obj_t *label2 = lv_label_create(btn2);
-    lv_label_set_text(label2, LV_SYMBOL_MINUS);
-    lv_obj_center(label2);
-
-    //2.3创建标签 =》 显示当前的温度值
-    lv_obj_t *label3 = lv_label_create(obs_table);
-    //lv_label_set_text_fmt(label3, "temp:%d",lv_subject_get_int(&temp_subject));不可用于观察者模式
-    //代替：绑定观察者模式：
-    lv_label_bind_text(label3,&temp_subject,"temp:%d");//%d绑定的是temp_subject的那个参数10
-    lv_obj_align(label3, LV_ALIGN_CENTER, 0, 80);
-
-
-    //2.4创建滑块 =》实现双向绑定(滑块和按钮都能控制温度值改变)
-    lv_obj_t *slider = lv_slider_create(obs_table);
-    lv_obj_set_size(slider, 200,20);
-    lv_obj_align(slider, LV_ALIGN_BOTTOM_MID, 0, -50);
-    lv_slider_set_range(slider, -100, 100);
-    lv_slider_set_value(slider, 50, LV_ANIM_OFF);
-    lv_slider_bind_value(slider,&temp_subject);//双向绑定
-
-    //滑块和标签都可以绑定观察者模式
-
-    //2.5在观察者页面顶部空白区域显示PA0~PA3的ADC原始值(0~4095)
-    //每个通道一个主题，label绑定主题后，主题值变化时自动刷新文本
-    for (uint8_t i = 0; i < 4; i++)
-    {
-        lv_subject_init_int(&adc_subject[i], 0);
-
-        lv_obj_t *adc_label = lv_label_create(obs_table);
-        lv_label_bind_text(adc_label, &adc_subject[i], adc_fmt[i]);//格式串里的%d绑定主题的int值
-        lv_obj_align(adc_label, LV_ALIGN_TOP_LEFT, 10, 8 + i * 20);//顶部空白区域纵向排列
+    pages[UI_PAGE_PARAMS] = ui_subpage("参数调节");
+    ui_button(pages[UI_PAGE_PARAMS], "返回", 180, 5, 52, 29, ui_back_cb, NULL);
+    for (uint8_t i = 0; i < UI_PARAM_COUNT; i++) {
+        int32_t y = 40 + i * 37;
+        ui_label(pages[UI_PAGE_PARAMS], param_names[i], 6, y + 5, 105);
+        ui_button(pages[UI_PAGE_PARAMS], "-", 112, y, 32, 29,
+                  ui_param_change_cb, (void *)(uintptr_t)(i * 2U));
+        param_labels[i] = ui_label(pages[UI_PAGE_PARAMS], "0", 151, y + 6, 49);
+        ui_button(pages[UI_PAGE_PARAMS], "+", 200, y, 32, 29,
+                  ui_param_change_cb, (void *)(uintptr_t)(i * 2U + 1U));
     }
+    ui_button(pages[UI_PAGE_PARAMS], "保存", 70, 226, 100, 30, ui_save_cb, NULL);
 
-    //2.6创建定时器 =》周期性把DMA缓存中的ADC值写入主题，触发观察者刷新label
-    lv_timer_create(adc_display_timer_cb, 200, NULL);//200ms刷新一次
+    pages[UI_PAGE_ABOUT] = ui_subpage("产品说明");
+    ui_button(pages[UI_PAGE_ABOUT], "返回", 180, 5, 52, 29, ui_back_cb, NULL);
+    ui_label(pages[UI_PAGE_ABOUT], "太阳能追光系统\n\n四路光敏电阻采集光照，\n双轴云台规划用于追光。\n\n当前仅为界面预览。", 14, 48, 212);
+    ui_button(pages[UI_PAGE_ABOUT], "预览异常提示", 35, 202, 170, 38, ui_error_preview_cb, NULL);
 
-    //在翻译页面中添加对应的下拉菜单  切换语言
-    lv_obj_t *dropdown = lv_dropdown_create(translation);
-    lv_dropdown_set_options(dropdown, "chinese\n"
-                                      "en");
+    pages[UI_PAGE_APP] = ui_subpage("手机 App 观测");
+    ui_button(pages[UI_PAGE_APP], "返回", 180, 5, 52, 29, ui_back_cb, NULL);
 
-    //添加回调函数
-    lv_obj_add_event_cb(dropdown, dropdown_event_cb, LV_EVENT_VALUE_CHANGED, dropdown);
+    lv_obj_t *footer = lv_obj_create(screen);
+    lv_obj_set_pos(footer, 0, UI_CONTENT_H);
+    lv_obj_set_size(footer, UI_SCREEN_W, UI_FOOTER_H);
+    lv_obj_set_style_pad_all(footer, 0, 0);
+    lv_obj_set_scrollable(footer, false);
+    adc_labels[0] = ui_label(footer, "左上:--  左下:--", 6, 3, 228);
+    adc_labels[1] = ui_label(footer, "右上:--  右下:--", 6, 21, 228);
+    adc_labels[2] = ui_label(footer, "平均:--  总差:--", 6, 39, 228);
 
+    dialog_layer = lv_obj_create(screen);
+    lv_obj_set_pos(dialog_layer, 0, 0);
+    lv_obj_set_size(dialog_layer, UI_SCREEN_W, UI_CONTENT_H + UI_FOOTER_H);
+    lv_obj_set_style_pad_all(dialog_layer, 0, 0);
+    lv_obj_set_style_border_width(dialog_layer, 0, 0);
+    lv_obj_set_style_bg_color(dialog_layer, lv_color_black(), 0);
+    lv_obj_set_style_bg_opa(dialog_layer, LV_OPA_50, 0);
+    lv_obj_set_scrollable(dialog_layer, false);
+    dialog = lv_obj_create(dialog_layer);
+    lv_obj_set_pos(dialog, 10, 84);
+    lv_obj_set_size(dialog, 220, 151);
+    lv_obj_set_style_pad_all(dialog, 0, 0);
+    lv_obj_set_scrollable(dialog, false);
+    dialog_text = ui_label(dialog, "", 10, 16, 175);
+    ui_button(dialog, "X", 185, 5, 28, 28, ui_close_dialog_cb, NULL);
+    dialog_buttons[0] = ui_button(dialog, "保存", 5, 100, 66, 37, ui_confirm_save_cb, NULL);
+    dialog_buttons[1] = ui_button(dialog, "放弃", 77, 100, 66, 37, ui_discard_cb, NULL);
+    dialog_buttons[2] = ui_button(dialog, "取消", 149, 100, 66, 37, ui_close_dialog_cb, NULL);
+    lv_obj_set_hidden(dialog_layer, true);
+
+    current_page = UI_PAGE_MAIN;
+    lv_tileview_set_tile(tileview, manual_tile, LV_ANIM_OFF);
+    lv_timer_create(ui_adc_timer_cb, UI_ADC_REFRESH_MS, NULL);
 }

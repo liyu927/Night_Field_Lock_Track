@@ -88,6 +88,7 @@ file(GLOB LVGL_CORE_SOURCES CONFIGURE_DEPENDS
         "${CMAKE_CURRENT_SOURCE_DIR}/lvgl/src/widgets/label/*.c"
         "${CMAKE_CURRENT_SOURCE_DIR}/lvgl/src/widgets/slider/*.c"
         "${CMAKE_CURRENT_SOURCE_DIR}/lvgl/src/widgets/tabview/*.c"
+        "${CMAKE_CURRENT_SOURCE_DIR}/lvgl/src/widgets/tileview/*.c"
         "${CMAKE_CURRENT_SOURCE_DIR}/lvgl/src/drivers/display/mipi/lv_lcd_generic_mipi.c"
         "${CMAKE_CURRENT_SOURCE_DIR}/lvgl/src/drivers/display/mipi/lv_st7789.c"
         "${CMAKE_CURRENT_SOURCE_DIR}/lvgl/src/lv_init.c"

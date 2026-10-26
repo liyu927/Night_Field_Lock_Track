@@ -1456,7 +1456,7 @@
 #define LV_USE_TABVIEW 1
 
 /** Tileview */
-#define LV_USE_TILEVIEW 0
+#define LV_USE_TILEVIEW 1
 
 /** Win */
 #define LV_USE_WIN 0
