@@ -3,20 +3,20 @@
 
 #include <stdint.h>
 
-/* PID 控制器运行状态，输入、输出和积分项均使用浮点数。 */
+/* 离散 PID 参数与历史状态；同一实例只能由其所属控制环按周期更新。 */
 typedef struct
 {
-    float kp;                /* 比例系数。 */
-    float ki;                /* 积分系数。 */
-    float kd;                /* 微分系数。 */
-    float integral;          /* 已累计的积分项。 */
-    float previous_error;    /* 上一周期误差，用于计算微分项。 */
-    float output_min;        /* 输出下限。 */
-    float output_max;        /* 输出上限。 */
-    uint8_t initialized;     /* 首次更新标记，防止微分突变。 */
+    float kp;                /* 比例增益：直接作用于当前误差。 */
+    float ki;                /* 积分增益：作用于按秒累计的误差。 */
+    float kd;                /* 微分增益：作用于误差变化率。 */
+    float integral;          /* 已累计的误差积分，尚未乘 ki。 */
+    float previous_error;    /* 上一周期误差，用于差分求微分项。 */
+    float output_min;        /* 输出下限；位置环为 rad/s，速度环为 V。 */
+    float output_max;        /* 输出上限；必须大于 output_min。 */
+    uint8_t initialized;     /* 首次更新不计算微分，避免初值造成尖峰。 */
 } PID_Controller_t;
 
-/* 初始化 PID 参数和输出限幅。 */
+/* 设置三项增益和输出范围，再清空积分与历史误差；参数不合法时直接返回。 */
 void PID_Init(PID_Controller_t *pid,
               float kp,
               float ki,
@@ -24,10 +24,12 @@ void PID_Init(PID_Controller_t *pid,
               float output_min,
               float output_max);
 
-/* 清空积分项和历史误差，保留 PID 参数。 */
+/* 清空积分、上一误差与首次更新标记，保留增益和输出限幅。 */
 void PID_Reset(PID_Controller_t *pid);
 
-/* 根据目标值、测量值和控制周期计算限幅后的 PID 输出。 */
+/* error=target-measurement；interval_s 为本次实际控制周期，单位秒。 */
+/* 先试算积分，若输出已饱和且误差继续推向饱和，则冻结积分；最后限制输出。 */
+/* 返回值的单位由所属控制环决定；空指针或非正周期返回 0。 */
 float PID_Update(PID_Controller_t *pid,
                  float target,
                  float measurement,

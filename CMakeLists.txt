@@ -48,7 +48,10 @@ add_executable(${CMAKE_PROJECT_NAME}
         Core/interface/SimpleFOC_Motor.h
         Middlewares/ST/ARM/DSP/Inc/arm_math.h
         Core/common/com_Debug.c
-        Core/common/com_Debug.h)
+        Core/common/com_Debug.h
+        Core/App/app_system.c
+        Core/App/app_system.h
+        Core/App/SystemTask.c)
 
 # 只编译当前屏幕、触摸和 user_home 页面实际需要的 LVGL 模块。
 # 不再递归编译 demos、测试、PC 平台驱动以及未使用的控件，减少 Flash 占用。
@@ -148,4 +151,12 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
     stm32cubemx
 
     # Add user defined libraries
+)
+
+# 链接成功后生成用于串口下载的 Intel HEX 文件。
+add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_OBJCOPY} -O ihex
+        $<TARGET_FILE:${CMAKE_PROJECT_NAME}>
+        $<TARGET_FILE_DIR:${CMAKE_PROJECT_NAME}>/${CMAKE_PROJECT_NAME}.hex
+    VERBATIM
 )

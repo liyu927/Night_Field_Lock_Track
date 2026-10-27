@@ -77,11 +77,19 @@ const osThreadAttr_t SmaplingTask_attributes = {
   .stack_size = 512 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
+/* Definitions for SystemStateTask */
+osThreadId_t SystemStateTaskHandle;
+const osThreadAttr_t SystemStateTask_attributes = {
+  .name = "SystemStateTask",
+  .stack_size = 512 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
 /* Definitions for Smapling */
 osMessageQueueId_t SmaplingHandle;
 const osMessageQueueAttr_t Smapling_attributes = {
   .name = "Smapling"
 };
+
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
 
@@ -91,6 +99,7 @@ void StartDebugTask(void *argument);
 void StartUiTask(void *argument);
 void StartMotorTask(void *argument);
 void StartSmaplingTask(void *argument);
+void StartSystemStateTask(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -136,6 +145,9 @@ void MX_FREERTOS_Init(void) {
 
   /* creation of SmaplingTask */
   SmaplingTaskHandle = osThreadNew(StartSmaplingTask, NULL, &SmaplingTask_attributes);
+
+  /* creation of SystemStateTask */
+  SystemStateTaskHandle = osThreadNew(StartSystemStateTask, NULL, &SystemStateTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -217,6 +229,24 @@ __weak void StartSmaplingTask(void *argument)
     osDelay(1);
   }
   /* USER CODE END StartSmaplingTask */
+}
+
+/* USER CODE BEGIN Header_StartSystemStateTask */
+/**
+* @brief Function implementing the SystemStateTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartSystemStateTask */
+__weak void StartSystemStateTask(void *argument)
+{
+  /* USER CODE BEGIN StartSystemStateTask */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END StartSystemStateTask */
 }
 
 /* Private application code --------------------------------------------------*/
