@@ -51,10 +51,10 @@ void PID_Reset(PID_Controller_t *pid)
 }
 
 /* 一次离散 PID 更新：试算积分、判断积分饱和、重算并裁剪输出。 */
-float PID_Update(PID_Controller_t *pid,
-                 float target,
-                 float measurement,
-                 float interval_s)
+float PID_Update(PID_Controller_t *pid,//PID控制器
+                 float target,//目标值
+                 float measurement,//测量值
+                 float interval_s)//经过的时间
 {
     float error;
     float derivative = 0.0f;

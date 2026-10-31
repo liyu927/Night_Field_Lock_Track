@@ -6,6 +6,6 @@
 void StartMotorTask(void *argument)
 {
     (void)argument;
-    App_MotorSpeed_Run(MOTOR_START_SPEED_RPS);
-    // App_MotorPosition_Run(360.0f); /* 位置测试：注释上一行，再启用本行。 */
+    //App_MotorSpeed_Run(MOTOR_START_SPEED_RPS);
+    App_MotorPosition_Run(360.0f); /* 位置测试：注释上一行，再启用本行。 */
 }

@@ -16,7 +16,7 @@
 #define SFOC_TWO_PI                (2.0f * SFOC_PI)
 #define SFOC_RAD_TO_DEG            (180.0f / SFOC_PI)
 #define SFOC_HALF                  0.5f
-#define SFOC_SQRT3_BY_TWO          0.86602540378443864676f
+#define SFOC_SQRT3_BY_TWO          0.86602540378443864676f      //  (根号3)/2
 
 
 
@@ -27,16 +27,16 @@
 #define MOTOR_TASK_PERIOD_MS             5U  /* 闭环任务的名义周期；实际 dt 由系统节拍计算。 */
 
 /* 两个电机的已确认硬件参数。 */
-#define MOTOR_POLE_PAIRS                 7U
-#define MOTOR_SUPPLY_VOLTAGE             12.0f
-#define MOTOR_DIRECTION_CLOCKWISE        1
+#define MOTOR_POLE_PAIRS                 7U     //极对数
+#define MOTOR_SUPPLY_VOLTAGE             12.0f  //母线电压
+#define MOTOR_DIRECTION_CLOCKWISE        1      //方向系数（顺逆相反时把这个取反）
 
 /* 自动电角零位校准参数：低 d 轴电压锁定转子后读取 AS5600。 */
 #define MOTOR_ALIGNMENT_VOLTAGE          1.0f
 #define MOTOR_ALIGNMENT_TIME_MS          800U
 #define MOTOR_ALIGNMENT_ANGLE_RAD        0.0f
 /* 角度源改为 0x0E 后更新记录版本，旧偏移量需重新测量。 */
-#define MOTOR_OFFSET_SIGNATURE          0x32464F43UL
+#define MOTOR_OFFSET_SIGNATURE          0x32464F43UL//这个项目用 MOTOR_OFFSET_SIGNATURE 充当这张标签。程序把标签与电角偏移一起存入 W25Q64；以后上电读取时，只有标签与当前程序要求的值相同，才继续考虑使用该偏移
 /* 配置字把极对数放在高位、方向放在低 8 位，防止误加载不匹配的校准记录。 */
 #define MOTOR_OFFSET_CONFIG             ((MOTOR_POLE_PAIRS << 8) | (MOTOR_DIRECTION_CLOCKWISE & 0xFF))
 #define MOTOR_OFFSET_TIM1_VALID         0x01U  /* TIM1 偏移量已校准并可恢复。 */
@@ -48,8 +48,8 @@
 #define MOTOR_SPEED_KP                   0.18f  /* 速度误差生成 q 轴电压的比例系数。 */
 #define MOTOR_SPEED_KI                   4.47f  /* 速度误差的积分系数，用于减小稳态速度误差。 */
 #define MOTOR_SPEED_FILTER_S             0.02f  /* 速度反馈低通滤波时间常数，单位秒；越大越平稳但滞后越大。 */
-#define MOTOR_MAX_Q_VOLTAGE              1.5f   /* q 轴电压指令的绝对值上限，单位伏；不是电流上限。 */
-#define MOTOR_Q_SLEW_VPS                 10.0f   /* q 轴电压指令每秒允许变化的最大值，单位伏/秒。 */
+#define MOTOR_MAX_Q_VOLTAGE              3.5f   /* q 轴电压指令的绝对值上限，单位伏；不是电流上限。 */
+#define MOTOR_Q_SLEW_VPS                 30.0f   /* q 轴电压指令每秒允许变化的最大值，单位伏/秒。 */
 #define MOTOR_MAX_STEP_DEG               8.0f   /* 相邻两次传感器读数允许的最大角度变化，超出则故障停机。 */
 #define MOTOR_MAX_OVERSHOOT_DEG         10.0f   /* 沿指令方向越过目标角度的容许量，超出则故障停机。 */
 #define MOTOR_MAX_COMMAND_DEG          360.0f   /* 单次相对转角指令的绝对值上限，超出则拒绝指令。 */
@@ -200,8 +200,9 @@ HAL_StatusTypeDef SimpleFOC_Motor_Init(void)
     HAL_GPIO_WritePin(g_vertical_axis.en_port, g_vertical_axis.en_pin, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(g_horizontal_axis.en_port, g_horizontal_axis.en_pin, GPIO_PIN_RESET);
 
-    if (sfoc_start_pwm(&g_vertical_axis) != HAL_OK)
+    if (sfoc_start_pwm(&g_vertical_axis) != HAL_OK)//写50%，关EN
     {
+        //失败处理
         sfoc_stop_pwm(&g_vertical_axis);
         return HAL_ERROR;
     }
@@ -225,7 +226,7 @@ void SimpleFOC_Motor_Enable(SimpleFOC_MotorAxis axis)
 /* 先关闭指定轴使能，再把三相 PWM 设为中性比较值。 */
 void SimpleFOC_Motor_Disable(SimpleFOC_MotorAxis axis)
 {
-    const SFOC_AxisHardware *hardware = sfoc_get_axis(axis);
+    const SFOC_AxisHardware *hardware = sfoc_get_axis(axis);//判断是哪个电机
     /* 先撤使能，再复位比较值，防止更新占空比时继续输出。 */
     HAL_GPIO_WritePin(hardware->en_port, hardware->en_pin, GPIO_PIN_RESET);
     sfoc_set_neutral_pwm(hardware);
@@ -238,7 +239,7 @@ void SimpleFOC_Motor_SetPhaseVoltage(SimpleFOC_MotorAxis axis,
                                      float electrical_angle,
                                      float supply_voltage)
 {
-    const SFOC_AxisHardware *hardware = sfoc_get_axis(axis);
+    const SFOC_AxisHardware *hardware = sfoc_get_axis(axis);//判断是哪个电机
     SimpleFOC_DirectQuadrature direct_quadrature = {voltage_d, voltage_q};
     SimpleFOC_AlphaBeta alpha_beta = {0.0f, 0.0f};
     float duty_a;
@@ -270,10 +271,10 @@ void SimpleFOC_Motor_SetPhaseVoltage(SimpleFOC_MotorAxis axis,
 }
 
 /* 将单圈机械角乘极对数、叠加校准零位，形成当前 FOC 换相电角度。 */
-float SimpleFOC_Motor_CalculateElectricalAngle(float mechanical_angle,
-                                               float electrical_offset,
-                                               uint8_t pole_pairs,
-                                               int8_t direction)
+float SimpleFOC_Motor_CalculateElectricalAngle(float mechanical_angle,//机械角
+                                               float electrical_offset,//电角零位（偏移量）
+                                               uint8_t pole_pairs,//极对数
+                                               int8_t direction)//方向
 {
     if ((pole_pairs == 0U) || ((direction != 1) && (direction != -1)))
     {
@@ -287,7 +288,7 @@ float SimpleFOC_Motor_CalculateElectricalAngle(float mechanical_angle,
 
 /* 锁转子时用已知磁场角减去机械角对应的电角，反推出零位偏移。 */
 float SimpleFOC_Motor_CalculateElectricalOffset(float mechanical_angle,
-                                                float alignment_angle,
+                                                float alignment_angle,//锁定时施加的固定磁场电角度（本工程 0.0f）。
                                                 uint8_t pole_pairs,
                                                 int8_t direction)
 {
@@ -297,6 +298,7 @@ float SimpleFOC_Motor_CalculateElectricalOffset(float mechanical_angle,
     }
 
     /* 已知锁定磁场角和实测机械角，移项求出日后复用的电角零位。 */
+    //θe(alignment_angle) = dir·pp·θm + offset移项得 offset = alignment_angle − dir·pp·θm。
     return sfoc_normalize_angle(alignment_angle
                                 - (float)direction * (float)pole_pairs
                                 * mechanical_angle);
@@ -329,15 +331,15 @@ void SimpleFOC_SVPWM(const SimpleFOC_AlphaBeta *input,
                      float *duty_b,
                      float *duty_c)
 {
-    float phase_voltage[3];
-    float maximum;
-    float minimum;
-    float common_mode;
+    float phase_voltage[3];//三相参考电压（范围-6~6V）
+    float maximum;//三相中的最大值
+    float minimum;//三相中的最小值
+    float common_mode;//公共偏置（零序电压）
     uint32_t maximum_index;
     uint32_t minimum_index;
 
     if ((input == 0) || (duty_a == 0) || (duty_b == 0) || (duty_c == 0)
-        || (supply_voltage <= 0.0f))
+        || (supply_voltage <= 0.0f))//这是指针为空，不是数值为0
     {
         return;
     }
@@ -456,10 +458,10 @@ static void motor_control_init(MotorControl_t *control,
 
 /* 读取 AS5600 并更新连续机械位置与机械角速度。 */
 static HAL_StatusTypeDef motor_update_feedback(MotorControl_t *control,
-                                                float interval_s)
+                                                float interval_s)//距上次采样的时间间隔（秒）
 {
-    float current_angle;
-    float angle_increment;
+    float current_angle;//本次读到的单圈机械角
+    float angle_increment;//解缠后的角度增量
 
     if (AS5600_ReadMechanicalAngle(&control->encoder, &current_angle) != HAL_OK)
     {
@@ -478,7 +480,7 @@ static HAL_StatusTypeDef motor_update_feedback(MotorControl_t *control,
 
     /* 单圈角先解缠，再检查相邻采样是否出现不可信的大跳变。 */
     angle_increment = motor_angle_difference(current_angle, control->raw_angle);
-    if (fabsf(angle_increment) > MOTOR_MAX_STEP_DEG * MOTOR_PI / 180.0f)
+    if (fabsf(angle_increment) > MOTOR_MAX_STEP_DEG * MOTOR_PI / 180.0f)//不能大于8度
         return HAL_ERROR;
     control->raw_angle = current_angle;
     /* 累加后得到可跨越 0/2π 的连续机械位置。 */
@@ -592,12 +594,12 @@ static void motor_run_speed_loop(MotorControl_t *control,
                                  float target_speed,
                                  float interval_s)
 {
-    float q_voltage;
-    float electrical_angle;
-    float previous_integral;
-    float max_change;
-    float upper;
-    float lower;
+    float q_voltage;//周期要下发的 q 轴电压
+    float electrical_angle;//换相电角度
+    float previous_integral;//PID 更新前的积分值，用于抗积分饱和的二次判断
+    float max_change;//本周期允许的电压变化量
+    float upper;//本周期允许的电压上界
+    float lower;//本周期允许的电压下界
 
     /* 内环：速度误差产生 q 轴电压；先记下积分，供后续斜率限幅时判断是否回退。 */
     previous_integral = control->speed_pid.integral;
@@ -606,7 +608,7 @@ static void motor_run_speed_loop(MotorControl_t *control,
                            control->mechanical_speed,
                            interval_s);
     /* 每周期只允许 q 轴电压变化 max_change，减轻突然加速或换向。 */
-    max_change = MOTOR_Q_SLEW_VPS * interval_s;
+    max_change = MOTOR_Q_SLEW_VPS * interval_s;//30 V/s × 0.005 s = 0.15 V
     /* 上下界都包含 0：允许立即向停车方向收敛，但限制重新施加电压的速度。 */
     upper = fmaxf(control->applied_q_voltage, 0.0f) + max_change;
     /* 下界从较小的“旧电压/零电压”起算，换向时允许先跨向零附近。 */
@@ -647,21 +649,21 @@ static void motor_run_position_loop(MotorControl_t *control,
 }
 
 /* 电机任务主循环：上电恢复/校准 TIM1，再按命令模式运行对应控制环。 */
-void SimpleFOC_Motor_RunTask(SimpleFOC_ControlMode initial_mode, float initial_target)
+void SimpleFOC_Motor_RunTask(SimpleFOC_ControlMode initial_mode, float initial_target)//模式、目标
 {
     MotorOffsetRecord offset_record = {0};
     HAL_StatusTypeDef storage_status;
-    uint32_t next_wake_tick;
-    uint32_t previous_tick;
-    uint32_t elapsed_ms;
-    float target_position;
-    float interval_s;
-    float target_deg;
-    float target_speed_rps;
-    float actual_deg;
-    uint32_t command_sequence = 0U;
-    SimpleFOC_ControlMode mode;
-    SimpleFOC_ControlMode previous_mode = SIMPLEFOC_CONTROL_NONE;
+    uint32_t next_wake_tick;//下一次绝对唤醒时刻（tick）。
+    uint32_t previous_tick;//上一周期的 tick，用于算 dt。
+    uint32_t elapsed_ms;//实际经过的毫秒数。
+    float target_position;//位置模式下换算后的绝对目标角(rad)。
+    float interval_s;//dt（秒）
+    float target_deg;//从共享状态取出的目标角度。
+    float target_speed_rps;//取出的目标速度。
+    float actual_deg;//本周期算出的“已转角度”。
+    uint32_t command_sequence = 0U;//任务本地副本的命令序号。初值 0 保证第一条命令（序号变成 1）一定被识别为新命令。
+    SimpleFOC_ControlMode mode;//本周期的模式（临界区内读取）。
+    SimpleFOC_ControlMode previous_mode = SIMPLEFOC_CONTROL_NONE;//上一周期模式,用于判断“是否发生了模式切换”。初值 NONE 保证第一次进入任何模式都会触发一次 PID 复位。
     uint8_t driver_enabled = 0U; /* 仅在本任务收到首条有效命令后置 1。 */
 
     /* 两轴建立控制对象；TIM8 只读取已保存的偏移量，不使能电机。 */

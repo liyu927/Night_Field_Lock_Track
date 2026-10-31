@@ -14,6 +14,6 @@ void StartSystemStateTask(void *argument)
     for (;;)
     {
 
-        osDelay(10); /* 让出 CPU，保持固定的采样与发布周期。 */
+        osDelay(10U); /* 让出 CPU，保持固定的采样与发布周期。 */
     }
 }
