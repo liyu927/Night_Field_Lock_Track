@@ -97,7 +97,13 @@ uint8_t MotorPosition_SetTargetDegrees(SimpleFOC_MotorAxis axis, float delta_deg
 /* 只运行速度环，绝对值超过 MOTOR_MAX_SPEED_DPS/360、未就绪或故障时返回 0。 */
 uint8_t MotorSpeed_SetTargetSpeed(SimpleFOC_MotorAxis axis, float speed_rps);
 
-/* 长期运行入口：准备两轴，并以相同初始命令启动各自控制环。 */
+/* 将指定轴当前反馈角度作为保持目标；校准尚未完成时仅停车。 */
+uint8_t MotorPosition_HoldCurrent(SimpleFOC_MotorAxis axis);
+
+/* 停止指定轴的速度控制，并由电机任务关闭驱动使能。 */
+void MotorSpeed_Stop(SimpleFOC_MotorAxis axis);
+
+/* 长期运行入口：准备两轴；NONE 模式保持停车，等待后续命令。 */
 /* 位置模式的目标单位度，速度模式的目标单位圈/秒；任务上下文调用后不返回。 */
 void SimpleFOC_Motor_RunTask(SimpleFOC_ControlMode initial_mode, float initial_target);
 

@@ -1,4 +1,5 @@
 #include "user_home.h"
+#include "app_system.h"
 #include "cmsis_os2.h"
 #include "SmaplingTypes.h"
 #include <stdint.h>
@@ -25,7 +26,7 @@ typedef enum {
 static lv_obj_t *tileview;
 static lv_obj_t *manual_tile;
 static lv_obj_t *pages[UI_PAGE_APP + 1];
-static lv_obj_t *adc_labels[3];
+static lv_obj_t *adc_labels[8];
 static lv_obj_t *auto_avg_label;
 static lv_obj_t *auto_diff_label;
 static lv_obj_t *direction_label;
@@ -41,6 +42,7 @@ static int32_t demo_params[UI_PARAM_COUNT];
 static int32_t entry_params[UI_PARAM_COUNT];
 static bool params_dirty;
 static bool save_then_back;
+static AppManualDirection manual_direction;
 
 static const char *const param_names[UI_PARAM_COUNT] = {
     "光照最小差异", "光照唤醒阈值", "光照最低阈值",
@@ -87,6 +89,10 @@ static lv_obj_t *ui_subpage(const char *title)
 
 static void ui_show_page(UiPage page)
 {
+    if (current_page == UI_PAGE_CONTROL && page != UI_PAGE_CONTROL) {
+        manual_direction = APP_MANUAL_STOP;
+        App_ManualControl_Send(APP_MANUAL_STOP);
+    }
     lv_obj_set_hidden(tileview, true);
     if (current_page != UI_PAGE_MAIN) {
         lv_obj_set_hidden(pages[current_page], true);
@@ -114,7 +120,7 @@ static void ui_push_page(UiPage page)
 static void ui_go_back(void)
 {
     if (current_page == UI_PAGE_CONTROL) {
-        lv_label_set_text(direction_label, "方向：未按下（仅界面演示）");
+        lv_label_set_text(direction_label, "方向：未按下");
     }
     ui_show_page(page_stack_size ? page_stack[--page_stack_size] : UI_PAGE_MAIN);
 }
@@ -164,11 +170,19 @@ static void ui_open_cb(lv_event_t *event)
 static void ui_direction_cb(lv_event_t *event)
 {
     lv_event_code_t code = lv_event_get_code(event);
+    AppManualDirection direction = (AppManualDirection)(uintptr_t)lv_event_get_user_data(event);
     if (code == LV_EVENT_PRESSED) {
-        const char *direction = lv_event_get_user_data(event);
-        lv_label_set_text_fmt(direction_label, "方向：%s（仅界面演示）", direction);
-    } else if (code == LV_EVENT_RELEASED || code == LV_EVENT_PRESS_LOST) {
-        lv_label_set_text(direction_label, "方向：未按下（仅界面演示）");
+        static const char *const names[4] = {"上", "下", "左", "右"};
+        manual_direction = direction;
+        App_ManualControl_Send(direction);
+        lv_label_set_text_fmt(direction_label, "方向：%s  目标：15°/s", names[direction - APP_MANUAL_UP]);
+    } else if (code == LV_EVENT_PRESSING && manual_direction == direction) {
+        App_ManualControl_Send(direction);
+    } else if ((code == LV_EVENT_RELEASED || code == LV_EVENT_PRESS_LOST
+                || code == LV_EVENT_CANCEL) && manual_direction == direction) {
+        manual_direction = APP_MANUAL_STOP;
+        App_ManualControl_Send(APP_MANUAL_STOP);
+        lv_label_set_text(direction_label, "方向：未按下");
     }
 }
 
@@ -256,9 +270,16 @@ static void ui_adc_timer_cb(lv_timer_t *timer)
         if (values[i] < min) min = values[i];
         sum += values[i];
     }
-    lv_label_set_text_fmt(adc_labels[0], "左上:%u  左下:%u", (unsigned int)values[0], (unsigned int)values[1]);
-    lv_label_set_text_fmt(adc_labels[1], "右上:%u  右下:%u", (unsigned int)values[2], (unsigned int)values[3]);
-    lv_label_set_text_fmt(adc_labels[2], "平均:%lu  总差:%u", (unsigned long)(sum / 4U), (unsigned int)(max - min));
+    int32_t x_diff = (int32_t)values[0] + values[1] - values[2] - values[3];
+    int32_t y_diff = (int32_t)values[0] + values[2] - values[1] - values[3];
+    lv_label_set_text_fmt(adc_labels[0], "左上%u", (unsigned int)values[0]);
+    lv_label_set_text_fmt(adc_labels[1], "左下%u", (unsigned int)values[1]);
+    lv_label_set_text_fmt(adc_labels[2], "右上%u", (unsigned int)values[2]);
+    lv_label_set_text_fmt(adc_labels[3], "右下%u", (unsigned int)values[3]);
+    lv_label_set_text_fmt(adc_labels[4], "均%lu", (unsigned long)(sum / 4U));
+    lv_label_set_text_fmt(adc_labels[5], "差%u", (unsigned int)(max - min));
+    lv_label_set_text_fmt(adc_labels[6], "左右差%ld", (long)x_diff);
+    lv_label_set_text_fmt(adc_labels[7], "上下差%ld", (long)y_diff);
     lv_label_set_text_fmt(auto_avg_label, "平均光照：%lu", (unsigned long)(sum / 4U));
     lv_label_set_text_fmt(auto_diff_label, "光照总差：%u", (unsigned int)(max - min));
 }
@@ -291,19 +312,21 @@ void user_home_create(void)
 
     pages[UI_PAGE_CONTROL] = ui_subpage("手动控制");
     ui_button(pages[UI_PAGE_CONTROL], "返回", 180, 5, 52, 29, ui_back_cb, NULL);
-    ui_label(pages[UI_PAGE_CONTROL], "按键仅演示触摸效果", 20, 48, 200);
+    ui_label(pages[UI_PAGE_CONTROL], "长按方向键：15°/s，松开保持", 8, 48, 224);
     lv_obj_t *directions[4];
     directions[0] = ui_button(pages[UI_PAGE_CONTROL], "上", 94, 78, 52, 42, NULL, NULL);
     directions[1] = ui_button(pages[UI_PAGE_CONTROL], "下", 94, 174, 52, 42, NULL, NULL);
     directions[2] = ui_button(pages[UI_PAGE_CONTROL], "左", 28, 126, 52, 42, NULL, NULL);
     directions[3] = ui_button(pages[UI_PAGE_CONTROL], "右", 160, 126, 52, 42, NULL, NULL);
-    static const char *const direction_names[4] = {"上", "下", "左", "右"};
     for (uint8_t i = 0; i < 4; i++) {
-        lv_obj_add_event_cb(directions[i], ui_direction_cb, LV_EVENT_PRESSED, (void *)direction_names[i]);
-        lv_obj_add_event_cb(directions[i], ui_direction_cb, LV_EVENT_RELEASED, NULL);
-        lv_obj_add_event_cb(directions[i], ui_direction_cb, LV_EVENT_PRESS_LOST, NULL);
+        void *direction = (void *)(uintptr_t)(APP_MANUAL_UP + i);
+        lv_obj_add_event_cb(directions[i], ui_direction_cb, LV_EVENT_PRESSED, direction);
+        lv_obj_add_event_cb(directions[i], ui_direction_cb, LV_EVENT_PRESSING, direction);
+        lv_obj_add_event_cb(directions[i], ui_direction_cb, LV_EVENT_RELEASED, direction);
+        lv_obj_add_event_cb(directions[i], ui_direction_cb, LV_EVENT_PRESS_LOST, direction);
+        lv_obj_add_event_cb(directions[i], ui_direction_cb, LV_EVENT_CANCEL, direction);
     }
-    direction_label = ui_label(pages[UI_PAGE_CONTROL], "方向：未按下（仅界面演示）", 8, 230, 224);
+    direction_label = ui_label(pages[UI_PAGE_CONTROL], "方向：未按下", 8, 230, 224);
 
     pages[UI_PAGE_PARAMS] = ui_subpage("参数调节");
     ui_button(pages[UI_PAGE_PARAMS], "返回", 180, 5, 52, 29, ui_back_cb, NULL);
@@ -331,9 +354,15 @@ void user_home_create(void)
     lv_obj_set_size(footer, UI_SCREEN_W, UI_FOOTER_H);
     lv_obj_set_style_pad_all(footer, 0, 0);
     lv_obj_set_scrollable(footer, false);
-    adc_labels[0] = ui_label(footer, "左上:--  左下:--", 6, 3, 228);
-    adc_labels[1] = ui_label(footer, "右上:--  右下:--", 6, 21, 228);
-    adc_labels[2] = ui_label(footer, "平均:--  总差:--", 6, 39, 228);
+    /* 三行标签均继承同一字体；左右差为左减右，上下差为上减下。 */
+    adc_labels[0] = ui_label(footer, "左上--", 3, 3, 77);
+    adc_labels[1] = ui_label(footer, "左下--", 80, 3, 77);
+    adc_labels[2] = ui_label(footer, "右上--", 157, 3, 80);
+    adc_labels[3] = ui_label(footer, "右下--", 3, 21, 77);
+    adc_labels[4] = ui_label(footer, "均--", 80, 21, 77);
+    adc_labels[5] = ui_label(footer, "差--", 157, 21, 80);
+    adc_labels[6] = ui_label(footer, "左右差--", 3, 39, 115);
+    adc_labels[7] = ui_label(footer, "上下差--", 120, 39, 117);
 
     dialog_layer = lv_obj_create(screen);
     lv_obj_set_pos(dialog_layer, 0, 0);
@@ -356,6 +385,7 @@ void user_home_create(void)
     lv_obj_set_hidden(dialog_layer, true);
 
     current_page = UI_PAGE_MAIN;
+    manual_direction = APP_MANUAL_STOP;
     lv_tileview_set_tile(tileview, manual_tile, LV_ANIM_OFF);
     lv_timer_create(ui_adc_timer_cb, UI_ADC_REFRESH_MS, NULL);
 }

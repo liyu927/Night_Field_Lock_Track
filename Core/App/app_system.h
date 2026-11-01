@@ -4,6 +4,18 @@
 #include <stdint.h>
 #include "SimpleFOC_Motor.h"
 
+typedef enum
+{
+    APP_MANUAL_STOP = 0,
+    APP_MANUAL_UP,
+    APP_MANUAL_DOWN,
+    APP_MANUAL_LEFT,
+    APP_MANUAL_RIGHT
+} AppManualDirection;
+
+/* UI 投递手动方向或停止请求；按住事件持续续发，超时则由系统任务转入位置保持。 */
+void App_ManualControl_Send(AppManualDirection direction);
+
 //============ 光照采样任务应用层函数 ============
 
 /* 启动 ADC1 DMA，并清空四路滤波状态；采样任务启动时调用一次。 */

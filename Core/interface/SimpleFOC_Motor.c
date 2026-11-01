@@ -34,6 +34,7 @@
 /* 自动电角零位校准参数：低 d 轴电压锁定转子后读取 AS5600。 */
 #define MOTOR_ALIGNMENT_VOLTAGE          1.0f
 #define MOTOR_ALIGNMENT_TIME_MS          800U
+#define MOTOR_ALIGNMENT_CHECK_MS         10U   /* 校准期间检查松手停车的周期。 */
 #define MOTOR_ALIGNMENT_ANGLE_RAD        0.0f
 /* 角度源改为 0x0E 后更新记录版本，旧偏移量需重新测量。 */
 #define MOTOR_OFFSET_SIGNATURE          0x32464F43UL//这个项目用 MOTOR_OFFSET_SIGNATURE 充当这张标签。程序把标签与电角偏移一起存入 W25Q64；以后上电读取时，只有标签与当前程序要求的值相同，才继续考虑使用该偏移
@@ -50,7 +51,7 @@
 #define MOTOR_SPEED_FILTER_S             0.02f  /* 速度反馈低通滤波时间常数，单位秒；越大越平稳但滞后越大。 */
 #define MOTOR_MAX_Q_VOLTAGE              3.5f   /* q 轴电压指令的绝对值上限，单位伏；不是电流上限。 */
 #define MOTOR_Q_SLEW_VPS                 30.0f   /* q 轴电压指令每秒允许变化的最大值，单位伏/秒。 */
-#define MOTOR_MAX_STEP_DEG               8.0f   /* 相邻两次传感器读数允许的最大角度变化，超出则故障停机。 */
+#define MOTOR_MAX_STEP_DEG               8.0f   /* 驱动运行期间相邻两次角度变化上限；空闲时不检查。 */
 #define MOTOR_MAX_OVERSHOOT_DEG         10.0f   /* 沿指令方向越过目标角度的容许量，超出则故障停机。 */
 #define MOTOR_MAX_COMMAND_DEG          360.0f   /* 单次相对转角指令的绝对值上限，超出则拒绝指令。 */
 #define MOTOR_MAX_SPEED_RPS             (MOTOR_MAX_SPEED_DPS / 360.0f)
@@ -91,6 +92,7 @@ typedef struct
     float target_speed_rps; /* 速度命令，单位圈/秒。 */
     SimpleFOC_ControlMode mode; /* 当前只执行位置环或速度环中的一种。 */
     uint8_t ready;     /* 本轴编码器、电角偏移与存储准备完成。 */
+    uint8_t calibrated; /* 电角偏移已恢复或校准，可安全进入位置保持。 */
     uint8_t fault;     /* 传感器、存储或越界故障已锁存。 */
 } MotorPositionState;
 
@@ -418,6 +420,36 @@ uint8_t MotorSpeed_SetTargetSpeed(SimpleFOC_MotorAxis axis, float speed_rps)
     return 1U;
 }
 
+/* 松手后在下一控制周期以最新反馈角度为零点，持续运行位置保持。 */
+uint8_t MotorPosition_HoldCurrent(SimpleFOC_MotorAxis axis)
+{
+    MotorPositionState *state;
+    uint8_t accepted;
+    if (axis != SIMPLEFOC_AXIS_VERTICAL && axis != SIMPLEFOC_AXIS_HORIZONTAL) return 0U;
+    state = &g_motor_state[axis];
+    taskENTER_CRITICAL();
+    accepted = state->ready != 0U && state->fault == 0U && state->calibrated != 0U;
+    state->target_speed_rps = 0.0f;
+    state->target_deg = 0.0f;
+    state->mode = accepted != 0U ? SIMPLEFOC_CONTROL_POSITION : SIMPLEFOC_CONTROL_NONE;
+    ++g_command_sequence[axis];
+    taskEXIT_CRITICAL();
+    return accepted;
+}
+
+/* 清除目标并请求电机任务关闭指定轴驱动。 */
+void MotorSpeed_Stop(SimpleFOC_MotorAxis axis)
+{
+    MotorPositionState *state;
+    if (axis != SIMPLEFOC_AXIS_VERTICAL && axis != SIMPLEFOC_AXIS_HORIZONTAL) return;
+    state = &g_motor_state[axis];
+    taskENTER_CRITICAL();
+    state->target_speed_rps = 0.0f;
+    state->mode = SIMPLEFOC_CONTROL_NONE;
+    ++g_command_sequence[axis];
+    taskEXIT_CRITICAL();
+}
+
 /* 将相邻两次绝对角度的差值限制到 -π 至 π，跨越 0 度时保持连续。 */
 static float motor_angle_difference(float current, float previous)
 {
@@ -505,6 +537,11 @@ static HAL_StatusTypeDef motor_update_feedback(MotorControl_t *control,
 static HAL_StatusTypeDef motor_auto_calibrate(MotorControl_t *control)
 {
     float mechanical_angle;
+    uint32_t started_sequence;
+
+    taskENTER_CRITICAL();
+    started_sequence = g_command_sequence[control->axis];
+    taskEXIT_CRITICAL();
 
     /* 固定电角度只输出 d 轴电压，使转子停在已知磁场方向。 */
     SimpleFOC_Motor_SetPhaseVoltage(control->axis,
@@ -514,7 +551,19 @@ static HAL_StatusTypeDef motor_auto_calibrate(MotorControl_t *control)
                                     MOTOR_SUPPLY_VOLTAGE);
     /* 对齐时间内电机会实际转动；等待稳定后才读取编码器。 */
     SimpleFOC_Motor_Enable(control->axis);
-    osDelay(MOTOR_ALIGNMENT_TIME_MS);
+    for (uint32_t elapsed = 0U; elapsed < MOTOR_ALIGNMENT_TIME_MS;
+         elapsed += MOTOR_ALIGNMENT_CHECK_MS)
+    {
+        osDelay(MOTOR_ALIGNMENT_CHECK_MS);
+        taskENTER_CRITICAL();
+        uint8_t cancelled = g_command_sequence[control->axis] != started_sequence;
+        taskEXIT_CRITICAL();
+        if (cancelled != 0U)
+        {
+            SimpleFOC_Motor_Disable(control->axis);
+            return HAL_BUSY;
+        }
+    }
 
     if (AS5600_ReadMechanicalAngle(&control->encoder, &mechanical_angle) != HAL_OK)
     {
@@ -603,7 +652,7 @@ static void motor_run_position_loop(MotorControl_t *control,
 
 /* 为指定轴恢复电角偏移；没有有效记录时校准并保存整包。 */
 static HAL_StatusTypeDef motor_prepare(MotorControl_t *control,
-                                       MotorOffsetRecord *record)
+                                       MotorOffsetRecord *record, uint8_t allow_calibration)
 {
     MotorOffsetRecord updated;
     uint32_t flag = control->axis == SIMPLEFOC_AXIS_VERTICAL
@@ -622,6 +671,7 @@ static HAL_StatusTypeDef motor_prepare(MotorControl_t *control,
         return status;
     }
 
+    if (allow_calibration == 0U) return HAL_BUSY;
     status = motor_auto_calibrate(control);
     if (status != HAL_OK) return status;
     updated = *record;
@@ -642,6 +692,7 @@ static void motor_fault(SimpleFOC_MotorAxis axis)
     taskENTER_CRITICAL();
     g_motor_state[axis].fault = 1U;
     g_motor_state[axis].ready = 0U;
+    g_motor_state[axis].calibrated = 0U;
     taskEXIT_CRITICAL();
 }
 
@@ -649,7 +700,8 @@ static void motor_fault(SimpleFOC_MotorAxis axis)
 static void motor_run_axis(SimpleFOC_MotorAxis axis, float interval_s,
                            uint32_t command_sequence[2],
                            SimpleFOC_ControlMode previous_mode[2],
-                           uint8_t driver_enabled[2])
+                           uint8_t driver_enabled[2],
+                           uint8_t offset_ready[2], MotorOffsetRecord *record)
 {
     MotorControl_t *control = &g_motor_control[axis];
     MotorPositionState *state = &g_motor_state[axis];
@@ -657,6 +709,40 @@ static void motor_run_axis(SimpleFOC_MotorAxis axis, float interval_s,
     float target_deg, target_speed_rps, actual_deg;
 
     if (state->ready == 0U || state->fault != 0U) return;
+    taskENTER_CRITICAL();
+    mode = state->mode;
+    taskEXIT_CRITICAL();
+    if (mode == SIMPLEFOC_CONTROL_NONE)
+    {
+        if (driver_enabled[axis] != 0U)
+        {
+            SimpleFOC_Motor_Disable(axis);
+            driver_enabled[axis] = 0U;
+        }
+        control->applied_q_voltage = 0.0f;
+        /* 空闲期间允许外力转轴；下次启动先以当前编码器角度重建速度基准。 */
+        control->feedback_initialized = 0U;
+        control->mechanical_speed = 0.0f;
+        previous_mode[axis] = SIMPLEFOC_CONTROL_NONE;
+        return;
+    }
+    /* 首次手动命令到来后才允许进行可能使转子移动的电角校准。 */
+    if (offset_ready[axis] == 0U)
+    {
+        HAL_StatusTypeDef prepare_status = motor_prepare(control, record, 1U);
+        if (prepare_status == HAL_BUSY) return;
+        if (prepare_status != HAL_OK)
+        {
+            motor_fault(axis);
+            return;
+        }
+        offset_ready[axis] = 1U;
+        taskENTER_CRITICAL();
+        state->calibrated = 1U;
+        mode = state->mode;
+        taskEXIT_CRITICAL();
+        if (mode == SIMPLEFOC_CONTROL_NONE) return;
+    }
     if (motor_update_feedback(control, interval_s) != HAL_OK)
     {
         motor_fault(axis);
@@ -700,17 +786,18 @@ static void motor_run_axis(SimpleFOC_MotorAxis axis, float interval_s,
         PID_Reset(&control->speed_pid);
         previous_mode[axis] = mode;
     }
-    if (driver_enabled[axis] == 0U)
-    {
-        SimpleFOC_Motor_Enable(axis);
-        driver_enabled[axis] = 1U;
-    }
     if (mode == SIMPLEFOC_CONTROL_POSITION)
         motor_run_position_loop(control,
             control->mechanical_origin + target_deg * MOTOR_PI / 180.0f,
             interval_s);
     else
         motor_run_speed_loop(control, target_speed_rps * MOTOR_TWO_PI, interval_s);
+    /* 先写入本周期三相占空比，再打开驱动使能。 */
+    if (driver_enabled[axis] == 0U)
+    {
+        SimpleFOC_Motor_Enable(axis);
+        driver_enabled[axis] = 1U;
+    }
 }
 
 /* 上电依次准备两轴，随后在同一任务内分别执行闭环。 */
@@ -723,6 +810,7 @@ void SimpleFOC_Motor_RunTask(SimpleFOC_ControlMode initial_mode, float initial_t
     SimpleFOC_ControlMode previous_mode[2] = {
         SIMPLEFOC_CONTROL_NONE, SIMPLEFOC_CONTROL_NONE};
     uint8_t driver_enabled[2] = {0U, 0U};
+    uint8_t offset_ready[2] = {0U, 0U};
 
     motor_control_init(&g_motor_control[0], SIMPLEFOC_AXIS_VERTICAL, &hi2c1);
     motor_control_init(&g_motor_control[1], SIMPLEFOC_AXIS_HORIZONTAL, &hi2c3);
@@ -742,12 +830,14 @@ void SimpleFOC_Motor_RunTask(SimpleFOC_ControlMode initial_mode, float initial_t
     {
         for (uint32_t i = 0U; i < 2U; ++i)
         {
-            status = motor_prepare(&g_motor_control[i], &record);
-            if (status == HAL_OK)
+            status = motor_prepare(&g_motor_control[i], &record, 0U);
+            if (status == HAL_OK || status == HAL_BUSY)
             {
                 SimpleFOC_Motor_Disable((SimpleFOC_MotorAxis)i);
+                offset_ready[i] = status == HAL_OK ? 1U : 0U;
                 taskENTER_CRITICAL();
                 g_motor_state[i].ready = 1U;
+                g_motor_state[i].calibrated = offset_ready[i];
                 taskEXIT_CRITICAL();
             }
             else
@@ -779,6 +869,7 @@ void SimpleFOC_Motor_RunTask(SimpleFOC_ControlMode initial_mode, float initial_t
         if (elapsed_ms > 20U) elapsed_ms = 20U;
         for (uint32_t i = 0U; i < 2U; ++i)
             motor_run_axis((SimpleFOC_MotorAxis)i, (float)elapsed_ms * 0.001f,
-                           command_sequence, previous_mode, driver_enabled);
+                           command_sequence, previous_mode, driver_enabled,
+                           offset_ready, &record);
     }
 }
