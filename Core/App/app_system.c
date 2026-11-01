@@ -69,26 +69,26 @@ uint32_t App_Ui_Run(void)
 
 //============ 电机任务应用层函数 ============
 
-/* 校准并启动 TIM1 速度环；后续只用 AS5600 的相邻角度差求速度。 */
+/* 准备并启动两轴速度环；后续只用各自 AS5600 的相邻角度差求速度。 */
 void App_MotorSpeed_Run(float speed_rps)
 {
     SimpleFOC_Motor_RunTask(SIMPLEFOC_CONTROL_SPEED, speed_rps);
 }
 
-/* 校准并启动 TIM1 位置、速度双环，目标角度相对本次命令起点。 */
+/* 准备并启动两轴位置、速度双环，目标角度相对各自命令起点。 */
 void App_MotorPosition_Run(float delta_deg)
 {
     SimpleFOC_Motor_RunTask(SIMPLEFOC_CONTROL_POSITION, delta_deg);
 }
 
 /* 运行期间改写速度目标；返回底层命令是否被接收。 */
-uint8_t App_MotorSpeed_SetTargetSpeed(float speed_rps)
+uint8_t App_MotorSpeed_SetTargetSpeed(SimpleFOC_MotorAxis axis, float speed_rps)
 {
-    return MotorSpeed_SetTargetSpeed(speed_rps);
+    return MotorSpeed_SetTargetSpeed(axis, speed_rps);
 }
 
 /* 运行期间改写相对角度目标；返回底层命令是否被接收。 */
-uint8_t App_MotorPosition_SetTargetDegrees(float delta_deg)
+uint8_t App_MotorPosition_SetTargetDegrees(SimpleFOC_MotorAxis axis, float delta_deg)
 {
-    return MotorPosition_SetTargetDegrees(delta_deg);
+    return MotorPosition_SetTargetDegrees(axis, delta_deg);
 }

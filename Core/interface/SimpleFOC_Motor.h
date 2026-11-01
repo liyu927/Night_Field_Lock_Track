@@ -14,7 +14,7 @@ typedef enum
     SIMPLEFOC_AXIS_HORIZONTAL      /* 水平轴：TIM8 三相 PWM、PE8 使能、I2C3 编码器。 */
 } SimpleFOC_MotorAxis;
 
-/* TIM1 控制模式；任务一次只运行其中一个控制路径。 */
+/* 两轴控制模式；每轴一次只运行其中一个控制路径。 */
 typedef enum
 {
     SIMPLEFOC_CONTROL_NONE = 0,
@@ -76,6 +76,9 @@ void SimpleFOC_InvPark(const SimpleFOC_DirectQuadrature *input,
                        float electrical_angle,
                        SimpleFOC_AlphaBeta *output);
 
+/* 逆 Clarke：将 α/β 电压还原为 A/B/C 三相参考电压。 */
+void SimpleFOC_InvClarke(const SimpleFOC_AlphaBeta *input, float phase_voltage[3]);
+
 /* SVPWM：由 α/β 电压求三相电压，注入公共偏置后得到 [0,1] 占空比。 */
 /* supply_voltage 为直流母线电压；三个 duty 输出分别对应 A/B/C 相。 */
 void SimpleFOC_SVPWM(const SimpleFOC_AlphaBeta *input,
@@ -84,22 +87,17 @@ void SimpleFOC_SVPWM(const SimpleFOC_AlphaBeta *input,
                      float *duty_b,
                      float *duty_c);
 
-/* TIM1 相对位置命令：每次调用以最近反馈位置为零点，再转 delta_deg 度。 */
+/* 指定轴相对位置命令：每次调用以最近反馈位置为零点，再转 delta_deg 度。 */
 /* 新命令立即覆盖旧目标，不重置编码器角度或速度反馈。 */
 /* 未就绪、故障、非有限数或超过 MOTOR_MAX_COMMAND_DEG 时返回 0；接收后返回 1。 */
 /* 内部使用 FreeRTOS 临界区，仅可从任务上下文调用；接收命令并不表示已经到位。 */
-uint8_t MotorPosition_SetTargetDegrees(float delta_deg);
+uint8_t MotorPosition_SetTargetDegrees(SimpleFOC_MotorAxis axis, float delta_deg);
 
-/* TIM1 速度命令：speed_rps 单位圈/秒，正负号控制方向，0 为零速但不关闭 EN。 */
+/* 指定轴速度命令：speed_rps 单位圈/秒，正负号控制方向，0 为零速但不关闭 EN。 */
 /* 只运行速度环，绝对值超过 MOTOR_MAX_SPEED_DPS/360、未就绪或故障时返回 0。 */
-uint8_t MotorSpeed_SetTargetSpeed(float speed_rps);
+uint8_t MotorSpeed_SetTargetSpeed(SimpleFOC_MotorAxis axis, float speed_rps);
 
-/* TIM8 上电保持禁用；准备使用该轴时在任务上下文显式调用。 */
-/* 已有偏移时只读取当前位置建立原点；无偏移时会锁转子校准并保存双备份。 */
-/* 校准会让电机实际移动；HAL_OK 表示准备成功，本函数不会下发位置目标。 */
-HAL_StatusTypeDef SimpleFOC_Motor_PrepareTIM8(void);
-
-/* 长期运行入口：完成 TIM1 校准，并以 initial_mode 和 initial_target 启动对应控制环。 */
+/* 长期运行入口：准备两轴，并以相同初始命令启动各自控制环。 */
 /* 位置模式的目标单位度，速度模式的目标单位圈/秒；任务上下文调用后不返回。 */
 void SimpleFOC_Motor_RunTask(SimpleFOC_ControlMode initial_mode, float initial_target);
 
