@@ -1,4 +1,6 @@
 #include "SimpleFOC_Motor.h"
+#include "AppMotorCommand.h"
+#include "app_system.h"
 
 #include "arm_math.h"
 #include "tim.h"
@@ -55,6 +57,9 @@
 #define MOTOR_MAX_OVERSHOOT_DEG         10.0f   /* 沿指令方向越过目标角度的容许量，超出则故障停机。 */
 #define MOTOR_MAX_COMMAND_DEG          360.0f   /* 单次相对转角指令的绝对值上限，超出则拒绝指令。 */
 #define MOTOR_MAX_SPEED_RPS             (MOTOR_MAX_SPEED_DPS / 360.0f)
+
+/* 系统任务发给电机任务的自动模式角度队列。 */
+extern osMessageQueueId_t SmapSystemToMotorHandle;
 
 /* 单轴闭环运行态：传感器给出单圈角，软件另行累计跨圈位置。 */
 typedef struct
@@ -694,6 +699,7 @@ static void motor_fault(SimpleFOC_MotorAxis axis)
     g_motor_state[axis].ready = 0U;
     g_motor_state[axis].calibrated = 0U;
     taskEXIT_CRITICAL();
+    App_System_ReportFault();
 }
 
 /* 每个周期按同一逻辑处理指定电机。 */
@@ -811,6 +817,8 @@ void SimpleFOC_Motor_RunTask(SimpleFOC_ControlMode initial_mode, float initial_t
         SIMPLEFOC_CONTROL_NONE, SIMPLEFOC_CONTROL_NONE};
     uint8_t driver_enabled[2] = {0U, 0U};
     uint8_t offset_ready[2] = {0U, 0U};
+    /* 两轴是否已在当前光照平衡区间锁定保持点。 */
+    uint8_t auto_hold_sent[2] = {0U, 0U};
 
     motor_control_init(&g_motor_control[0], SIMPLEFOC_AXIS_VERTICAL, &hi2c1);
     motor_control_init(&g_motor_control[1], SIMPLEFOC_AXIS_HORIZONTAL, &hi2c3);
@@ -867,6 +875,41 @@ void SimpleFOC_Motor_RunTask(SimpleFOC_ControlMode initial_mode, float initial_t
         previous_tick += elapsed_ms;
         if (elapsed_ms == 0U) continue;
         if (elapsed_ms > 20U) elapsed_ms = 20U;
+        /* 在本电机任务中只取最新自动角度，避免追赶过时光照。 */
+        if (SmapSystemToMotorHandle != NULL)
+        {
+            AppMotorCommand command;
+            uint8_t received = 0U;
+            while (osMessageQueueGet(SmapSystemToMotorHandle, &command, NULL, 0U) == osOK)
+                received = 1U;
+            if (App_System_IsAutoMode() == 0U)
+            {
+                auto_hold_sent[0] = 0U;
+                auto_hold_sent[1] = 0U;
+            }
+            else if (received != 0U)
+            {
+                for (uint32_t i = 0U; i < 2U; ++i)
+                {
+                    /* 两轴分别使用上下差和左右差计算出的目标。 */
+                    float target = i == SIMPLEFOC_AXIS_VERTICAL
+                        ? command.vertical_deg : command.horizontal_deg;
+                    /* 未校准时超时停车可能进入空闲，恢复采样后需重新锁定零度。 */
+                    if (g_motor_state[i].mode == SIMPLEFOC_CONTROL_NONE)
+                        auto_hold_sent[i] = 0U;
+                    if (target != 0.0f)
+                    {
+                        (void)MotorPosition_SetTargetDegrees((SimpleFOC_MotorAxis)i, target);
+                        auto_hold_sent[i] = 0U;
+                    }
+                    else if (auto_hold_sent[i] == 0U)
+                    {
+                        auto_hold_sent[i] = MotorPosition_SetTargetDegrees(
+                            (SimpleFOC_MotorAxis)i, 0.0f);
+                    }
+                }
+            }
+        }
         for (uint32_t i = 0U; i < 2U; ++i)
             motor_run_axis((SimpleFOC_MotorAxis)i, (float)elapsed_ms * 0.001f,
                            command_sequence, previous_mode, driver_enabled,

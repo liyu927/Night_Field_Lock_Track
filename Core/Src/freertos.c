@@ -27,6 +27,7 @@
 /* USER CODE BEGIN Includes */
 #include "SimpleFOC_Motor.h"
 #include "SmaplingTypes.h"
+#include "AppMotorCommand.h"
 
 /* USER CODE END Includes */
 
@@ -89,6 +90,16 @@ osMessageQueueId_t SmaplingHandle;
 const osMessageQueueAttr_t Smapling_attributes = {
   .name = "Smapling"
 };
+/* Definitions for SmapToSystem */
+osMessageQueueId_t SmapToSystemHandle;
+const osMessageQueueAttr_t SmapToSystem_attributes = {
+  .name = "SmapToSystem"
+};
+/* Definitions for SmapSystemToMotor */
+osMessageQueueId_t SmapSystemToMotorHandle;
+const osMessageQueueAttr_t SmapSystemToMotor_attributes = {
+  .name = "SmapSystemToMotor"
+};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -128,6 +139,12 @@ void MX_FREERTOS_Init(void) {
   /* Create the queue(s) */
   /* creation of Smapling */
   SmaplingHandle = osMessageQueueNew (16, sizeof(SmaplingData_t), &Smapling_attributes);
+
+  /* creation of SmapToSystem */
+  SmapToSystemHandle = osMessageQueueNew (16, sizeof(SmaplingData_t), &SmapToSystem_attributes);
+
+  /* creation of SmapSystemToMotor */
+  SmapSystemToMotorHandle = osMessageQueueNew (16, sizeof(uint16_t), &SmapSystemToMotor_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */

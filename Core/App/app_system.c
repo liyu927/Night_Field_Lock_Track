@@ -20,6 +20,8 @@
 static Median3Filter_t g_light_median[4];
 static LowPassFilter_t g_light_low_pass[4];
 extern osMessageQueueId_t SmaplingHandle;
+/* 四路滤波结果同时提供给系统状态任务。 */
+extern osMessageQueueId_t SmapToSystemHandle;
 
 //============ 光照采样任务应用层函数 ============
 
@@ -46,6 +48,14 @@ void App_Smapling_Run(void)
         Filter_Median3Update(&g_light_median[3], adc1_dma_buf[3]), LIGHT_LOW_PASS_SHIFT);
 
     (void)osMessageQueuePut(SmaplingHandle, &data, 0U, 0U);
+    if (SmapToSystemHandle != NULL
+        && osMessageQueuePut(SmapToSystemHandle, &data, 0U, 0U) != osOK)
+    {
+        /* 队列满时丢弃最旧帧，保证系统任务能取得新光照。 */
+        SmaplingData_t old_data;
+        (void)osMessageQueueGet(SmapToSystemHandle, &old_data, NULL, 0U);
+        (void)osMessageQueuePut(SmapToSystemHandle, &data, 0U, 0U);
+    }
 }
 
 //============ UI 任务应用层函数 ============
@@ -64,6 +74,9 @@ void App_Ui_Init(void)
 /* 执行一轮 UI 更新并交还 LVGL 建议的延时。 */
 uint32_t App_Ui_Run(void)
 {
+    /* LVGL 只在 UI 任务中操作；异常通知由系统任务锁存到首次领取。 */
+    if (App_System_TakeErrorPopup() != 0U)
+        user_home_show_error();
     return lv_timer_handler();
 }
 

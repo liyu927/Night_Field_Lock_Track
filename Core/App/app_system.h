@@ -13,6 +13,26 @@ typedef enum
     APP_MANUAL_RIGHT
 } AppManualDirection;
 
+/* 手动、自动与复位前不可退出的异常模式。 */
+typedef enum
+{
+    APP_MODE_MANUAL = 0,
+    APP_MODE_AUTO,
+    APP_MODE_ERROR
+} AppMode;
+
+/* UI 请求切换模式，实际模式只由系统状态任务更新。 */
+void App_System_RequestMode(AppMode mode);
+
+/* 电机任务用此接口拒绝已经退出自动模式的旧光照命令。 */
+uint8_t App_System_IsAutoMode(void);
+
+/* 电机等任务报告故障，由系统任务统一进入异常模式。 */
+void App_System_ReportFault(void);
+
+/* UI 任务领取首次进入异常模式的弹窗通知。 */
+uint8_t App_System_TakeErrorPopup(void);
+
 /* UI 投递手动方向或停止请求；按住事件持续续发，超时则由系统任务转入位置保持。 */
 void App_ManualControl_Send(AppManualDirection direction);
 

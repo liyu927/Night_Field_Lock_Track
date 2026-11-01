@@ -25,6 +25,8 @@ typedef enum {
 
 static lv_obj_t *tileview;
 static lv_obj_t *manual_tile;
+/* 自动模式瓦片用于识别用户的模式切换。 */
+static lv_obj_t *auto_tile;
 static lv_obj_t *pages[UI_PAGE_APP + 1];
 static lv_obj_t *adc_labels[8];
 static lv_obj_t *auto_avg_label;
@@ -144,6 +146,12 @@ static void ui_dialog_show(const char *text, bool confirm)
     lv_obj_move_foreground(dialog_layer);
 }
 
+/* 使用屏幕根对象上的遮罩层，当前页面无论显示什么都能弹出。 */
+void user_home_show_error(void)
+{
+    ui_dialog_show("设备异常，电机已停止", false);
+}
+
 static void ui_close_dialog_cb(lv_event_t *event)
 {
     (void)event;
@@ -165,6 +173,14 @@ static void ui_open_cb(lv_event_t *event)
 {
     UiPage page = (UiPage)(uintptr_t)lv_event_get_user_data(event);
     ui_push_page(page);
+}
+
+/* 瓦片切换只请求改变模式，电机输出由系统任务决定。 */
+static void ui_tile_changed_cb(lv_event_t *event)
+{
+    (void)event;
+    App_System_RequestMode(lv_tileview_get_tile_active(tileview) == auto_tile
+        ? APP_MODE_AUTO : APP_MODE_MANUAL);
 }
 
 static void ui_direction_cb(lv_event_t *event)
@@ -293,7 +309,8 @@ void user_home_create(void)
     lv_obj_set_pos(tileview, 0, 0);
     lv_obj_set_size(tileview, UI_SCREEN_W, UI_CONTENT_H);
     manual_tile = lv_tileview_add_tile(tileview, 0, 0, LV_DIR_BOTTOM);
-    lv_obj_t *auto_tile = lv_tileview_add_tile(tileview, 0, 1, LV_DIR_TOP);
+    auto_tile = lv_tileview_add_tile(tileview, 0, 1, LV_DIR_TOP);
+    lv_obj_add_event_cb(tileview, ui_tile_changed_cb, LV_EVENT_VALUE_CHANGED, NULL);
     lv_obj_set_style_pad_all(manual_tile, 0, 0);
     lv_obj_set_style_pad_all(auto_tile, 0, 0);
     lv_obj_set_scrollable(manual_tile, false);
@@ -307,8 +324,8 @@ void user_home_create(void)
     ui_label(auto_tile, "自动模式  下滑返回手动", 8, 9, 224);
     auto_avg_label = ui_label(auto_tile, "平均光照：--", 12, 48, 216);
     auto_diff_label = ui_label(auto_tile, "光照总差：--", 12, 78, 216);
-    ui_label(auto_tile, "当前状态：待接入状态机\n进入倒计时：-- s\n低光倒计时：-- s", 12, 120, 216);
-    ui_label(auto_tile, "仅显示采样数据，不执行追光", 12, 225, 216);
+    ui_label(auto_tile, "进入自动后等待 3 s\n光差平衡时保持位置\n低光判断：待接入", 12, 120, 216);
+    ui_label(auto_tile, "光强差控制已接入", 12, 225, 216);
 
     pages[UI_PAGE_CONTROL] = ui_subpage("手动控制");
     ui_button(pages[UI_PAGE_CONTROL], "返回", 180, 5, 52, 29, ui_back_cb, NULL);
