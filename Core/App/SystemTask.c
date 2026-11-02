@@ -244,7 +244,7 @@ static void power_backlight_set(uint8_t percent)
     __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_4, percent);
 }
 
-/* STOP 会停止 TIM3，黑屏时用 GPIO 保证 PB1 持续为低电平。 */
+/* 定时器异常未产生更新事件时，才用 GPIO 保证背光关闭。 */
 static void power_backlight_pin_set(uint8_t pwm)
 {
     GPIO_InitTypeDef gpio = {0};
@@ -282,8 +282,15 @@ static void power_screen_set(uint8_t on)
         }
         /* 等待已开始的 SPI DMA 刷屏结束，再关闭背光或进入 STOP。 */
         lv_port_disp_wait_idle();
+        /* CCR4 开启预装载，等待更新事件使 0 真正进入输出比较单元。 */
         power_backlight_set(0U);
-        power_backlight_pin_set(0U);
+        __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
+        uint32_t start = HAL_GetTick();
+        while (__HAL_TIM_GET_FLAG(&htim3, TIM_FLAG_UPDATE) == RESET
+            && (uint32_t)(HAL_GetTick() - start) < 3U) {}
+        /* TIM3 未正常计数时避免亮屏进入 STOP。 */
+        if (__HAL_TIM_GET_FLAG(&htim3, TIM_FLAG_UPDATE) == RESET)
+            power_backlight_pin_set(0U);
     }
     else
     {
