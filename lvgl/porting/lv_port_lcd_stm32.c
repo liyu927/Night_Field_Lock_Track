@@ -36,8 +36,6 @@
 
 #define LCD_RESET_GPIO_Port SPI1_RST_GPIO_Port
 #define LCD_RESET_Pin SPI1_RST_Pin
-#define LCD_BLK_GPIO_Port SPI1_BLK_GPIO_Port
-#define LCD_BLK_Pin SPI1_BLK_Pin
 #define LCD_CS_GPIO_Port SPI1_CS_GPIO_Port
 #define LCD_CS_Pin SPI1_CS_Pin
 #define LCD_DCX_GPIO_Port SPI1_DC_GPIO_Port
@@ -133,9 +131,6 @@ static int32_t lcd_io_init(void)
 {
     /* Register SPI Tx Complete Callback */
     HAL_SPI_RegisterCallback(&hspi1, HAL_SPI_TX_COMPLETE_CB_ID, lcd_color_transfer_ready_cb);
-
-    //打开背光（不然不亮）
-    HAL_GPIO_WritePin(LCD_BLK_GPIO_Port, LCD_BLK_Pin, GPIO_PIN_SET);
 
     /* reset LCD */
     HAL_GPIO_WritePin(LCD_RESET_GPIO_Port, LCD_RESET_Pin, GPIO_PIN_RESET);

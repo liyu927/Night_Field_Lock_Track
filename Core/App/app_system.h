@@ -21,24 +21,12 @@ typedef enum
     APP_MODE_ERROR
 } AppMode;
 
-/* UI 展示用电源快照：系统任务写入，UI 任务只读取，不代表硬件寄存器状态。 */
-typedef struct
-{
-    AppMode mode;             /* 当前系统模式，决定哪一种倒计时文案可见。 */
-    uint8_t screen_on;        /* 背光是否开启；黑屏运行和 STOP 时都为 0。 */
-    uint8_t auto_counting;    /* A/B 是否连续成立；为 0 时自动页面显示无穷秒。 */
-    uint8_t manual_remaining; /* 手动无触摸倒计时剩余秒数，按向上取整显示。 */
-    uint8_t auto_elapsed;     /* 自动 A/B 倒计时已过秒数。 */
-} AppPowerUiState;
-
 /* 由触摸 EXTI 中断调用，只记录唤醒事件并屏蔽本次手势。 */
 void App_System_TouchInterrupt(void);
 /* LVGL 轮询触摸状态后调用；按住期间不累计无触摸时间。 */
 void App_System_TouchHeld(uint8_t held);
 /* LVGL 输入回调调用；返回 1 时本次触摸必须作为松开处理。 */
 uint8_t App_System_SuppressTouch(uint8_t pressed);
-/* UI 任务读取系统任务发布的模式、背光和倒计时快照。 */
-void App_System_GetPowerUiState(AppPowerUiState *state);
 /* STOP 前停止 ADC 循环 DMA，避免外设持续工作和旧数据残留。 */
 void App_Smapling_Stop(void);
 

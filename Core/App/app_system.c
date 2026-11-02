@@ -84,8 +84,6 @@ uint32_t App_Ui_Run(void)
     /* LVGL 只在 UI 任务中操作；异常通知由系统任务锁存到首次领取。 */
     if (App_System_TakeErrorPopup() != 0U)
         user_home_show_error();
-    /* LVGL 的页面文字由 UI 任务独占更新，系统任务只发布状态快照。 */
-    user_home_update_power();
     return lv_timer_handler();
 }
 

@@ -5,12 +5,18 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "rtc.h"
+#include "tim.h"
 #include "main.h"
 #include "adc.h"
 #include "lv_port_lcd_stm32.h"
 
 /* 全部页面连续无触摸 15 秒后关背光；手动模式同时进入 STOP。 */
 #define POWER_IDLE_MS             15000U
+/* 正常背光占空比，范围为 0～100。 */
+#define POWER_NORMAL_BRIGHTNESS   100U
+/* 关屏前五秒将背光降为正常亮度的 30%。 */
+#define POWER_DIM_MS              5000U
+#define POWER_DIM_PERCENT         30U
 /* 自动模式 A 或 B 连续成立 15 秒后进入 STOP，与关背光分别计时。 */
 #define POWER_AUTO_MS             15000U
 /* 自动模式 B 的 ADC 平均值门槛：严格大于 1800 才成立。 */
@@ -37,8 +43,6 @@ static volatile uint8_t touch_release_count;
 static volatile uint8_t screen_on = 1U;
 /* 记录 UI 任务是否已暂停，防止对同一任务重复暂停或恢复。 */
 static uint8_t ui_suspended;
-/* 系统任务发布给 UI 的只读状态快照；UI 不直接修改倒计时。 */
-static AppPowerUiState power_ui;
 
 /* 触摸 EXTI 回调入口：只记录事件；黑屏时标记本次触摸无效。 */
 void App_System_TouchInterrupt(void)
@@ -78,16 +82,6 @@ uint8_t App_System_SuppressTouch(uint8_t pressed)
     /* 连续两次未按下才解除屏蔽；本次调用仍返回屏蔽状态。 */
     else if (++touch_release_count >= 2U) touch_suppressed = 0U;
     return 1U;
-}
-
-/* UI 任务一次性复制状态快照，避免读到更新了一半的倒计时字段。 */
-void App_System_GetPowerUiState(AppPowerUiState *state)
-{
-    if (state == NULL) return;
-    /* 系统任务也在临界区内写该结构体，这里与写入保持原子性。 */
-    taskENTER_CRITICAL();
-    *state = power_ui;
-    taskEXIT_CRITICAL();
 }
 
 /* 手动按住时的目标机械角速度，单位度/秒。 */
@@ -243,10 +237,38 @@ static uint8_t power_auto_idle(const AppLightMetrics *light)
     return balanced != 0U || light->average > POWER_DARK_AVG;
 }
 
+/* TIM3 的 ARR 为 99，CCR4 取 0～100 正好对应 0～100% 占空比。 */
+static void power_backlight_set(uint8_t percent)
+{
+    if (percent > 100U) percent = 100U;
+    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_4, percent);
+}
+
+/* STOP 会停止 TIM3，黑屏时用 GPIO 保证 PB1 持续为低电平。 */
+static void power_backlight_pin_set(uint8_t pwm)
+{
+    GPIO_InitTypeDef gpio = {0};
+    gpio.Pin = GPIO_PIN_1;
+    gpio.Pull = GPIO_NOPULL;
+    if (pwm != 0U)
+    {
+        gpio.Mode = GPIO_MODE_AF_PP;
+        gpio.Speed = GPIO_SPEED_FREQ_LOW;
+        gpio.Alternate = GPIO_AF2_TIM3;
+    }
+    else
+    {
+        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_RESET);
+        gpio.Mode = GPIO_MODE_OUTPUT_PP;
+        gpio.Speed = GPIO_SPEED_FREQ_LOW;
+    }
+    HAL_GPIO_Init(GPIOB, &gpio);
+}
+
 /* 只切换背光和 UI 任务；黑屏不等于已进入 MCU STOP。 */
 static void power_screen_set(uint8_t on)
 {
-    /* 状态未变化时不重复操作 GPIO 和任务。 */
+    /* 状态未变化时不重复操作背光和任务。 */
     if (on == screen_on) return;
     if (on == 0U)
     {
@@ -260,12 +282,14 @@ static void power_screen_set(uint8_t on)
         }
         /* 等待已开始的 SPI DMA 刷屏结束，再关闭背光或进入 STOP。 */
         lv_port_disp_wait_idle();
-        HAL_GPIO_WritePin(SPI1_BLK_GPIO_Port, SPI1_BLK_Pin, GPIO_PIN_RESET);
+        power_backlight_set(0U);
+        power_backlight_pin_set(0U);
     }
     else
     {
-        /* 当前硬件初始化使用高电平点亮背光，唤醒时恢复同一电平。 */
-        HAL_GPIO_WritePin(SPI1_BLK_GPIO_Port, SPI1_BLK_Pin, GPIO_PIN_SET);
+        /* 唤醒时恢复正常占空比。 */
+        power_backlight_set(POWER_NORMAL_BRIGHTNESS);
+        power_backlight_pin_set(1U);
         screen_on = 1U;
         if (ui_suspended != 0U)
         {
@@ -458,6 +482,9 @@ void StartSystemStateTask(void *argument)
     SmaplingData_t sample;
     AppLightMetrics light = {0};
     (void)argument;
+    /* 初始化背光 PWM；ARR 为 99 时 CCR 为 100 即持续高电平。 */
+    power_backlight_set(POWER_NORMAL_BRIGHTNESS);
+    if (HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_4) != HAL_OK) Error_Handler();
     /* CubeMX 初始化时已启动 RTC；平时关闭周期中断，仅自动 STOP 时启用。 */
     (void)HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
 
@@ -600,24 +627,18 @@ void StartSystemStateTask(void *argument)
         }
         else auto_counting = 0U;
 
-        /* 所有模式都可因 15 秒无触摸黑屏；持续手动运动时不关屏。 */
-        if (touch_held == 0U && active == APP_MANUAL_STOP
-            && (uint32_t)(now - last_touch_tick) >= POWER_IDLE_MS)
-            power_screen_set(0U);
-
-        /* 向 UI 发布完整快照；UI 只画标签，不自行计算入睡条件。 */
-        taskENTER_CRITICAL();
-        power_ui.mode = current_mode;
-        power_ui.screen_on = screen_on;
-        power_ui.auto_counting = auto_counting;
-        /* 剩余秒数向上取整，所以最后五秒显示 5、4、3、2、1。 */
-        power_ui.manual_remaining = touch_held != 0U || active != APP_MANUAL_STOP ? 0U
-            : (uint32_t)(now - last_touch_tick) >= POWER_IDLE_MS ? 0U
-            : (uint8_t)((POWER_IDLE_MS - (uint32_t)(now - last_touch_tick) + 999U) / 1000U);
-        /* 自动页显示已走过的秒数；计时无效时由 UI 显示无穷秒。 */
-        power_ui.auto_elapsed = auto_counting == 0U ? 0U
-            : (uint8_t)((uint32_t)(now - auto_idle_tick) / 1000U);
-        taskEXIT_CRITICAL();
+        /* 无触摸关屏前五秒变暗；触摸或持续手动运动会恢复正常亮度。 */
+        if (screen_on != 0U)
+        {
+            if (touch_held == 0U && active == APP_MANUAL_STOP
+                && (uint32_t)(now - last_touch_tick) >= POWER_IDLE_MS - POWER_DIM_MS)
+            {
+                if ((uint32_t)(now - last_touch_tick) >= POWER_IDLE_MS)
+                    power_screen_set(0U);
+                else power_backlight_set(POWER_NORMAL_BRIGHTNESS * POWER_DIM_PERCENT / 100U);
+            }
+            else power_backlight_set(POWER_NORMAL_BRIGHTNESS);
+        }
 
         /* 手动无触摸到期或自动 A/B 连续成立到期，才真正进入 STOP。 */
         if ((current_mode == APP_MODE_MANUAL && touch_held == 0U

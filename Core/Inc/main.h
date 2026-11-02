@@ -75,8 +75,6 @@ void Error_Handler(void);
 #define SPI1_RST_GPIO_Port GPIOA
 #define SPI1_CS_Pin GPIO_PIN_0
 #define SPI1_CS_GPIO_Port GPIOB
-#define SPI1_BLK_Pin GPIO_PIN_1
-#define SPI1_BLK_GPIO_Port GPIOB
 #define TIM1_EN_Pin GPIO_PIN_7
 #define TIM1_EN_GPIO_Port GPIOE
 #define TIM8_EN_Pin GPIO_PIN_8

@@ -144,7 +144,7 @@ void MX_FREERTOS_Init(void) {
   SmapToSystemHandle = osMessageQueueNew (16, sizeof(SmaplingData_t), &SmapToSystem_attributes);
 
   /* creation of SmapSystemToMotor */
-  SmapSystemToMotorHandle = osMessageQueueNew (16, sizeof(uint16_t), &SmapSystemToMotor_attributes);
+  SmapSystemToMotorHandle = osMessageQueueNew (16, sizeof(AppMotorCommand), &SmapSystemToMotor_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
