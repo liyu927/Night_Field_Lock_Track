@@ -11,6 +11,7 @@
  *********************/
 #include "lv_port_indev.h"
 #include "FT6336.h"
+#include "app_system.h"
 #include "lv_port_lcd_stm32.h"
 /*********************
  *      DEFINES
@@ -190,8 +191,16 @@ static void touchpad_read(lv_indev_t * indev_drv, lv_indev_data_t * data)
     static int32_t last_x = 0;
     static int32_t last_y = 0;
 
-    /*Save the pressed coordinates and the state*/
-    if(touchpad_is_pressed()) {
+    /* 先读真实接触状态；长按状态必须上报系统任务，避免按住时入睡。 */
+    bool pressed = touchpad_is_pressed();
+    App_System_TouchHeld(pressed ? 1U : 0U);
+    /* 唤醒屏幕的整次触摸在松手前不传给页面控件。 */
+    if(App_System_SuppressTouch(pressed ? 1U : 0U) != 0U) {
+        /* 即使落在保存或跳页按钮上，也只作为一次无效的唤醒触摸。 */
+        data->state = LV_INDEV_STATE_RELEASED;
+    }
+    else if(pressed) {
+        /* 后续新的正常触摸才读取坐标并交给 LVGL 处理。 */
         touchpad_get_xy(&last_x, &last_y);
         data->state = LV_INDEV_STATE_PRESSED;
     }

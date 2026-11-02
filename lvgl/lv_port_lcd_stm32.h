@@ -35,6 +35,8 @@ extern "C" {
  **********************/
 /* Initialize low level display driver */
 void lv_port_disp_init(void);
+/* STOP 前等待最后一次 SPI DMA 刷屏结束，避免传输中断被 STOP 截断。 */
+void lv_port_disp_wait_idle(void);
 
 /**********************
  *      MACROS

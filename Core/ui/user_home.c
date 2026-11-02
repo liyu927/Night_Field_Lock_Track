@@ -8,6 +8,8 @@
 #define UI_CONTENT_H         260
 #define UI_FOOTER_H          60
 #define UI_ADC_REFRESH_MS    200
+/* 手动页面只在无触摸倒计时剩余五秒内显示顶部提示。 */
+#define UI_SLEEP_NOTICE_S    5U
 #define UI_PAGE_STACK_DEPTH  4
 #define UI_PARAM_COUNT       5
 #define UI_DEMO_PARAM_MIN    0
@@ -31,6 +33,10 @@ static lv_obj_t *pages[UI_PAGE_APP + 1];
 static lv_obj_t *adc_labels[8];
 static lv_obj_t *auto_avg_label;
 static lv_obj_t *auto_diff_label;
+/* 自动页显示 A/B 连续成立的秒数；条件都不成立时显示无穷秒。 */
+static lv_obj_t *auto_sleep_label;
+/* 所有手动子页共用根屏顶部提示，切页时无需重新创建。 */
+static lv_obj_t *manual_sleep_label;
 static lv_obj_t *direction_label;
 static lv_obj_t *param_labels[UI_PARAM_COUNT];
 static lv_obj_t *dialog_layer;
@@ -300,6 +306,45 @@ static void ui_adc_timer_cb(lv_timer_t *timer)
     lv_label_set_text_fmt(auto_diff_label, "光照总差：%u", (unsigned int)(max - min));
 }
 
+/* UI 任务读取系统快照，仅在显示值变化时更新 LVGL 标签。 */
+void user_home_update_power(void)
+{
+    /* 上次显示值用于跳过重复写字，减少无意义的 SPI 刷新。 */
+    static uint8_t last_manual = 255U;
+    static uint8_t last_auto_elapsed = 255U;
+    static uint8_t last_auto_counting = 255U;
+    static AppMode last_mode = APP_MODE_ERROR;
+    /* 系统任务统一计算计时，UI 不自行判断光照或触摸超时。 */
+    AppPowerUiState state;
+    App_System_GetPowerUiState(&state);
+    /* 页面尚未构建完成时，不能访问标签对象。 */
+    if (manual_sleep_label == NULL || auto_sleep_label == NULL) return;
+    /* 只在手动模式最后五秒显示剩余数字，其他时段隐藏。 */
+    if (state.mode != last_mode || state.manual_remaining != last_manual)
+    {
+        if (state.mode == APP_MODE_MANUAL && state.manual_remaining <= UI_SLEEP_NOTICE_S
+            && state.manual_remaining > 0U)
+        {
+            lv_label_set_text_fmt(manual_sleep_label, "%us", state.manual_remaining);
+            lv_obj_set_hidden(manual_sleep_label, false);
+        }
+        else lv_obj_set_hidden(manual_sleep_label, true);
+    }
+    /* A/B 不成立时显示无穷秒；成立时显示从零累计的秒数。 */
+    if (state.mode != last_mode || state.auto_counting != last_auto_counting
+        || state.auto_elapsed != last_auto_elapsed)
+    {
+        if (state.mode == APP_MODE_AUTO && state.auto_counting != 0U)
+            lv_label_set_text_fmt(auto_sleep_label, "低功耗：%us", state.auto_elapsed);
+        else lv_label_set_text(auto_sleep_label, "低功耗：∞");
+    }
+    /* 保存本次结果，下次调用只处理实际变化的标签。 */
+    last_manual = state.manual_remaining;
+    last_auto_counting = state.auto_counting;
+    last_auto_elapsed = state.auto_elapsed;
+    last_mode = state.mode;
+}
+
 void user_home_create(void)
 {
     lv_obj_t *screen = lv_screen_active();
@@ -315,7 +360,9 @@ void user_home_create(void)
     lv_obj_set_style_pad_all(auto_tile, 0, 0);
     lv_obj_set_scrollable(manual_tile, false);
     lv_obj_set_scrollable(auto_tile, false);
-    ui_label(manual_tile, "手动模式  上滑切换自动", 8, 9, 224);
+    /* 手动标题缩短，右侧留给最后五秒的统一倒计时。 */
+    ui_label(manual_tile, "手动模式", 8, 9, 100);
+    ui_label(manual_tile, "上滑切换自动", 8, 236, 224);
     ui_button(manual_tile, "手动控制", 16, 42, 208, 40, ui_open_cb, (void *)(uintptr_t)UI_PAGE_CONTROL);
     ui_button(manual_tile, "参数调节", 16, 90, 208, 40, ui_open_cb, (void *)(uintptr_t)UI_PAGE_PARAMS);
     ui_button(manual_tile, "产品说明", 16, 138, 208, 40, ui_open_cb, (void *)(uintptr_t)UI_PAGE_ABOUT);
@@ -324,6 +371,8 @@ void user_home_create(void)
     ui_label(auto_tile, "自动模式  下滑返回手动", 8, 9, 224);
     auto_avg_label = ui_label(auto_tile, "平均光照：--", 12, 48, 216);
     auto_diff_label = ui_label(auto_tile, "光照总差：--", 12, 78, 216);
+    /* 自动 STOP 倒计时与无触摸黑屏倒计时独立；此处只显示前者。 */
+    auto_sleep_label = ui_label(auto_tile, "低功耗：∞", 12, 195, 216);
     ui_label(auto_tile, "进入自动后等待 3 s\n光差平衡时保持位置\n低光判断：待接入", 12, 120, 216);
     ui_label(auto_tile, "光强差控制已接入", 12, 225, 216);
 
@@ -400,6 +449,10 @@ void user_home_create(void)
     dialog_buttons[1] = ui_button(dialog, "放弃", 77, 100, 66, 37, ui_discard_cb, NULL);
     dialog_buttons[2] = ui_button(dialog, "取消", 149, 100, 66, 37, ui_close_dialog_cb, NULL);
     lv_obj_set_hidden(dialog_layer, true);
+
+    /* 根屏标签覆盖所有手动子页，保留各页现有对象和返回栈。 */
+    manual_sleep_label = ui_label(screen, "", 130, 7, 45);
+    lv_obj_set_hidden(manual_sleep_label, true);
 
     current_page = UI_PAGE_MAIN;
     manual_direction = APP_MANUAL_STOP;

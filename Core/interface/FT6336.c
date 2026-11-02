@@ -1,4 +1,5 @@
 #include "FT6336.h"
+#include "app_system.h"
 #include "i2c.h"
 #include <stddef.h>
 
@@ -78,12 +79,13 @@ bool FT6336_Read(uint16_t *x, uint16_t *y)
 /**
  * @brief HAL 的 GPIO EXTI 回调，运行在 EXTI15_10 中断上下文。
  * @param GPIO_Pin 本次产生外部中断的 GPIO 引脚号。
- * @note 当前仅保留触摸中断入口，不调用 I2C、FreeRTOS 或 LVGL 接口。
+ * @note 仅通知系统任务记录事件；中断内不访问 I2C、FreeRTOS 或 LVGL。
  */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
     if (GPIO_Pin == CTP_INT_Pin)
     {
-        /* 已确认触摸控制器中断能够进入此处，后续低功耗唤醒逻辑可在此扩展。 */
+        /* 真正开背光和重置倒计时由系统任务处理。 */
+        App_System_TouchInterrupt();
     }
 }

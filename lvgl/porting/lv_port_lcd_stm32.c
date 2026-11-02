@@ -65,6 +65,13 @@ static void lcd_send_color(lv_display_t * disp, const uint8_t * cmd, size_t cmd_
 static lv_display_t * lcd_disp;
 static volatile int lcd_bus_busy = 0;
 
+/* 背光关闭或进入 STOP 前，等待异步刷屏完成并让出毫秒节拍。 */
+void lv_port_disp_wait_idle(void)
+{
+    /* DMA 完成回调会清除此标志；等待期间保留 HAL 中断处理。 */
+    while (lcd_bus_busy != 0) HAL_Delay(1U);
+}
+
 /**********************
  *      MACROS
  **********************/

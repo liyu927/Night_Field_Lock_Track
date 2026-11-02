@@ -33,6 +33,13 @@ void App_Smapling_Init(void)
     ADC1_DMA_Start();
 }
 
+/* 进入 STOP 前停止连续 ADC DMA，唤醒后再由采样初始化函数启动。 */
+void App_Smapling_Stop(void)
+{
+    /* 不改动滤波结果；STOP 流程会清队列，探测前重新初始化滤波器。 */
+    (void)HAL_ADC_Stop_DMA(&hadc1);
+}
+
 /* 四路数据按 PA0～PA3 顺序滤波并发布最新快照。 */
 void App_Smapling_Run(void)
 {
@@ -77,6 +84,8 @@ uint32_t App_Ui_Run(void)
     /* LVGL 只在 UI 任务中操作；异常通知由系统任务锁存到首次领取。 */
     if (App_System_TakeErrorPopup() != 0U)
         user_home_show_error();
+    /* LVGL 的页面文字由 UI 任务独占更新，系统任务只发布状态快照。 */
+    user_home_update_power();
     return lv_timer_handler();
 }
 
