@@ -15,7 +15,11 @@
 #define W25_PROGRAM_TIMEOUT_MS 10U//页编程典型耗时上限 10 ms（手册典型值 0.4~3 ms）。
 #define W25_ERASE_TIMEOUT_MS   3000U//扇区擦除超时 3 s（手册典型值 45~400 ms，取 3 s 保险）。
 #define W25_RECORD_MAGIC      0x36345157UL//包头的标识字段（包头共 16 字节：标识、序号、数据长度、CRC32），记录标记 0x36345157。小端存进 Flash 后字节顺序是 57 51 34 36，正好是 ASCII W Q 4 6——用来判断"这块扇区是不是我们写过的参数"。
-/* 芯片末尾两个扇区专用于参数，固件缓存只能使用前面的空间。 */
+/* 最后五个扇区的固定分配；电机偏移仍占原来的最后两个扇区。 */
+/* 用户 A/B 轮流存新旧版本，出厂扇区不参与轮换。 */
+#define W25_USER_A            (W25Q64_CAPACITY_BYTES - 5UL * W25Q64_SECTOR_BYTES)
+#define W25_USER_B            (W25Q64_CAPACITY_BYTES - 4UL * W25Q64_SECTOR_BYTES)
+#define W25_FACTORY           (W25Q64_CAPACITY_BYTES - 3UL * W25Q64_SECTOR_BYTES)
 #define W25_SLOT_A            (W25Q64_CAPACITY_BYTES - 2UL * W25Q64_SECTOR_BYTES)//A 槽地址 = 0x800000 − 8192 = 0x7FE000。
 #define W25_SLOT_B            (W25Q64_CAPACITY_BYTES - W25Q64_SECTOR_BYTES)//B 槽地址 = 0x800000 − 4096 = 0x7FF000。两个槽紧挨着，各 4 KB。
 
@@ -248,7 +252,7 @@ static HAL_StatusTypeDef flash_save_slot(uint32_t slot, uint32_t sequence,
     return flash_check_slot(slot, length, &checked_sequence);
 }
 
-/* 两份 CRC 都有效时仍需比较内容，处理断电后留下的新旧版本。 */
+/* 比较出厂记录与代码默认值，内容一致时避免重复擦写。 */
 static HAL_StatusTypeDef flash_compare_slot(uint32_t slot,
                                             const uint8_t *data, uint32_t length)
 {
@@ -321,74 +325,123 @@ HAL_StatusTypeDef W25Q64_EraseSector(uint32_t address)
     return result;
 }
 
-/* 分别读取验证两份记录，优先采用序号较新的有效记录。并且检查另一份状态 */
-HAL_StatusTypeDef W25Q64_LoadParameters(void *data, uint32_t length)//读取参数包,这个data是一个电机结构体来的，要用void*来指内存地址
+/* 校验两个槽的记录头、长度和 CRC，再按序号选择最新版或旧版。 */
+/* previous=0 取最新有效槽；previous!=0 要求两槽均有效并读取较旧槽。 */
+/* 返回 HAL_BUSY 表示所需版本不存在；此函数只读，不自动修复或覆盖旧槽。 */
+static HAL_StatusTypeDef flash_load_pair(uint32_t first, uint32_t second,
+                                          uint8_t previous, uint8_t *data, uint32_t length)
 {
     uint32_t sequence_a = 0U, sequence_b = 0U;
     HAL_StatusTypeDef a, b, result;
+    a = flash_check_slot(first, length, &sequence_a);
+    b = flash_check_slot(second, length, &sequence_b);
+    if (a == HAL_ERROR || b == HAL_ERROR) result = HAL_ERROR;
+    else if (a != HAL_OK && b != HAL_OK) result = HAL_BUSY;
+    else if (previous != 0U && (a != HAL_OK || b != HAL_OK)) result = HAL_BUSY;
+    else
+    {
+        uint32_t slot = (b == HAL_OK && (a != HAL_OK
+            || (int32_t)(sequence_b - sequence_a) > 0)) ? second : first;
+        if (previous != 0U) slot = slot == first ? second : first;
+        result = flash_read_raw(slot + 16U, data, length);
+    }
+    return result;
+}
+
+/* 保存前比较最新版内容：相同则跳过擦写，避免无意义保存挤掉真正旧版。 */
+/* 内容不同时只擦写较旧或无效槽，并赋予比现有最新版更大的序号。 */
+/* 首次两个槽都无效时先写 A 槽，B 槽保持空白，直到下一次内容变化。 */
+static HAL_StatusTypeDef flash_save_pair(uint32_t first, uint32_t second,
+                                          const uint8_t *data, uint32_t length)
+{
+    uint32_t sequence_a = 0U, sequence_b = 0U;
+    HAL_StatusTypeDef a, b, result;
+    a = flash_check_slot(first, length, &sequence_a);
+    b = flash_check_slot(second, length, &sequence_b);
+    if (a == HAL_ERROR || b == HAL_ERROR) return HAL_ERROR;
+    if (a == HAL_OK || b == HAL_OK)
+    {
+        uint32_t latest = b == HAL_OK && (a != HAL_OK
+            || (int32_t)(sequence_b - sequence_a) > 0) ? second : first;
+        result = flash_compare_slot(latest, data, length);
+        if (result != HAL_BUSY) return result;
+    }
+    if (a != HAL_OK && b != HAL_OK)
+        result = flash_save_slot(first, 1U, data, length);
+    else if (a != HAL_OK || (b == HAL_OK && (int32_t)(sequence_b - sequence_a) > 0))
+        result = flash_save_slot(first, sequence_b + 1U, data, length);
+    else
+        result = flash_save_slot(second, sequence_a + 1U, data, length);
+    return result;
+}
+
+/* 电机双槽与用户双槽共用的入口：检查载荷长度并独占 SPI/DMA 缓冲区。 */
+/* first、second 为两槽地址；save 为 1 时写入，为 0 时按 previous 读取。 */
+static HAL_StatusTypeDef flash_pair_access(uint32_t first, uint32_t second,
+    void *data, uint32_t length, uint8_t previous, uint8_t save)
+{
+    HAL_StatusTypeDef result;
     if (data == NULL || length == 0U || length > W25Q64_PARAMETER_MAX_BYTES)
         return HAL_ERROR;
     result = flash_lock();
     if (result != HAL_OK) return result;
-    a = flash_check_slot(W25_SLOT_A, length, &sequence_a);
-    b = flash_check_slot(W25_SLOT_B, length, &sequence_b);
-    if (a == HAL_ERROR || b == HAL_ERROR) result = HAL_ERROR;
-    else if (a != HAL_OK && b != HAL_OK) result = HAL_BUSY;
-    else
-    {
-        /* 序号较新者是最近一次写入；序号差用有符号比较以兼容回绕。 */
-        uint32_t slot = (b == HAL_OK && (a != HAL_OK
-            || (int32_t)(sequence_b - sequence_a) > 0)) ? W25_SLOT_B : W25_SLOT_A;
-        result = flash_read_raw(slot + 16U, data, length);
-        if (result == HAL_OK)//检查AB区是否相同，如果AB区不相同，若A区序号更大，那么B区复制一遍A区的数据，并且序号是A区的+1
-        {
-            uint32_t other = slot == W25_SLOT_A ? W25_SLOT_B : W25_SLOT_A;//另一份（没被选中的那个槽）的地址。序号小
-            uint32_t sequence = slot == W25_SLOT_A ? sequence_a : sequence_b;//被选中那份的序号。序号大
-            HAL_StatusTypeDef comparison = a != b ? HAL_BUSY
-                : flash_compare_slot(other, data, length);
-            if (comparison == HAL_ERROR) result = HAL_ERROR;
-            /* 一份损坏或内容较旧时补齐备份；补写失败也保留已读出的有效记录。 */
-            else if (comparison == HAL_BUSY)
-                (void)flash_save_slot(other, sequence + 1U, data, length);
-        }
-    }
+    result = save != 0U ? flash_save_pair(first, second, data, length)
+        : flash_load_pair(first, second, previous, data, length);
     flash_unlock();
     return result;
 }
 
-/* 先写无效或较旧副本，验证通过后才更新原来的有效副本。 */
-/* 已有有效记录时，中途断电仍可保留写入前或写入后的完整参数包。 */
-HAL_StatusTypeDef W25Q64_SaveParameters(const void *data, uint32_t length)//写入参数包
+/* 电机偏移量：从原 A/B 扇区读取最新完整记录。 */
+HAL_StatusTypeDef W25Q64_LoadParameters(void *data, uint32_t length)
 {
-    uint32_t sequence_a = 0U, sequence_b = 0U;
-    HAL_StatusTypeDef a, b, result;
+    return flash_pair_access(W25_SLOT_A, W25_SLOT_B, data, length, 0U, 0U);
+}
+
+/* 电机偏移量：新数据写到较旧槽，保留另一槽的上一版本。 */
+HAL_StatusTypeDef W25Q64_SaveParameters(const void *data, uint32_t length)
+{
+    return flash_pair_access(W25_SLOT_A, W25_SLOT_B, (void *)data, length, 0U, 1U);
+}
+
+/* 用户参数：previous 控制读取最新记录或上一完整记录。 */
+HAL_StatusTypeDef W25Q64_LoadUserParameters(void *data, uint32_t length, uint8_t previous)
+{
+    return flash_pair_access(W25_USER_A, W25_USER_B, data, length, previous, 0U);
+}
+
+/* 用户参数：仅在内容变化时轮换 A/B 槽，保留旧版本用于回归。 */
+HAL_StatusTypeDef W25Q64_SaveUserParameters(const void *data, uint32_t length)
+{
+    return flash_pair_access(W25_USER_A, W25_USER_B, (void *)data, length, 0U, 1U);
+}
+
+/* 出厂参数：先验证独立扇区的记录，再跳过 16 字节包头读取参数载荷。 */
+HAL_StatusTypeDef W25Q64_LoadFactoryParameters(void *data, uint32_t length)
+{
+    uint32_t sequence;
+    HAL_StatusTypeDef result;
     if (data == NULL || length == 0U || length > W25Q64_PARAMETER_MAX_BYTES)
         return HAL_ERROR;
     result = flash_lock();
     if (result != HAL_OK) return result;
-    a = flash_check_slot(W25_SLOT_A, length, &sequence_a);
-    b = flash_check_slot(W25_SLOT_B, length, &sequence_b);
-    if (a == HAL_ERROR || b == HAL_ERROR) result = HAL_ERROR;
-    else if (a != HAL_OK && b != HAL_OK)
-    {
-        /* 空白芯片或两份都无效：先建 A，再建 B。 */
-        result = flash_save_slot(W25_SLOT_A, 1U, data, length);
-        if (result == HAL_OK) result = flash_save_slot(W25_SLOT_B, 2U, data, length);
-    }
-    else if (a != HAL_OK || (b == HAL_OK && (int32_t)(sequence_b - sequence_a) > 0))
-    {
-        /* B 较新或 A 无效：先更新 A，成功后再更新 B。 */
-        result = flash_save_slot(W25_SLOT_A, sequence_b + 1U, data, length);
-        if (result == HAL_OK)
-            result = flash_save_slot(W25_SLOT_B, sequence_b + 2U, data, length);
-    }
-    else
-    {
-        /* A 较新或 B 无效：先更新 B，成功后再更新 A。 */
-        result = flash_save_slot(W25_SLOT_B, sequence_a + 1U, data, length);
-        if (result == HAL_OK)
-            result = flash_save_slot(W25_SLOT_A, sequence_a + 2U, data, length);
-    }
+    result = flash_check_slot(W25_FACTORY, length, &sequence);
+    if (result == HAL_OK) result = flash_read_raw(W25_FACTORY + 16U, data, length);
+    flash_unlock();
+    return result;
+}
+
+/* 出厂参数：每次启动核对固件默认值；一致时不擦除，变化或损坏时重写。 */
+HAL_StatusTypeDef W25Q64_SyncFactoryParameters(const void *data, uint32_t length)
+{
+    uint32_t sequence;
+    HAL_StatusTypeDef result;
+    if (data == NULL || length == 0U || length > W25Q64_PARAMETER_MAX_BYTES)
+        return HAL_ERROR;
+    result = flash_lock();
+    if (result != HAL_OK) return result;
+    result = flash_check_slot(W25_FACTORY, length, &sequence);
+    if (result == HAL_OK) result = flash_compare_slot(W25_FACTORY, data, length);
+    if (result == HAL_BUSY) result = flash_save_slot(W25_FACTORY, 1U, data, length);
     flash_unlock();
     return result;
 }

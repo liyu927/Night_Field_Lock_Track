@@ -1,5 +1,5 @@
-#ifndef SOLAR_LIGHT_TRACKING_SYSTEM_SIMPLEFOC_MOTOR_H
-#define SOLAR_LIGHT_TRACKING_SYSTEM_SIMPLEFOC_MOTOR_H
+#ifndef NIGHT_FIELD_LOCK_TRACK_SIMPLEFOC_MOTOR_H
+#define NIGHT_FIELD_LOCK_TRACK_SIMPLEFOC_MOTOR_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -111,4 +111,4 @@ void SimpleFOC_Motor_RunTask(SimpleFOC_ControlMode initial_mode, float initial_t
 }
 #endif
 
-#endif /* SOLAR_LIGHT_TRACKING_SYSTEM_SIMPLEFOC_MOTOR_H */
+#endif /* NIGHT_FIELD_LOCK_TRACK_SIMPLEFOC_MOTOR_H */
