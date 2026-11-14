@@ -1,5 +1,5 @@
-#ifndef SOLAR_LIGHT_TRACKING_SYSTEM_APP_SYSTEM_H
-#define SOLAR_LIGHT_TRACKING_SYSTEM_APP_SYSTEM_H
+#ifndef NIGHT_FIELD_LOCK_TRACK_APP_SYSTEM_H
+#define NIGHT_FIELD_LOCK_TRACK_APP_SYSTEM_H
 
 #include <stdint.h>
 #include "SimpleFOC_Motor.h"
@@ -79,4 +79,4 @@ uint8_t App_MotorSpeed_SetTargetSpeed(SimpleFOC_MotorAxis axis, float speed_rps)
 /* delta_deg 单位度，范围为 -360～360；频繁调用会持续把目标推向当前位置前方。 */
 uint8_t App_MotorPosition_SetTargetDegrees(SimpleFOC_MotorAxis axis, float delta_deg);
 
-#endif /* SOLAR_LIGHT_TRACKING_SYSTEM_APP_SYSTEM_H */
+#endif /* NIGHT_FIELD_LOCK_TRACK_APP_SYSTEM_H */

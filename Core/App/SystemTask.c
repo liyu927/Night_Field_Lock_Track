@@ -1,4 +1,5 @@
 #include "app_system.h"
+#include "app_parameters.h"
 #include "AppMotorCommand.h"
 #include "SmaplingTypes.h"
 #include "cmsis_os2.h"
@@ -10,19 +11,13 @@
 #include "adc.h"
 #include "lv_port_lcd_stm32.h"
 
-/* 全部页面连续无触摸 15 秒后关背光；手动模式同时进入 STOP。 */
-#define POWER_IDLE_MS             15000U
-/* 正常背光占空比，范围为 0～100。 */
-#define POWER_NORMAL_BRIGHTNESS   100U
+/* 连续无触摸达到当前模式的设定时间后关背光；手动模式同时进入 STOP。 */
 /* 关屏前五秒将背光降为正常亮度的 30%。 */
 #define POWER_DIM_MS              5000U
 #define POWER_DIM_PERCENT         30U
-/* 自动模式 A 或 B 连续成立 15 秒后进入 STOP，与关背光分别计时。 */
-#define POWER_AUTO_MS             15000U
-/* 自动模式 B 的 ADC 平均值门槛：严格大于 1800 才成立。 */
-#define POWER_DARK_AVG            1800U
-/* RTC 使用 1 Hz 的 ck_spre；计数值 2 对应约 3 秒一次唤醒。 */
-#define POWER_RTC_COUNTER         2U
+/* 自动模式 A 或 B 连续成立达到设定时间后进入 STOP，与关背光分别计时。 */
+/* 自动模式 B 的 ADC 平均值门槛由低功耗光强阈值参数决定。 */
+/* RTC 使用 1 Hz 的 ck_spre；唤醒周期由参数决定。 */
 
 /* STOP 前暂停这些任务；系统任务负责恢复，不在中断里操作任务。 */
 extern osThreadId_t UiTaskHandle, MotorTaskHandle, SmaplingTaskHandle, DebugTaskHandle;
@@ -85,7 +80,6 @@ uint8_t App_System_SuppressTouch(uint8_t pressed)
 }
 
 /* 手动按住时的目标机械角速度，单位度/秒。 */
-#define MANUAL_SPEED_DPS          15.0f
 /* 手动按住事件超过此时间未续发时改为保持当前位置。 */
 #define MANUAL_HOLD_TIMEOUT_MS    200U
 /* 上键和右键对应的电机正方向，实机方向不符时改符号。 */
@@ -96,11 +90,8 @@ uint8_t App_System_SuppressTouch(uint8_t pressed)
 /* 超过此时间没有新光照帧时停止追光并保持当前位置。 */
 #define AUTO_SAMPLE_TIMEOUT_MS    100U
 /* 水平光强差处于此范围时锁定水平轴当前位置。 */
-#define AUTO_HORIZONTAL_BAND      50
 /* 竖直光强差处于此范围时锁定竖直轴当前位置。 */
-#define AUTO_VERTICAL_BAND        100
 /* 光强比例环增益：差值 1500 对应相对目标 150 度。 */
-#define AUTO_LIGHT_KP             0.1f
 /* 四路滤波 ADC 均严格高于此值时认为环境较暗，停止追光并保持位置。 */
 #define AUTO_ALL_DARK_ADC         1500U
 /* 单次相对角度命令的最大绝对值，单位度。 */
@@ -228,13 +219,16 @@ static AppLightMetrics light_analyze(const SmaplingData_t *sample)
 /* 自动入睡条件：A 为两轴光差都在停转区间，B 为四路平均值偏暗。 */
 static uint8_t power_auto_idle(const AppLightMetrics *light)
 {
+    AppParameters parameters = App_Parameters_Get();
     /* 四个比较必须同时成立才算 A；任一轴超限都表示可能需要追光。 */
-    uint8_t balanced = light->horizontal_diff >= -AUTO_HORIZONTAL_BAND
-        && light->horizontal_diff <= AUTO_HORIZONTAL_BAND
-        && light->vertical_diff >= -AUTO_VERTICAL_BAND
-        && light->vertical_diff <= AUTO_VERTICAL_BAND;
-    /* A 或 B 满足即可继续累计同一只 15 秒计时器。 */
-    return balanced != 0U || light->average > POWER_DARK_AVG;
+    int32_t horizontal = parameters.values[APP_PARAM_HORIZONTAL_BAND];
+    int32_t vertical = parameters.values[APP_PARAM_VERTICAL_BAND];
+    uint8_t balanced = light->horizontal_diff >= -horizontal
+        && light->horizontal_diff <= horizontal
+        && light->vertical_diff >= -vertical
+        && light->vertical_diff <= vertical;
+    /* A 或 B 满足即可继续累计同一只自动熄屏计时器。 */
+    return balanced != 0U || light->average > parameters.values[APP_PARAM_LOW_POWER_LIGHT];
 }
 
 /* TIM3 的 ARR 为 99，CCR4 取 0～100 正好对应 0～100% 占空比。 */
@@ -268,6 +262,7 @@ static void power_backlight_pin_set(uint8_t pwm)
 /* 只切换背光和 UI 任务；黑屏不等于已进入 MCU STOP。 */
 static void power_screen_set(uint8_t on)
 {
+    AppParameters parameters = App_Parameters_Get();
     /* 状态未变化时不重复操作背光和任务。 */
     if (on == screen_on) return;
     if (on == 0U)
@@ -295,7 +290,7 @@ static void power_screen_set(uint8_t on)
     else
     {
         /* 唤醒时恢复正常占空比。 */
-        power_backlight_set(POWER_NORMAL_BRIGHTNESS);
+        power_backlight_set((uint8_t)parameters.values[APP_PARAM_BRIGHTNESS]);
         power_backlight_pin_set(1U);
         screen_on = 1U;
         if (ui_suspended != 0U)
@@ -385,10 +380,13 @@ static uint8_t power_stop(uint8_t automatic, SmaplingData_t *sample,
             result = 3U;
             break;
         }
-        /* 先停用上次的唤醒定时器，自动模式再重装完整约三秒周期。 */
+        /* 先停用上次的唤醒定时器，自动模式再按设定周期重装。 */
         (void)HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
+        /* 每次进入 STOP 前读取当前周期，参数页保存后下次定时唤醒立即使用新秒数。 */
+        AppParameters parameters = App_Parameters_Get();
         if (automatic != 0U
-            && HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, POWER_RTC_COUNTER,
+            && HAL_RTCEx_SetWakeUpTimer_IT(&hrtc,
+                                           parameters.values[APP_PARAM_WAKE_INTERVAL] - 1U,
                                            RTC_WAKEUPCLOCK_CK_SPRE_16BITS) != HAL_OK)
         {
             /* RTC 设置失败时不冒险进入无法定时检查的 STOP。 */
@@ -412,7 +410,7 @@ static uint8_t power_stop(uint8_t automatic, SmaplingData_t *sample,
         HAL_ResumeTick();
         SystemClock_Config();
         after = power_rtc_ms();
-        /* 处理 RTC 跨午夜回零；一次 STOP 最多约三秒。 */
+        /* 处理 RTC 跨午夜回零；一次 STOP 最多一个设定唤醒周期。 */
         elapsed = after >= before ? after - before : 86400000U - before + after;
         /* SysTick 中断暂停期间由 RTC 补回 RTOS 毫秒，保持任务延时语义。 */
         if (elapsed != 0U) (void)xTaskCatchUpTicks(elapsed);
@@ -436,12 +434,12 @@ static uint8_t power_stop(uint8_t automatic, SmaplingData_t *sample,
                     break;
                 }
             }
-            /* A 或 B 仍成立：关 ADC 后立即继续下一轮 STOP，不重计 15 秒。 */
+            /* A 或 B 仍成立：关 ADC 后立即继续下一轮 STOP。 */
             App_Smapling_Stop();
             adc_running = 0U;
         }
     } while (result == 0U);
-    /* 真正离开 STOP 流程后取消 RTC 周期中断，正常运行不必每三秒检查。 */
+    /* 真正离开 STOP 流程后取消 RTC 周期中断。 */
     (void)HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
     /* 丢弃本次探测留在队列中的旧帧，恢复运行后只处理持续采样的新帧。 */
     if (SmapToSystemHandle != NULL) (void)osMessageQueueReset(SmapToSystemHandle);
@@ -481,7 +479,7 @@ void StartSystemStateTask(void *argument)
     uint32_t seen_touch = touch_sequence, last_touch_tick = osKernelGetTickCount();
     /* 自动 A/B 首次连续成立的时间，与无触摸黑屏计时独立。 */
     uint32_t auto_idle_tick = 0U;
-    /* auto_counting 表示自动 15 秒计时有效；was_held 用于捕获松手瞬间。 */
+    /* auto_counting 表示自动熄屏计时有效；was_held 用于捕获松手瞬间。 */
     uint8_t auto_counting = 0U, was_held = 0U;
     /* 采样超时后只锁定一次保持点。 */
     uint8_t sample_stale = 0U;
@@ -490,7 +488,9 @@ void StartSystemStateTask(void *argument)
     AppLightMetrics light = {0};
     (void)argument;
     /* 初始化背光 PWM；ARR 为 99 时 CCR 为 100 即持续高电平。 */
-    power_backlight_set(POWER_NORMAL_BRIGHTNESS);
+    /* 先同步出厂扇区并加载最新用户参数，再按已生效的亮度启动背光。 */
+    App_Parameters_Init();
+    power_backlight_set((uint8_t)App_Parameters_Get().values[APP_PARAM_BRIGHTNESS]);
     if (HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_4) != HAL_OK) Error_Handler();
     /* CubeMX 初始化时已启动 RTC；平时关闭周期中断，仅自动 STOP 时启用。 */
     (void)HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
@@ -504,6 +504,10 @@ void StartSystemStateTask(void *argument)
         uint8_t sample_received = 0U, fault;
         /* 统一用本周期的 RTOS 毫秒值作倒计时基准，避免多处读数不一致。 */
         uint32_t now = osKernelGetTickCount();
+        /* 每轮读取整份快照；界面保存后无需重启即可改变熄屏、电机和光照逻辑。 */
+        AppParameters parameters = App_Parameters_Get();
+        uint32_t screen_idle_ms = (uint32_t)parameters.values[
+            current_mode == APP_MODE_AUTO ? APP_PARAM_AUTO_SLEEP : APP_PARAM_MANUAL_SLEEP] * 1000U;
         taskENTER_CRITICAL();
         fault = fault_requested;
         requested_mode = pending_mode;
@@ -522,7 +526,7 @@ void StartSystemStateTask(void *argument)
             auto_counting = 0U;
             power_screen_set(1U);
         }
-        /* 长按期间不睡；松开时重新起算完整的无触摸 15 秒。 */
+        /* 长按期间不睡；松开时重新起算设定的无触摸时间。 */
         if (was_held != 0U && touch_held == 0U) last_touch_tick = now;
         was_held = touch_held;
 
@@ -584,7 +588,8 @@ void StartSystemStateTask(void *argument)
                         : -MANUAL_RIGHT_SIGN;
                     /* 本次按钮要控制的物理轴。 */
                     SimpleFOC_MotorAxis axis = manual_axis(direction);
-                    if (MotorSpeed_SetTargetSpeed(axis, sign * MANUAL_SPEED_DPS / 360.0f) != 0U)
+                    if (MotorSpeed_SetTargetSpeed(axis,
+                        sign * parameters.values[APP_PARAM_MANUAL_SPEED] / 360.0f) != 0U)
                         active = direction;
                     else
                         (void)MotorPosition_HoldCurrent(axis);
@@ -638,21 +643,23 @@ void StartSystemStateTask(void *argument)
         if (screen_on != 0U)
         {
             if (touch_held == 0U && active == APP_MANUAL_STOP
-                && (uint32_t)(now - last_touch_tick) >= POWER_IDLE_MS - POWER_DIM_MS)
+                && (uint32_t)(now - last_touch_tick) >= screen_idle_ms - POWER_DIM_MS)
             {
-                if ((uint32_t)(now - last_touch_tick) >= POWER_IDLE_MS)
+                if ((uint32_t)(now - last_touch_tick) >= screen_idle_ms)
                     power_screen_set(0U);
-                else power_backlight_set(POWER_NORMAL_BRIGHTNESS * POWER_DIM_PERCENT / 100U);
+                else power_backlight_set((uint8_t)(parameters.values[APP_PARAM_BRIGHTNESS]
+                    * POWER_DIM_PERCENT / 100U));
             }
-            else power_backlight_set(POWER_NORMAL_BRIGHTNESS);
+            else power_backlight_set((uint8_t)parameters.values[APP_PARAM_BRIGHTNESS]);
         }
 
         /* 手动无触摸到期或自动 A/B 连续成立到期，才真正进入 STOP。 */
         if ((current_mode == APP_MODE_MANUAL && touch_held == 0U
              && active == APP_MANUAL_STOP
-             && (uint32_t)(now - last_touch_tick) >= POWER_IDLE_MS)
+             && (uint32_t)(now - last_touch_tick) >= screen_idle_ms)
             || (current_mode == APP_MODE_AUTO && auto_counting != 0U
-                && (uint32_t)(now - auto_idle_tick) >= POWER_AUTO_MS))
+                && (uint32_t)(now - auto_idle_tick) >=
+                   (uint32_t)parameters.values[APP_PARAM_AUTO_SLEEP] * 1000U))
         {
             /* STOP 内部可能经历多次 RTC 短暂唤醒；返回才是状态转换。 */
             uint8_t reason = power_stop(current_mode == APP_MODE_AUTO,
@@ -694,14 +701,17 @@ void StartSystemStateTask(void *argument)
                 && sample.right_top > AUTO_ALL_DARK_ADC
                 && sample.right_bottom > AUTO_ALL_DARK_ADC))
             {
-                if (light.horizontal_diff < -AUTO_HORIZONTAL_BAND
-                    || light.horizontal_diff > AUTO_HORIZONTAL_BAND)
+                /* Kp 以百分之一存储，乘 0.01 后恢复实际比例系数，双轴共用。 */
+                if (light.horizontal_diff < -(int32_t)parameters.values[APP_PARAM_HORIZONTAL_BAND]
+                    || light.horizontal_diff > (int32_t)parameters.values[APP_PARAM_HORIZONTAL_BAND])
                     command.horizontal_deg = auto_limit_target(
-                        AUTO_HORIZONTAL_SIGN * AUTO_LIGHT_KP * light.horizontal_diff);
-                if (light.vertical_diff < -AUTO_VERTICAL_BAND
-                    || light.vertical_diff > AUTO_VERTICAL_BAND)
+                        AUTO_HORIZONTAL_SIGN * parameters.values[APP_PARAM_AUTO_KP]
+                        * 0.01f * light.horizontal_diff);
+                if (light.vertical_diff < -(int32_t)parameters.values[APP_PARAM_VERTICAL_BAND]
+                    || light.vertical_diff > (int32_t)parameters.values[APP_PARAM_VERTICAL_BAND])
                     command.vertical_deg = auto_limit_target(
-                        AUTO_VERTICAL_SIGN * AUTO_LIGHT_KP * light.vertical_diff);
+                        AUTO_VERTICAL_SIGN * parameters.values[APP_PARAM_AUTO_KP]
+                        * 0.01f * light.vertical_diff);
             }
             auto_send_target(&command);
         }

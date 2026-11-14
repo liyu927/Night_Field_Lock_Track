@@ -19,7 +19,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # Set the project name
-set(CMAKE_PROJECT_NAME Solar_Light_Tracking_System)
+set(CMAKE_PROJECT_NAME Night_Field_Lock_Track)
 
 # Enable compile command to ease indexing with e.g. clangd
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
@@ -52,6 +52,7 @@ add_executable(${CMAKE_PROJECT_NAME}
         Core/App/app_system.c
         Core/App/app_system.h
         Core/App/SystemTask.c)
+target_sources(${CMAKE_PROJECT_NAME} PRIVATE Core/App/app_parameters.c)
 
 # 只编译当前屏幕、触摸和 user_home 页面实际需要的 LVGL 模块。
 # 不再递归编译 demos、测试、PC 平台驱动以及未使用的控件，减少 Flash 占用。
