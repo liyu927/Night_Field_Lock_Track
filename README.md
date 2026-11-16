@@ -11,7 +11,7 @@
 - 手动空闲或自动满足入睡条件时关闭背光并进入 MCU STOP 模式；触摸或 RTC 定时采光可唤醒系统。
 - 参数记录带序号和 CRC32 校验。用户参数 A/B 双槽保留新旧两个版本，电机偏移量另有独立双槽。
 
-**详细代码解析网页：**[Detailed_Analysis.html](word/Detailed_Analysis/Detailed_Analysis.html) 是预留给作者自行编写详细代码解析的网址页面。
+**详细代码解析网页：**D:\A_RTOS_MCU\project\Solar_Light_Tracking_System\Night_Field_Lock_Track\word\Detailed_Analysis是预留给作者自行编写详细代码解析的网址页面。
 
 ## 实物、原理图与 PCB 图片
 
