@@ -1,0 +1,325 @@
+<!DOCTYPE html><html lang='zh-CN'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>第 10 章 · 应用层框架与任务间接口（app_system.h / app_system.c / Types） - 项目代码逐行详解</title><style>
+:root{
+  --bg:#14161a; --panel:#1d2026; --panel2:#22262e; --code:#171a20;
+  --text:#d8dde5; --dim:#8b93a1; --accent:#4da3ff; --accent2:#7ee2b8;
+  --line:#2c313b; --warn:#f0b429;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:"Microsoft YaHei","PingFang SC",Segoe UI,sans-serif;font-size:15px;line-height:1.75}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px 80px}
+nav.topbar{position:sticky;top:0;z-index:9;background:rgba(20,22,26,.96);
+  border-bottom:1px solid var(--line);padding:10px 0;backdrop-filter:blur(6px)}
+nav.topbar .wrap{padding:0 20px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+nav.topbar a{background:var(--panel2);color:var(--text);padding:4px 12px;border-radius:16px;
+  font-size:13px;border:1px solid var(--line);white-space:nowrap}
+nav.topbar a.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+nav.topbar a:hover{text-decoration:none;filter:brightness(1.15)}
+header.chapter{margin:28px 0 8px}
+header.chapter h1{font-size:26px;margin:0 0 6px;color:#fff}
+header.chapter .meta{color:var(--dim);font-size:13px}
+.intro{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);
+  border-radius:8px;padding:14px 18px;margin:18px 0}
+.summary{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent2);
+  border-radius:8px;padding:14px 18px;margin:18px 0}
+.summary h4,.intro h4{margin:0 0 8px;font-size:15px;color:var(--accent2)}
+.intro h4{color:var(--accent)}
+.section{margin:34px 0}
+.section > h2{font-size:20px;color:#fff;border-bottom:1px solid var(--line);padding-bottom:8px}
+.section .filepath{font-family:Consolas,monospace;color:var(--warn);font-size:14px}
+.section .filedesc{color:var(--dim);font-size:14px;margin:6px 0 10px}
+table.code{width:100%;border-collapse:collapse;background:var(--code);
+  border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:13px}
+table.code th{background:var(--panel2);color:var(--dim);font-weight:600;text-align:left;
+  padding:7px 10px;font-size:12px;position:sticky;top:44px}
+table.code td{padding:3px 10px;vertical-align:top;border-top:1px solid #20242c}
+td.no{width:52px;text-align:right;color:#5c6575;font-family:Consolas,monospace;user-select:none}
+td.src{width:46%;font-family:Consolas,"Courier New",monospace;color:#c9d2e0;white-space:pre;
+  overflow-x:auto}
+td.exp{color:var(--text);font-size:13.5px}
+tr.comment td.src{color:#5f7060}
+tr.comment td.exp{color:var(--dim);font-style:normal}
+tr.blank td.src{color:#3a4150}
+.pill{display:inline-block;background:var(--panel2);border:1px solid var(--line);color:var(--dim);
+  border-radius:12px;padding:1px 10px;font-size:12px;margin-right:6px}
+.diagram{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;
+  margin:18px 0;font-family:Consolas,monospace;white-space:pre;overflow-x:auto;color:#bcd3f5;font-size:13px;line-height:1.55}
+.toc{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 18px;margin:14px 0}
+.toc a{display:block;padding:3px 0;font-size:14px}
+.badge{display:inline-block;background:#2b3a55;color:#9ecbff;border-radius:4px;padding:0 8px;font-size:12px;margin-right:6px}
+tr.auto td.exp{color:#9aa6b8}
+.auto-tag{display:inline-block;background:#2c3140;color:#8fa0b8;border:1px solid #3a4150;
+  border-radius:10px;padding:0 7px;font-size:11px;margin-right:5px;font-style:normal}
+</style></head><body><nav class='topbar'><div class='wrap'><a href='index.html'>目录</a><a href='ch01_startup.html'>01 启动流程</a><a href='ch02_interrupt.html'>02 中断与时基</a><a href='ch03_gpio_dma.html'>03 GPIO/DMA</a><a href='ch04_adc.html'>04 ADC 采样</a><a href='ch05_i2c.html'>05 I2C 底层</a><a href='ch06_spi.html'>06 SPI 底层</a><a href='ch07_tim.html'>07 定时器PWM</a><a href='ch08_usart_rtc.html'>08 串口/RTC</a><a href='ch09_rtos.html'>09 RTOS骨架</a><a href='ch10_appframe.html' class='active'>10 应用框架</a><a href='ch11_systemtask.html'>11 SystemTask</a><a href='ch12_algorithm.html'>12 PID/滤波</a><a href='ch13_foc.html'>13 FOC/SVPWM</a><a href='ch14_w25q64.html'>14 W25Q64存储</a><a href='ch15_parameters.html'>15 参数管理</a><a href='ch16_sensors.html'>16 传感器驱动</a><a href='ch17_lvgl_port.html'>17 LVGL移植</a><a href='ch18_ui.html'>18 UI界面</a><a href='ch19.html'>19 调试与VOFA</a></div></nav>
+<div class='wrap'>
+<header class='chapter'><h1>第 10 章 · 应用层框架与任务间接口（app_system.h / app_system.c / Types）</h1><div class='meta'>文件：Core/App/app_system.h（87 行）、Core/App/app_system.c（117 行）、Core/Types/SmaplingTypes.h、Core/Types/AppMotorCommand.h</div></header>
+<div class='intro'><h4>本章导读</h4><p>本章是“应用层的接线板”：定义了模式枚举、两个消息结构体，以及把各任务连接起来的全部应用函数。app_system.c 实现了光照采样任务的三步（Init/Stop/Run）、UI 任务的两步（Init/Run）与电机任务的四个转发接口。所有跨任务数据交换要么走队列，要么走这里的临界区保护函数——绝不裸共享变量。</p></div>
+<div class='section'>
+<h2><span class='filepath'>Core/Types/SmaplingTypes.h</span> <span class='pill'>0 行</span></h2>
+<div class='filedesc'>光照采样数据结构：一帧四路滤波后的 ADC 值。</div>
+<table class='code'>
+<tr><th>行号</th><th>代码（Core/Types/SmaplingTypes.h）</th><th>逐行讲解</th></tr>
+<tr class='auto'><td class='no'>1</td><td class='src'>#ifndef SMAPLING_TYPES_H</td><td class='exp'><span class='auto-tag'>自动</span>条件编译入口（ifndef）：满足条件才编译下面的内容，不满足则整段跳过。</td></tr>
+<tr class='auto'><td class='no'>2</td><td class='src'>#define SMAPLING_TYPES_H</td><td class='exp'><span class='auto-tag'>自动</span>定义宏 <code>SMAPLING_TYPES_H</code>：编译前做纯文本替换，详见对应头文件小总结。</td></tr>
+<tr class='blank'><td class='no'>3</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>4</td><td class='src'>#include &lt;stdint.h&gt;</td><td class='exp'><span class='auto-tag'>自动</span>包含系统头文件 &lt;stdint.h&gt;：引入标准库/库的声明。</td></tr>
+<tr class='blank'><td class='no'>5</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>6</td><td class='src'>/* 四路光敏电阻经滤波后的光照数据，用于任务间队列传递。 */</td><td class='exp'>结构体注释：四路光敏电阻经滤波后的光照数据。</td></tr>
+<tr class=''><td class='no'>7</td><td class='src'>typedef struct</td><td class='exp'>定义 SmaplingData_t 结构体——两条光照队列的元素类型。</td></tr>
+<tr class=''><td class='no'>8</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>9</td><td class='src'>    uint16_t left_top;       /* PA0：左上角光敏电阻的滤波 ADC 值。 */</td><td class='exp'>左上光敏（PA0）的滤波值，16 位 0~4095。</td></tr>
+<tr class=''><td class='no'>10</td><td class='src'>    uint16_t left_bottom;    /* PA1：左下角光敏电阻的滤波 ADC 值。 */</td><td class='exp'>左下光敏（PA1）。</td></tr>
+<tr class=''><td class='no'>11</td><td class='src'>    uint16_t right_top;      /* PA2：右上角光敏电阻的滤波 ADC 值。 */</td><td class='exp'>右上光敏（PA2）。</td></tr>
+<tr class=''><td class='no'>12</td><td class='src'>    uint16_t right_bottom;   /* PA3：右下角光敏电阻的滤波 ADC 值。 */</td><td class='exp'>右下光敏（PA3）。</td></tr>
+<tr class='auto'><td class='no'>13</td><td class='src'>} SmaplingData_t;</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='blank'><td class='no'>14</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>15</td><td class='src'>#endif</td><td class='exp'><span class='auto-tag'>自动</span>结束一个条件编译块。</td></tr>
+</table>
+<div class='summary'><h4>本文件小总结</h4><b>SmaplingTypes.h 总结：</b>8 字节的纯数据快照。队列按值拷贝传递，因此发送方修改原值不影响接收方。</div>
+</div>
+<div class='section'>
+<h2><span class='filepath'>Core/Types/AppMotorCommand.h</span> <span class='pill'>0 行</span></h2>
+<div class='filedesc'>自动追光角度命令结构体：双轴相对目标角。</div>
+<table class='code'>
+<tr><th>行号</th><th>代码（Core/Types/AppMotorCommand.h）</th><th>逐行讲解</th></tr>
+<tr class='auto'><td class='no'>1</td><td class='src'>#ifndef APP_MOTOR_COMMAND_H</td><td class='exp'><span class='auto-tag'>自动</span>条件编译入口（ifndef）：满足条件才编译下面的内容，不满足则整段跳过。</td></tr>
+<tr class='auto'><td class='no'>2</td><td class='src'>#define APP_MOTOR_COMMAND_H</td><td class='exp'><span class='auto-tag'>自动</span>定义宏 <code>APP_MOTOR_COMMAND_H</code>：编译前做纯文本替换，详见对应头文件小总结。</td></tr>
+<tr class='blank'><td class='no'>3</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>4</td><td class='src'>/* 系统任务发给电机任务的双轴相对角度命令；零度表示锁定当前位置。 */</td><td class='exp'>注释：零度表示锁定当前位置（位置保持）。</td></tr>
+<tr class=''><td class='no'>5</td><td class='src'>typedef struct</td><td class='exp'>定义 AppMotorCommand——SmapSystemToMotor 队列的元素类型。</td></tr>
+<tr class=''><td class='no'>6</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>7</td><td class='src'>    float vertical_deg;      /* TIM1 竖直轴的相对目标角度。 */</td><td class='exp'>竖直轴（TIM1）相对目标角度，单位度，正负即方向。</td></tr>
+<tr class=''><td class='no'>8</td><td class='src'>    float horizontal_deg;    /* TIM8 水平轴的相对目标角度。 */</td><td class='exp'>水平轴（TIM8）相对目标角度。</td></tr>
+<tr class='auto'><td class='no'>9</td><td class='src'>} AppMotorCommand;</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='blank'><td class='no'>10</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>11</td><td class='src'>#endif</td><td class='exp'><span class='auto-tag'>自动</span>结束一个条件编译块。</td></tr>
+</table>
+<div class='summary'><h4>本文件小总结</h4><b>AppMotorCommand.h 总结：</b>系统任务每次算出“相对当前位置转多少度”，装进这个结构体发队列。MotorTask 排空队列只取最新一条——过期光照命令不执行。</div>
+</div>
+<div class='section'>
+<h2><span class='filepath'>Core/App/app_system.h</span> <span class='pill'>0 行</span></h2>
+<div class='filedesc'>应用层公共接口声明：模式枚举、手动方向、采样/UI/电机三类函数。</div>
+<table class='code'>
+<tr><th>行号</th><th>代码（Core/App/app_system.h）</th><th>逐行讲解</th></tr>
+<tr class='auto'><td class='no'>1</td><td class='src'>#ifndef NIGHT_FIELD_LOCK_TRACK_APP_SYSTEM_H</td><td class='exp'><span class='auto-tag'>自动</span>条件编译入口（ifndef）：满足条件才编译下面的内容，不满足则整段跳过。</td></tr>
+<tr class='auto'><td class='no'>2</td><td class='src'>#define NIGHT_FIELD_LOCK_TRACK_APP_SYSTEM_H</td><td class='exp'><span class='auto-tag'>自动</span>定义宏 <code>NIGHT_FIELD_LOCK_TRACK_APP_SYSTEM_H</code>：编译前做纯文本替换，详见对应头文件小总结。</td></tr>
+<tr class='blank'><td class='no'>3</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>4</td><td class='src'>#include &lt;stdint.h&gt;</td><td class='exp'>包含标准整型定义。</td></tr>
+<tr class=''><td class='no'>5</td><td class='src'>#include "SimpleFOC_Motor.h"</td><td class='exp'>包含电机模块（要用 SimpleFOC_MotorAxis 等类型）。</td></tr>
+<tr class='blank'><td class='no'>6</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>7</td><td class='src'>typedef enum</td><td class='exp'>定义手动方向枚举。</td></tr>
+<tr class=''><td class='no'>8</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>9</td><td class='src'>    APP_MANUAL_STOP = 0,</td><td class='exp'>0：停止。</td></tr>
+<tr class=''><td class='no'>10</td><td class='src'>    APP_MANUAL_UP,</td><td class='exp'>1：上。</td></tr>
+<tr class=''><td class='no'>11</td><td class='src'>    APP_MANUAL_DOWN,</td><td class='exp'>2：下。</td></tr>
+<tr class=''><td class='no'>12</td><td class='src'>    APP_MANUAL_LEFT,</td><td class='exp'>3：左。</td></tr>
+<tr class=''><td class='no'>13</td><td class='src'>    APP_MANUAL_RIGHT</td><td class='exp'>4：右。</td></tr>
+<tr class='auto'><td class='no'>14</td><td class='src'>} AppManualDirection;</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='blank'><td class='no'>15</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>16</td><td class='src'>/* 手动、自动与等待人工请求恢复的异常模式。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>17</td><td class='src'>typedef enum</td><td class='exp'>定义系统模式枚举。</td></tr>
+<tr class=''><td class='no'>18</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>19</td><td class='src'>    APP_MODE_MANUAL = 0,</td><td class='exp'>0：手动模式。</td></tr>
+<tr class=''><td class='no'>20</td><td class='src'>    APP_MODE_AUTO,</td><td class='exp'>1：自动追光模式。</td></tr>
+<tr class=''><td class='no'>21</td><td class='src'>    APP_MODE_ERROR</td><td class='exp'>2：异常模式（故障锁存，需人工恢复）。</td></tr>
+<tr class='auto'><td class='no'>22</td><td class='src'>} AppMode;</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='blank'><td class='no'>23</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>24</td><td class='src'>/* 由触摸 EXTI 中断调用，只记录唤醒事件并屏蔽本次手势。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>25</td><td class='src'>void App_System_TouchInterrupt(void);</td><td class='exp'>App_System_TouchInterrupt：触摸 EXTI 中断调用的接口（只记录事件并屏蔽本次手势）。</td></tr>
+<tr class='comment'><td class='no'>26</td><td class='src'>/* LVGL 轮询触摸状态后调用；按住期间不累计无触摸时间。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>27</td><td class='src'>void App_System_TouchHeld(uint8_t held);</td><td class='exp'>App_System_TouchHeld：LVGL 轮询后上报“手指是否按住”，按住期间系统任务不累计熄屏时间。</td></tr>
+<tr class='comment'><td class='no'>28</td><td class='src'>/* LVGL 输入回调调用；返回 1 时本次触摸必须作为松开处理。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>29</td><td class='src'>uint8_t App_System_SuppressTouch(uint8_t pressed);</td><td class='exp'>App_System_SuppressTouch：黑屏唤醒手势屏蔽接口；返回 1 时 LVGL 必须把本次触摸当松开处理。</td></tr>
+<tr class='comment'><td class='no'>30</td><td class='src'>/* STOP 前停止 ADC 循环 DMA，避免外设持续工作和旧数据残留。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>31</td><td class='src'>void App_Smapling_Stop(void);</td><td class='exp'>App_Smapling_Stop：STOP 前停止 ADC 循环 DMA。</td></tr>
+<tr class='blank'><td class='no'>32</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>33</td><td class='src'>/* UI 请求切换模式，实际模式只由系统状态任务更新。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>34</td><td class='src'>void App_System_RequestMode(AppMode mode);</td><td class='exp'>App_System_RequestMode：UI 请求切模式，实际切换只由系统任务执行。</td></tr>
+<tr class='blank'><td class='no'>35</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>36</td><td class='src'>/* 电机任务用此接口拒绝已经退出自动模式的旧光照命令。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>37</td><td class='src'>uint8_t App_System_IsAutoMode(void);</td><td class='exp'>App_System_IsAutoMode：电机任务用它拒绝已退出自动模式的旧光照命令。</td></tr>
+<tr class='blank'><td class='no'>38</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>39</td><td class='src'>/* 电机等任务报告故障，由系统任务统一进入异常模式。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>40</td><td class='src'>void App_System_ReportFault(void);</td><td class='exp'>App_System_ReportFault：电机任务报告故障，系统任务统一进入异常模式。</td></tr>
+<tr class='blank'><td class='no'>41</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>42</td><td class='src'>/* UI 任务领取首次进入异常模式的弹窗通知。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>43</td><td class='src'>uint8_t App_System_TakeErrorPopup(void);</td><td class='exp'>App_System_TakeErrorPopup：UI 任务领取一次性的异常弹窗通知。</td></tr>
+<tr class='blank'><td class='no'>44</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>45</td><td class='src'>/* UI 请求检查电机并尝试退出异常模式；结果由 UI 任务稍后领取。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>46</td><td class='src'>void App_System_RequestRecovery(void);</td><td class='exp'>App_System_RequestRecovery：UI 请求电机任务复查并尝试退出异常。</td></tr>
+<tr class='comment'><td class='no'>47</td><td class='src'>/* 返回 0 表示未完成，1 表示恢复成功，2 表示恢复失败。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>48</td><td class='src'>uint8_t App_System_TakeRecoveryResult(void);</td><td class='exp'>App_System_TakeRecoveryResult：领取恢复结果（0 未完成/1 成功/2 失败）。</td></tr>
+<tr class='blank'><td class='no'>49</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>50</td><td class='src'>/* UI 投递手动方向或停止请求；按住事件持续续发，超时则由系统任务转入位置保持。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>51</td><td class='src'>void App_ManualControl_Send(AppManualDirection direction);</td><td class='exp'>App_ManualControl_Send：UI 投递手动方向命令（按住持续续发）。</td></tr>
+<tr class='blank'><td class='no'>52</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>53</td><td class='src'>//============ 光照采样任务应用层函数 ============</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>54</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>55</td><td class='src'>/* 启动 ADC1 DMA，并清空四路滤波状态；采样任务启动时调用一次。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>56</td><td class='src'>void App_Smapling_Init(void);</td><td class='exp'>App_Smapling_Init：启动 ADC DMA 并清滤波历史（任务启动时调一次）。</td></tr>
+<tr class='blank'><td class='no'>57</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>58</td><td class='src'>/* 读取四路 DMA 值，依次做中值和低通滤波，再非阻塞发布一帧；每 20 ms 调用一次。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>59</td><td class='src'>void App_Smapling_Run(void);</td><td class='exp'>App_Smapling_Run：四路滤波并发布一帧，每 20ms 调一次。</td></tr>
+<tr class='blank'><td class='no'>60</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>61</td><td class='src'>//============ UI 任务应用层函数 ============</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>62</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>63</td><td class='src'>/* 初始化 LVGL、显示屏、触摸输入和首页；UI 任务启动时调用一次。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>64</td><td class='src'>void App_Ui_Init(void);</td><td class='exp'>App_Ui_Init：初始化 LVGL、屏幕、触摸和首页。</td></tr>
+<tr class='blank'><td class='no'>65</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>66</td><td class='src'>/* 处理一次 LVGL 定时器；返回建议的下次调用间隔，单位毫秒。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>67</td><td class='src'>uint32_t App_Ui_Run(void);</td><td class='exp'>App_Ui_Run：处理一轮 LVGL，返回建议的下次间隔。</td></tr>
+<tr class='blank'><td class='no'>68</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>69</td><td class='src'>//============ 电机任务应用层函数 ============</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>70</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>71</td><td class='src'>/* 上电准备两轴后进入速度模式；speed_rps 单位圈/秒，正负号决定方向。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>72</td><td class='src'>/* 调用后长期运行；绝对值不得超过 0.5 圈/秒，0 表示目标速度为零但不会关闭 EN。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>73</td><td class='src'>void App_MotorSpeed_Run(float speed_rps);</td><td class='exp'>App_MotorSpeed_Run：两轴进入速度模式长期运行。</td></tr>
+<tr class='blank'><td class='no'>74</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>75</td><td class='src'>/* 上电准备两轴后进入位置模式；delta_deg 为相对当前位置的角度，单位度。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>76</td><td class='src'>/* 调用后长期运行；每次新命令重设位置命令零点，不清零编码器或速度反馈。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>77</td><td class='src'>void App_MotorPosition_Run(float delta_deg);</td><td class='exp'>App_MotorPosition_Run：两轴进入位置模式（目标相对当前位置）。</td></tr>
+<tr class='blank'><td class='no'>78</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>79</td><td class='src'>/* 运行期间更新速度目标并切换到速度模式；未就绪、故障或超限返回 0，成功返回 1。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>80</td><td class='src'>/* speed_rps 单位圈/秒，允许范围为 -0.5～0.5；0 不关闭 EN，仅可在任务上下文调用。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>81</td><td class='src'>uint8_t App_MotorSpeed_SetTargetSpeed(SimpleFOC_MotorAxis axis, float speed_rps);</td><td class='exp'>App_MotorSpeed_SetTargetSpeed：运行中改速度目标（-0.5~0.5 圈/秒）。</td></tr>
+<tr class='blank'><td class='no'>82</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>83</td><td class='src'>/* 运行期间更新相对角度目标并切换到位置模式；未就绪、故障或超限返回 0。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>84</td><td class='src'>/* delta_deg 单位度，范围为 -360～360；频繁调用会持续把目标推向当前位置前方。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>85</td><td class='src'>uint8_t App_MotorPosition_SetTargetDegrees(SimpleFOC_MotorAxis axis, float delta_deg);</td><td class='exp'>App_MotorPosition_SetTargetDegrees：运行中改相对角度目标（-360~360 度）。</td></tr>
+<tr class='blank'><td class='no'>86</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>87</td><td class='src'>#endif /* NIGHT_FIELD_LOCK_TRACK_APP_SYSTEM_H */</td><td class='exp'><span class='auto-tag'>自动</span>结束一个条件编译块。</td></tr>
+</table>
+<div class='summary'><h4>本文件小总结</h4><b>app_system.h 总结：</b>这一头文件是“任务间协议书”：谁（UI/系统/电机任务）可以调用什么、线程安全规则是什么（哪些只能在任务上下文调用）。模式切换、故障上报、恢复请求等全部经由这些接口中转到系统任务统一裁决。</div>
+</div>
+<div class='section'>
+<h2><span class='filepath'>Core/App/app_system.c</span> <span class='pill'>0 行</span></h2>
+<div class='filedesc'>应用层实现：滤波发布、LVGL 初始化/驱动、电机命令转发。</div>
+<table class='code'>
+<tr><th>行号</th><th>代码（Core/App/app_system.c）</th><th>逐行讲解</th></tr>
+<tr class=''><td class='no'>1</td><td class='src'>#include "app_system.h"</td><td class='exp'>包含本模块头文件。</td></tr>
+<tr class='blank'><td class='no'>2</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>3</td><td class='src'>#include "adc.h"</td><td class='exp'>包含 adc.h：要用 ADC1_DMA_Start 和 adc1_dma_buf。</td></tr>
+<tr class=''><td class='no'>4</td><td class='src'>#include "cmsis_os2.h"</td><td class='exp'>包含 CMSIS 头（队列 API）。</td></tr>
+<tr class=''><td class='no'>5</td><td class='src'>#include "filter.h"</td><td class='exp'>包含滤波模块（中值+低通）。</td></tr>
+<tr class=''><td class='no'>6</td><td class='src'>#include "FreeRTOS.h"</td><td class='exp'>包含 FreeRTOS 头（taskENTER_CRITICAL 等由 cmsis_os2 间接也需要）。</td></tr>
+<tr class=''><td class='no'>7</td><td class='src'>#include "lvgl.h"</td><td class='exp'>包含 LVGL 总头。</td></tr>
+<tr class=''><td class='no'>8</td><td class='src'>#include "lv_port_indev.h"</td><td class='exp'>包含输入设备移植层（lv_port_indev_init）。</td></tr>
+<tr class=''><td class='no'>9</td><td class='src'>#include "lv_port_lcd_stm32.h"</td><td class='exp'>包含显示移植层（lv_port_disp_init）。</td></tr>
+<tr class=''><td class='no'>10</td><td class='src'>#include "main.h"</td><td class='exp'>包含 main.h（HAL 句柄）。</td></tr>
+<tr class=''><td class='no'>11</td><td class='src'>#include "SimpleFOC_Motor.h"</td><td class='exp'>包含电机模块。</td></tr>
+<tr class=''><td class='no'>12</td><td class='src'>#include "SmaplingTypes.h"</td><td class='exp'>包含光照数据类型。</td></tr>
+<tr class=''><td class='no'>13</td><td class='src'>#include "task.h"</td><td class='exp'>包含 FreeRTOS task 头（vTaskDelay 给 LVGL 用）。</td></tr>
+<tr class=''><td class='no'>14</td><td class='src'>#include "user_home.h"</td><td class='exp'>包含首页 UI（user_home_create）。</td></tr>
+<tr class=''><td class='no'>15</td><td class='src'>#include &lt;string.h&gt;</td><td class='exp'>包含 string.h（memset）。</td></tr>
+<tr class='blank'><td class='no'>16</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>17</td><td class='src'>#define LIGHT_LOW_PASS_SHIFT 3U /* 一阶低通系数为 1/8。 */</td><td class='exp'>低通滤波强度宏：系数 1/8，即每次输出向新采样值靠近 1/8（shift=3 就是 ÷8）。值越小越平滑、延迟越大。</td></tr>
+<tr class='blank'><td class='no'>18</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>19</td><td class='src'>/* 四路滤波历史必须跨采样周期保留，由初始化函数统一清零。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>20</td><td class='src'>static Median3Filter_t g_light_median[4];</td><td class='exp'>四路中值滤波器的静态实例数组：跨采样周期保留历史，这是 static 的原因。</td></tr>
+<tr class=''><td class='no'>21</td><td class='src'>static LowPassFilter_t g_light_low_pass[4];</td><td class='exp'>四路低通滤波器实例数组。</td></tr>
+<tr class=''><td class='no'>22</td><td class='src'>extern osMessageQueueId_t SmaplingHandle;</td><td class='exp'>extern 引用 freertos.c 创建的 Smapling 队列（发给 UI）。</td></tr>
+<tr class='comment'><td class='no'>23</td><td class='src'>/* 四路滤波结果同时提供给系统状态任务。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>24</td><td class='src'>extern osMessageQueueId_t SmapToSystemHandle;</td><td class='exp'>extern 引用 SmapToSystem 队列（发给系统任务）。</td></tr>
+<tr class='blank'><td class='no'>25</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>26</td><td class='src'>//============ 光照采样任务应用层函数 ============</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>27</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>28</td><td class='src'>/* 采样任务启动时清空滤波历史并启动循环 ADC DMA。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>29</td><td class='src'>void App_Smapling_Init(void)</td><td class='exp'><b>App_Smapling_Init()</b>：采样任务/唤醒探测前的复位入口。</td></tr>
+<tr class=''><td class='no'>30</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>31</td><td class='src'>    memset(g_light_median, 0, sizeof(g_light_median));</td><td class='exp'>把 4 个中值滤波器状态清零（initialized=0，下次调用会自动用首个样本填充）。</td></tr>
+<tr class=''><td class='no'>32</td><td class='src'>    memset(g_light_low_pass, 0, sizeof(g_light_low_pass));</td><td class='exp'>把 4 个低通滤波器状态清零。</td></tr>
+<tr class=''><td class='no'>33</td><td class='src'>    ADC1_DMA_Start();</td><td class='exp'>ADC1_DMA_Start()：重启四通道循环 DMA。进 STOP 前 App_Smapling_Stop 停过，这里重新开。</td></tr>
+<tr class=''><td class='no'>34</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>35</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>36</td><td class='src'>/* 进入 STOP 前停止连续 ADC DMA，唤醒后再由采样初始化函数启动。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>37</td><td class='src'>void App_Smapling_Stop(void)</td><td class='exp'><b>App_Smapling_Stop()</b>：STOP 前停止采样。</td></tr>
+<tr class=''><td class='no'>38</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>39</td><td class='src'>    /* 不改动滤波结果；STOP 流程会清队列，探测前重新初始化滤波器。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>40</td><td class='src'>    (void)HAL_ADC_Stop_DMA(&amp;hadc1);</td><td class='exp'>HAL_ADC_Stop_DMA：停 ADC 并停 DMA。STOP 模式下外设时钟会停，不主动停的话唤醒后缓冲里是旧数据。</td></tr>
+<tr class=''><td class='no'>41</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>42</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>43</td><td class='src'>/* 四路数据按 PA0～PA3 顺序滤波并发布最新快照。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>44</td><td class='src'>void App_Smapling_Run(void)</td><td class='exp'><b>App_Smapling_Run()</b>：每 20ms 执行的采样+滤波+发布。</td></tr>
+<tr class=''><td class='no'>45</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>46</td><td class='src'>    SmaplingData_t data;</td><td class='exp'>声明本帧数据。</td></tr>
+<tr class='blank'><td class='no'>47</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>48</td><td class='src'>    data.left_top = Filter_LowPass(&amp;g_light_low_pass[0],</td><td class='exp'>第 1 路（左上）：先 Filter_Median3Update 用最新 ADC 原始值滚动三点中值（去毛刺），再 Filter_LowPass 对中值做 1/8 低通（平滑）。</td></tr>
+<tr class='auto'><td class='no'>49</td><td class='src'>        Filter_Median3Update(&amp;g_light_median[0], adc1_dma_buf[0]), LIGHT_LOW_PASS_SHIFT);</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>50</td><td class='src'>    data.left_bottom = Filter_LowPass(&amp;g_light_low_pass[1],</td><td class='exp'>第 2 路（左下）同样“中值→低通”两级滤波。</td></tr>
+<tr class='auto'><td class='no'>51</td><td class='src'>        Filter_Median3Update(&amp;g_light_median[1], adc1_dma_buf[1]), LIGHT_LOW_PASS_SHIFT);</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>52</td><td class='src'>    data.right_top = Filter_LowPass(&amp;g_light_low_pass[2],</td><td class='exp'>第 3 路（右上）。</td></tr>
+<tr class='auto'><td class='no'>53</td><td class='src'>        Filter_Median3Update(&amp;g_light_median[2], adc1_dma_buf[2]), LIGHT_LOW_PASS_SHIFT);</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>54</td><td class='src'>    data.right_bottom = Filter_LowPass(&amp;g_light_low_pass[3],</td><td class='exp'>第 4 路（右下）。</td></tr>
+<tr class='auto'><td class='no'>55</td><td class='src'>        Filter_Median3Update(&amp;g_light_median[3], adc1_dma_buf[3]), LIGHT_LOW_PASS_SHIFT);</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='blank'><td class='no'>56</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>57</td><td class='src'>    (void)osMessageQueuePut(SmaplingHandle, &amp;data, 0U, 0U);</td><td class='exp'>把本帧放进 Smapling 队列（UI 底栏）。超时 0=非阻塞，队列满则丢弃本帧（UI 显示可容忍丢帧）。</td></tr>
+<tr class=''><td class='no'>58</td><td class='src'>    if (SmapToSystemHandle != NULL</td><td class='exp'>再尝试放进 SmapToSystem 队列（系统任务）。非空指针检查防止初始化早期崩溃。</td></tr>
+<tr class='auto'><td class='no'>59</td><td class='src'>        &amp;&amp; osMessageQueuePut(SmapToSystemHandle, &amp;data, 0U, 0U) != osOK)</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>60</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>61</td><td class='src'>        /* 队列满时丢弃最旧帧，保证系统任务能取得新光照。 */</td><td class='exp'>队列满时：先取出最旧一帧丢掉，再把新帧塞进去——保证系统任务拿到的是新光照（自动追光用新数据，旧光照没有意义）。</td></tr>
+<tr class='auto'><td class='no'>62</td><td class='src'>        SmaplingData_t old_data;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>old_data</code>（类型 <code>SmaplingData_t</code>）。</td></tr>
+<tr class='auto'><td class='no'>63</td><td class='src'>        (void)osMessageQueueGet(SmapToSystemHandle, &amp;old_data, NULL, 0U);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>osMessageQueueGet()</code>：从 CMSIS-RTOS2 消息队列取出一条消息；超时参数为 0 表示队列为空时立即返回失败。</td></tr>
+<tr class='auto'><td class='no'>64</td><td class='src'>        (void)osMessageQueuePut(SmapToSystemHandle, &amp;data, 0U, 0U);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>osMessageQueuePut()</code>：向 CMSIS-RTOS2 消息队列投递一条消息；超时参数为 0 表示队列已满时立即返回失败而不等待。</td></tr>
+<tr class=''><td class='no'>65</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>66</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+</table><div class='summary'><b>小总结（光照采样链路）：</b>本段代码完成的工作是“从 DMA 缓冲到任务队列”的数据加工：ADC1_DMA 循环写入的四个原始值先经<b>三点中值滤波</b>剔除偶发毛刺，再经 <b>1/8 一阶低通</b>平滑噪声，然后打包成 SmaplingData_t 发布到两条队列。队列满时的策略不同：UI 队列直接丢新帧（显示无所谓），系统队列挤旧留新（追光必须用最新光照）——同一份数据、两种丢弃策略，体现用途差异。</div><table class='code'><tr><th>行号</th><th>代码（Core/App/app_system.c）</th><th>逐行讲解</th></tr>
+<tr class='blank'><td class='no'>67</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>68</td><td class='src'>//============ UI 任务应用层函数 ============</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>69</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>70</td><td class='src'>/* 建立 LVGL 时钟、显示、输入设备和首页。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>71</td><td class='src'>void App_Ui_Init(void)</td><td class='exp'><b>App_Ui_Init()</b>：UI 任务启动时调用一次。</td></tr>
+<tr class=''><td class='no'>72</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>73</td><td class='src'>    lv_init();</td><td class='exp'>lv_init：初始化 LVGL 内核（内存池、定时器系统、默认主题）。</td></tr>
+<tr class=''><td class='no'>74</td><td class='src'>    lv_tick_set_cb(HAL_GetTick);</td><td class='exp'>lv_tick_set_cb(HAL_GetTick)：把 LVGL 的时基接到 HAL 毫秒计数——LVGL 的动画时间、触摸超时都用它。</td></tr>
+<tr class=''><td class='no'>75</td><td class='src'>    lv_delay_set_cb(vTaskDelay);</td><td class='exp'>lv_delay_set_cb(vTaskDelay)：LVGL 内部需要延时的地方改为 RTOS 延时（让出 CPU，而不是空转）。</td></tr>
+<tr class=''><td class='no'>76</td><td class='src'>    lv_port_disp_init();</td><td class='exp'>lv_port_disp_init：创建 LVGL 显示设备、绑定双缓冲和 SPI DMA 刷屏（见 LVGL 移植章）。</td></tr>
+<tr class=''><td class='no'>77</td><td class='src'>    lv_port_indev_init();</td><td class='exp'>lv_port_indev_init：注册触摸输入设备（见 LVGL 移植章）。</td></tr>
+<tr class=''><td class='no'>78</td><td class='src'>    user_home_create();</td><td class='exp'>user_home_create：构建主界面、参数页、底栏和弹窗（见 UI 章）。</td></tr>
+<tr class=''><td class='no'>79</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>80</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>81</td><td class='src'>/* 执行一轮 UI 更新并交还 LVGL 建议的延时。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>82</td><td class='src'>uint32_t App_Ui_Run(void)</td><td class='exp'><b>App_Ui_Run()</b>：UI 每轮执行。</td></tr>
+<tr class=''><td class='no'>83</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>84</td><td class='src'>    /* LVGL 只在 UI 任务中操作；异常通知由系统任务锁存到首次领取。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>85</td><td class='src'>    if (App_System_TakeErrorPopup() != 0U)</td><td class='exp'>领取异常弹窗通知（一次性标志，临界区保护）——有则弹出“设备异常”对话框。</td></tr>
+<tr class='auto'><td class='no'>86</td><td class='src'>        user_home_show_error();</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>user_home_show_error()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>87</td><td class='src'>    uint8_t recovery_result = App_System_TakeRecoveryResult();</td><td class='exp'>领取电机恢复结果（0/1/2）。</td></tr>
+<tr class='auto'><td class='no'>88</td><td class='src'>    if (recovery_result != 0U)</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class=''><td class='no'>89</td><td class='src'>        user_home_show_recovery_result(recovery_result);</td><td class='exp'>非 0 则在界面显示恢复成功/失败提示。</td></tr>
+<tr class=''><td class='no'>90</td><td class='src'>    return lv_timer_handler();</td><td class='exp'>lv_timer_handler：执行一轮 LVGL 内核调度（渲染脏区、处理触摸事件、运行定时器），返回建议的下次间隔毫秒数。</td></tr>
+<tr class=''><td class='no'>91</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+</table><div class='summary'><b>小总结（UI 链路）：</b>App_Ui_Init 把 LVGL 与 STM32 世界“接上电”：时基用 HAL_GetTick、延时用 vTaskDelay、显示用 SPI DMA 移植层、输入用 FT6336 移植层，最后建好首页。App_Ui_Run 每轮先领取系统任务锁存的通知（异常弹窗/恢复结果），再跑 lv_timer_handler。原理：LVGL 不是线程安全的，规定它只在 UI 任务中被调用；系统任务只能通过“置标志+UI 领取”的方式请求弹窗，避免跨任务直接操作界面。</div><table class='code'><tr><th>行号</th><th>代码（Core/App/app_system.c）</th><th>逐行讲解</th></tr>
+<tr class='blank'><td class='no'>92</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>93</td><td class='src'>//============ 电机任务应用层函数 ============</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>94</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>95</td><td class='src'>/* 准备并启动两轴速度环；后续只用各自 AS5600 的相邻角度差求速度。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>96</td><td class='src'>void App_MotorSpeed_Run(float speed_rps)</td><td class='exp'><b>App_MotorSpeed_Run</b>：电机任务的应用层入口之一。</td></tr>
+<tr class=''><td class='no'>97</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>98</td><td class='src'>    SimpleFOC_Motor_RunTask(SIMPLEFOC_CONTROL_SPEED, speed_rps);</td><td class='exp'>直接转发到底层 SimpleFOC_Motor_RunTask(速度模式)。speed_rps 单位圈/秒。</td></tr>
+<tr class=''><td class='no'>99</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>100</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>101</td><td class='src'>/* 准备并启动两轴位置、速度双环，目标角度相对各自命令起点。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>102</td><td class='src'>void App_MotorPosition_Run(float delta_deg)</td><td class='exp'><b>App_MotorPosition_Run</b>：位置模式入口。</td></tr>
+<tr class=''><td class='no'>103</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>104</td><td class='src'>    SimpleFOC_Motor_RunTask(SIMPLEFOC_CONTROL_POSITION, delta_deg);</td><td class='exp'>转发到底层位置模式；delta_deg 相对当前位置。</td></tr>
+<tr class=''><td class='no'>105</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>106</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>107</td><td class='src'>/* 运行期间改写速度目标；返回底层命令是否被接收。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>108</td><td class='src'>uint8_t App_MotorSpeed_SetTargetSpeed(SimpleFOC_MotorAxis axis, float speed_rps)</td><td class='exp'><b>App_MotorSpeed_SetTargetSpeed</b>：运行中改速度目标。</td></tr>
+<tr class=''><td class='no'>109</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>110</td><td class='src'>    return MotorSpeed_SetTargetSpeed(axis, speed_rps);</td><td class='exp'>转发 MotorSpeed_SetTargetSpeed，返回值 1=命令被接收。</td></tr>
+<tr class=''><td class='no'>111</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>112</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>113</td><td class='src'>/* 运行期间改写相对角度目标；返回底层命令是否被接收。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>114</td><td class='src'>uint8_t App_MotorPosition_SetTargetDegrees(SimpleFOC_MotorAxis axis, float delta_deg)</td><td class='exp'><b>App_MotorPosition_SetTargetDegrees</b>：运行中改角度目标。</td></tr>
+<tr class=''><td class='no'>115</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>116</td><td class='src'>    return MotorPosition_SetTargetDegrees(axis, delta_deg);</td><td class='exp'>转发 MotorPosition_SetTargetDegrees。</td></tr>
+<tr class=''><td class='no'>117</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+</table><div class='summary'><b>小总结（电机转发接口）：</b>这四个函数只是“转发+注释”，真正的控制在 SimpleFOC_Motor.c。这样分层的好处：任务文件不依赖具体电机库；改底层实现（如换驱动芯片）不影响上层调用；返回值统一表达“命令是否被接收”，UI/系统任务据此知道是否成功。</div><table class='code'><tr><th>行号</th><th>代码（Core/App/app_system.c）</th><th>逐行讲解</th></tr>
+</table>
+<div class='summary'><h4>本文件小总结</h4><b>app_system.c 总结：</b>它是三个任务与底层模块之间的适配层：采样任务=滤波+发布；UI 任务=LVGL 生命周期+通知领取；电机任务=命令转发。全部跨任务写操作都在临界区或队列里完成。</div>
+</div>
+<div class='summary'><h4>本章总结</h4><b>本章总结：</b>记住两条数据流：①原始 ADC →（中值→低通）→ 队列 → 系统任务分析/UI 显示；②系统任务的光照分析 → AppMotorCommand 队列 → 电机任务执行。应用层框架的关键词：单所有权（LVGL 只在 UI 任务）、单向数据流、临界区保护的小状态、队列满时的差异化丢弃策略。</div>
+</div></body></html>

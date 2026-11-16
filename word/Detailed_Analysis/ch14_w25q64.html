@@ -1,0 +1,564 @@
+<!DOCTYPE html><html lang='zh-CN'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>第 14 章 · W25Q64 外部 Flash 存储底层（W25Q64.h/c） - 项目代码逐行详解</title><style>
+:root{
+  --bg:#14161a; --panel:#1d2026; --panel2:#22262e; --code:#171a20;
+  --text:#d8dde5; --dim:#8b93a1; --accent:#4da3ff; --accent2:#7ee2b8;
+  --line:#2c313b; --warn:#f0b429;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:"Microsoft YaHei","PingFang SC",Segoe UI,sans-serif;font-size:15px;line-height:1.75}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px 80px}
+nav.topbar{position:sticky;top:0;z-index:9;background:rgba(20,22,26,.96);
+  border-bottom:1px solid var(--line);padding:10px 0;backdrop-filter:blur(6px)}
+nav.topbar .wrap{padding:0 20px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+nav.topbar a{background:var(--panel2);color:var(--text);padding:4px 12px;border-radius:16px;
+  font-size:13px;border:1px solid var(--line);white-space:nowrap}
+nav.topbar a.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+nav.topbar a:hover{text-decoration:none;filter:brightness(1.15)}
+header.chapter{margin:28px 0 8px}
+header.chapter h1{font-size:26px;margin:0 0 6px;color:#fff}
+header.chapter .meta{color:var(--dim);font-size:13px}
+.intro{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);
+  border-radius:8px;padding:14px 18px;margin:18px 0}
+.summary{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent2);
+  border-radius:8px;padding:14px 18px;margin:18px 0}
+.summary h4,.intro h4{margin:0 0 8px;font-size:15px;color:var(--accent2)}
+.intro h4{color:var(--accent)}
+.section{margin:34px 0}
+.section > h2{font-size:20px;color:#fff;border-bottom:1px solid var(--line);padding-bottom:8px}
+.section .filepath{font-family:Consolas,monospace;color:var(--warn);font-size:14px}
+.section .filedesc{color:var(--dim);font-size:14px;margin:6px 0 10px}
+table.code{width:100%;border-collapse:collapse;background:var(--code);
+  border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:13px}
+table.code th{background:var(--panel2);color:var(--dim);font-weight:600;text-align:left;
+  padding:7px 10px;font-size:12px;position:sticky;top:44px}
+table.code td{padding:3px 10px;vertical-align:top;border-top:1px solid #20242c}
+td.no{width:52px;text-align:right;color:#5c6575;font-family:Consolas,monospace;user-select:none}
+td.src{width:46%;font-family:Consolas,"Courier New",monospace;color:#c9d2e0;white-space:pre;
+  overflow-x:auto}
+td.exp{color:var(--text);font-size:13.5px}
+tr.comment td.src{color:#5f7060}
+tr.comment td.exp{color:var(--dim);font-style:normal}
+tr.blank td.src{color:#3a4150}
+.pill{display:inline-block;background:var(--panel2);border:1px solid var(--line);color:var(--dim);
+  border-radius:12px;padding:1px 10px;font-size:12px;margin-right:6px}
+.diagram{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;
+  margin:18px 0;font-family:Consolas,monospace;white-space:pre;overflow-x:auto;color:#bcd3f5;font-size:13px;line-height:1.55}
+.toc{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 18px;margin:14px 0}
+.toc a{display:block;padding:3px 0;font-size:14px}
+.badge{display:inline-block;background:#2b3a55;color:#9ecbff;border-radius:4px;padding:0 8px;font-size:12px;margin-right:6px}
+tr.auto td.exp{color:#9aa6b8}
+.auto-tag{display:inline-block;background:#2c3140;color:#8fa0b8;border:1px solid #3a4150;
+  border-radius:10px;padding:0 7px;font-size:11px;margin-right:5px;font-style:normal}
+</style></head><body><nav class='topbar'><div class='wrap'><a href='index.html'>目录</a><a href='ch01_startup.html'>01 启动流程</a><a href='ch02_interrupt.html'>02 中断与时基</a><a href='ch03_gpio_dma.html'>03 GPIO/DMA</a><a href='ch04_adc.html'>04 ADC 采样</a><a href='ch05_i2c.html'>05 I2C 底层</a><a href='ch06_spi.html'>06 SPI 底层</a><a href='ch07_tim.html'>07 定时器PWM</a><a href='ch08_usart_rtc.html'>08 串口/RTC</a><a href='ch09_rtos.html'>09 RTOS骨架</a><a href='ch10_appframe.html'>10 应用框架</a><a href='ch11_systemtask.html'>11 SystemTask</a><a href='ch12_algorithm.html'>12 PID/滤波</a><a href='ch13_foc.html'>13 FOC/SVPWM</a><a href='ch14_w25q64.html' class='active'>14 W25Q64存储</a><a href='ch15_parameters.html'>15 参数管理</a><a href='ch16_sensors.html'>16 传感器驱动</a><a href='ch17_lvgl_port.html'>17 LVGL移植</a><a href='ch18_ui.html'>18 UI界面</a><a href='ch19.html'>19 调试与VOFA</a></div></nav>
+<div class='wrap'>
+<header class='chapter'><h1>第 14 章 · W25Q64 外部 Flash 存储底层（W25Q64.h/c）</h1><div class='meta'>文件：Core/interface/W25Q64.h（37 行）、Core/interface/W25Q64.c（447 行）</div></header>
+<div class='intro'><h4>本章导读</h4><p>W25Q64 是 8MB SPI Flash，承担两类持久化：电机电角零位（A/B 双槽）与用户/出厂参数（双槽+独立出厂扇区）。本章逐行讲解 SPI 指令层（JEDEC/读/写使能/页编程/扇区擦除/状态轮询）、DMA 收发封装、CRC32 校验、双槽 A/B 轮换策略——并回答关键问题：<b>存储失败时会发生什么？要不要重传？</b>答案在各级返回值与读回校验里。</p></div>
+<div class='section'>
+<h2><span class='filepath'>Core/interface/W25Q64.h</span> <span class='pill'>0 行</span></h2>
+<div class='filedesc'>存储容量布局与公开 API。</div>
+<table class='code'>
+<tr><th>行号</th><th>代码（Core/interface/W25Q64.h）</th><th>逐行讲解</th></tr>
+<tr class='auto'><td class='no'>1</td><td class='src'>#ifndef NIGHT_FIELD_LOCK_TRACK_W25Q64_H</td><td class='exp'><span class='auto-tag'>自动</span>条件编译入口（ifndef）：满足条件才编译下面的内容，不满足则整段跳过。</td></tr>
+<tr class='auto'><td class='no'>2</td><td class='src'>#define NIGHT_FIELD_LOCK_TRACK_W25Q64_H</td><td class='exp'><span class='auto-tag'>自动</span>定义宏 <code>NIGHT_FIELD_LOCK_TRACK_W25Q64_H</code>：编译前做纯文本替换，详见对应头文件小总结。</td></tr>
+<tr class='blank'><td class='no'>3</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>4</td><td class='src'>#include "main.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "main.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='blank'><td class='no'>5</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>6</td><td class='src'>/* 8 MiB 总容量；末尾五个 4 KB 扇区依次为用户 A、用户 B、出厂、电机 A、电机 B。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>7</td><td class='src'>#define W25Q64_CAPACITY_BYTES       0x800000UL /* 芯片总字节数。 */</td><td class='exp'>芯片总容量 0x800000 = 8MB。</td></tr>
+<tr class=''><td class='no'>8</td><td class='src'>#define W25Q64_SECTOR_BYTES         4096UL     /* 最小擦除单位，一个参数槽占一扇区。 */</td><td class='exp'>扇区 4KB：最小擦除单位（Flash 只能整块擦、逐字节写 0→1 必须先擦成 1）。</td></tr>
+<tr class=''><td class='no'>9</td><td class='src'>#define W25Q64_PAGE_BYTES           256UL      /* 单次页编程的最大字节数。 */</td><td class='exp'>页 256 字节：单次页编程上限，跨页写入要分段。</td></tr>
+<tr class=''><td class='no'>10</td><td class='src'>#define W25Q64_PARAMETER_MAX_BYTES  (W25Q64_SECTOR_BYTES - 16UL) /* 去掉 16 字节记录头后的最大载荷。 */</td><td class='exp'>单槽载荷上限 = 4096−16（包头）= 4080 字节。</td></tr>
+<tr class='comment'><td class='no'>11</td><td class='src'>/* 固件缓存可用区的结束地址，原始编程和擦除接口不得写入后五个参数扇区。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>12</td><td class='src'>#define W25Q64_FIRMWARE_END         (W25Q64_CAPACITY_BYTES - 5UL * W25Q64_SECTOR_BYTES)</td><td class='exp'>固件可用区结束地址 = 8MB − 5 扇区：原始擦写接口禁止触碰末尾 5 个参数扇区。</td></tr>
+<tr class='blank'><td class='no'>13</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>14</td><td class='src'>/* SPI2 和 DMA 初始化完成后调用；检查芯片 JEDEC ID。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>15</td><td class='src'>HAL_StatusTypeDef W25Q64_Init(void);</td><td class='exp'>W25Q64_Init：读 JEDEC ID 校验芯片。</td></tr>
+<tr class='comment'><td class='no'>16</td><td class='src'>/* 原始读写供后续固件缓存使用；擦写不允许覆盖末尾五个参数扇区。写入前须擦除。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>17</td><td class='src'>//从任意地址读任意长度（可跨页，芯片内部地址自动递增）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>18</td><td class='src'>HAL_StatusTypeDef W25Q64_Read(uint32_t address, void *data, uint32_t length);</td><td class='exp'>W25Q64_Read：任意地址任意长度原始读。</td></tr>
+<tr class='comment'><td class='no'>19</td><td class='src'>//W25Q64_Program：页编程，内部会自动分页、写使能、等待完成。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>20</td><td class='src'>HAL_StatusTypeDef W25Q64_Program(uint32_t address, const void *data, uint32_t length);</td><td class='exp'>W25Q64_Program：原始页编程（调用者先擦除）。</td></tr>
+<tr class='comment'><td class='no'>21</td><td class='src'>//擦除一个 4 KB 扇区，地址必须 4096 对齐。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>22</td><td class='src'>HAL_StatusTypeDef W25Q64_EraseSector(uint32_t address);</td><td class='exp'>W25Q64_EraseSector：擦除一个 4KB 扇区。</td></tr>
+<tr class='comment'><td class='no'>23</td><td class='src'>/* 电机偏移量专用双槽：读取序号最新的有效记录，保存时保留上一份完整记录。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>24</td><td class='src'>/* data 指向接收缓冲或待写缓冲；length 是数据字节数，不能超过单槽载荷上限。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>25</td><td class='src'>HAL_StatusTypeDef W25Q64_LoadParameters(void *data, uint32_t length);</td><td class='exp'>W25Q64_LoadParameters：读电机偏移（取最新有效槽）。</td></tr>
+<tr class=''><td class='no'>26</td><td class='src'>HAL_StatusTypeDef W25Q64_SaveParameters(const void *data, uint32_t length);</td><td class='exp'>W25Q64_SaveParameters：存电机偏移（写到较旧槽，保留上一版）。</td></tr>
+<tr class='comment'><td class='no'>27</td><td class='src'>/* 用户参数专用双槽：previous=0 读取最新版，previous!=0 读取较旧版。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>28</td><td class='src'>/* 读取不补写另一槽；旧版不存在或资源正忙时返回 HAL_BUSY，SPI 故障返回 HAL_ERROR。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>29</td><td class='src'>HAL_StatusTypeDef W25Q64_LoadUserParameters(void *data, uint32_t length, uint8_t previous);</td><td class='exp'>W25Q64_LoadUserParameters：读用户参数，previous=0 最新版 / 非 0 上一版。</td></tr>
+<tr class='comment'><td class='no'>30</td><td class='src'>/* 将新用户参数写到较旧或无效槽；内容与最新版相同时直接返回成功、不擦写。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>31</td><td class='src'>HAL_StatusTypeDef W25Q64_SaveUserParameters(const void *data, uint32_t length);</td><td class='exp'>W25Q64_SaveUserParameters：存用户参数（内容没变不擦写）。</td></tr>
+<tr class='comment'><td class='no'>32</td><td class='src'>/* 从独立出厂扇区读取整份默认参数，供“恢复出厂设置”使用。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>33</td><td class='src'>HAL_StatusTypeDef W25Q64_LoadFactoryParameters(void *data, uint32_t length);</td><td class='exp'>W25Q64_LoadFactoryParameters：读出厂扇区。</td></tr>
+<tr class='comment'><td class='no'>34</td><td class='src'>/* 上电用固件默认值核对出厂扇区；仅在空白、校验失败或内容变化时擦写。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>35</td><td class='src'>HAL_StatusTypeDef W25Q64_SyncFactoryParameters(const void *data, uint32_t length);</td><td class='exp'>W25Q64_SyncFactoryParameters：上电用固件默认值核对出厂扇区，变化才重写。</td></tr>
+<tr class='blank'><td class='no'>36</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>37</td><td class='src'>#endif</td><td class='exp'><span class='auto-tag'>自动</span>结束一个条件编译块。</td></tr>
+</table>
+<div class='summary'><h4>本文件小总结</h4><b>W25Q64.h 总结：</b>存储地图：8MB = 固件缓存区 + 末尾 5 个 4KB 扇区（用户A/用户B/出厂/电机A/电机B）。API 分三层：原始读写擦（带地址保护）、双槽参数（CRC+序号轮换）、出厂扇区（同步+恢复）。</div>
+</div>
+<div class='section'>
+<h2><span class='filepath'>Core/interface/W25Q64.c</span> <span class='pill'>0 行</span></h2>
+<div class='filedesc'>SPI 指令层、DMA 传输、CRC、双槽轮换、失败处理全实现。</div>
+<table class='code'>
+<tr><th>行号</th><th>代码（Core/interface/W25Q64.c）</th><th>逐行讲解</th></tr>
+<tr class='auto'><td class='no'>1</td><td class='src'>#include "W25Q64.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "W25Q64.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='auto'><td class='no'>2</td><td class='src'>#include "spi.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "spi.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='auto'><td class='no'>3</td><td class='src'>#include &lt;string.h&gt;</td><td class='exp'><span class='auto-tag'>自动</span>包含系统头文件 &lt;string.h&gt;：引入标准库/库的声明。</td></tr>
+<tr class='blank'><td class='no'>4</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>5</td><td class='src'>/* W25Q64 指令与状态位；读写均通过 SPI2 全双工 DMA 完成。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>6</td><td class='src'>#define W25_CMD_JEDEC_ID       0x9FU//读 JEDEC ID 指令 0x9F：回 3 字节（厂商 + 存储类型 + 容量）。</td><td class='exp'>JEDEC ID 指令 0x9F：回 3 字节（厂商/类型/容量），用于确认芯片在位。</td></tr>
+<tr class=''><td class='no'>7</td><td class='src'>#define W25_CMD_READ           0x03U//普通读指令 0x03：后面跟 3 字节地址，然后可以一直读下去（称为 Read Data）。</td><td class='exp'>读数据指令 0x03：3 字节地址后可连续读任意长度。</td></tr>
+<tr class=''><td class='no'>8</td><td class='src'>#define W25_CMD_WRITE_ENABLE   0x06U//写使能指令 0x06：每次编程/擦除前都必须发，否则芯片拒绝写入。</td><td class='exp'>写使能指令 0x06：每次编程/擦除前必须发，否则芯片拒绝写入。</td></tr>
+<tr class=''><td class='no'>9</td><td class='src'>#define W25_CMD_STATUS         0x05U//读状态寄存器-1 指令 0x05：后面持续读可以不断拿到状态字节。</td><td class='exp'>读状态寄存器指令 0x05：持续读可不断拿到状态字节（轮询 BUSY 用）。</td></tr>
+<tr class=''><td class='no'>10</td><td class='src'>#define W25_CMD_PROGRAM        0x02U//页编程指令 0x02：后面跟 3 字节地址，再跟最多 256 字节数据。</td><td class='exp'>页编程指令 0x02：3 字节地址 + 最多 256 字节数据。</td></tr>
+<tr class=''><td class='no'>11</td><td class='src'>#define W25_CMD_ERASE_4K       0x20U//4 KB 扇区擦除指令 0x20：后面跟 3 字节地址（芯片会自动对齐到扇区边界）。</td><td class='exp'>4KB 扇区擦除指令 0x20（芯片自动对齐扇区边界）。</td></tr>
+<tr class=''><td class='no'>12</td><td class='src'>#define W25_STATUS_BUSY        0x01U//状态寄存器 BUSY 位掩码 bit0：1 = 芯片正在内部擦/写，此时不响应多数指令。</td><td class='exp'>状态 BUSY 位(bit0)：1=芯片正在擦/写。</td></tr>
+<tr class=''><td class='no'>13</td><td class='src'>#define W25_STATUS_WEL         0x02U//状态寄存器 WEL 位掩码 bit1：Write Enable Latch，1 = 写使能已生效。</td><td class='exp'>状态 WEL 位(bit1)：写使能锁存已生效。</td></tr>
+<tr class=''><td class='no'>14</td><td class='src'>#define W25_DMA_TIMEOUT_MS     100U//一次 DMA 传输的超时上限 100 ms。256 字节 @21 MHz 只要约 0.1 ms，100 ms 是极宽松的保护。</td><td class='exp'>DMA 传输超时 100ms（256 字节@21MHz 实际约 0.1ms，超时值极宽松）。</td></tr>
+<tr class=''><td class='no'>15</td><td class='src'>#define W25_PROGRAM_TIMEOUT_MS 10U//页编程典型耗时上限 10 ms（手册典型值 0.4~3 ms）。</td><td class='exp'>页编程超时 10ms（手册典型 0.4~3ms）。</td></tr>
+<tr class=''><td class='no'>16</td><td class='src'>#define W25_ERASE_TIMEOUT_MS   3000U//扇区擦除超时 3 s（手册典型值 45~400 ms，取 3 s 保险）。</td><td class='exp'>扇区擦除超时 3s（典型 45~400ms，取 3s 保险）。</td></tr>
+<tr class=''><td class='no'>17</td><td class='src'>#define W25_RECORD_MAGIC      0x36345157UL//包头的标识字段（包头共 16 字节：标识、序号、数据长度、CRC32），记录标记 0x36345157。小端存进 Flash 后字节顺序是 57 51 34 36，正好是 ASCII W Q 4 6——用来判断"这块扇区是不是我们写过的参数"。</td><td class='exp'>记录标签 0x36345157：小端存储字节序为 57 51 34 36 = ASCII "WQ46"，用于判断扇区是否写过我们的数据。</td></tr>
+<tr class='comment'><td class='no'>18</td><td class='src'>/* 最后五个扇区的固定分配；电机偏移仍占原来的最后两个扇区。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>19</td><td class='src'>/* 用户 A/B 轮流存新旧版本，出厂扇区不参与轮换。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>20</td><td class='src'>#define W25_USER_A            (W25Q64_CAPACITY_BYTES - 5UL * W25Q64_SECTOR_BYTES)</td><td class='exp'>用户参数 A 槽地址 = 8MB − 5×4KB（倒数第 5 扇区）。</td></tr>
+<tr class=''><td class='no'>21</td><td class='src'>#define W25_USER_B            (W25Q64_CAPACITY_BYTES - 4UL * W25Q64_SECTOR_BYTES)</td><td class='exp'>用户 B 槽 = 倒数第 4 扇区。</td></tr>
+<tr class=''><td class='no'>22</td><td class='src'>#define W25_FACTORY           (W25Q64_CAPACITY_BYTES - 3UL * W25Q64_SECTOR_BYTES)</td><td class='exp'>出厂扇区 = 倒数第 3。</td></tr>
+<tr class=''><td class='no'>23</td><td class='src'>#define W25_SLOT_A            (W25Q64_CAPACITY_BYTES - 2UL * W25Q64_SECTOR_BYTES)//A 槽地址 = 0x800000 − 8192 = 0x7FE000。</td><td class='exp'>电机 A 槽 = 0x7FE000（倒数第 2）。</td></tr>
+<tr class=''><td class='no'>24</td><td class='src'>#define W25_SLOT_B            (W25Q64_CAPACITY_BYTES - W25Q64_SECTOR_BYTES)//B 槽地址 = 0x800000 − 4096 = 0x7FF000。两个槽紧挨着，各 4 KB。</td><td class='exp'>电机 B 槽 = 0x7FF000（最后 1 扇区）。A/B 紧邻，各 4KB。</td></tr>
+<tr class='blank'><td class='no'>25</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>26</td><td class='src'>/* DMA 必须使用在传输完成前始终有效的缓冲区；锁防止任务交叉使用它们。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>27</td><td class='src'>static uint8_t dma_tx[W25Q64_PAGE_BYTES];//静态发送缓冲 256 字节。必须是 static：DMA 控制器直接读这块内存的物理地址，不能用栈上的临时数组（函数返回就失效）</td><td class='exp'><b>dma_tx[256]</b>：静态 DMA 发送缓冲。必须 static——DMA 按物理地址读内存，栈数组函数返回就失效。</td></tr>
+<tr class=''><td class='no'>28</td><td class='src'>static uint8_t dma_rx[W25Q64_PAGE_BYTES];//静态发送缓冲 256 字节。必须是 static：DMA 控制器直接读这块内存的物理地址，不能用栈上的临时数组（函数返回就失效）</td><td class='exp'><b>dma_rx[256]</b>：静态 DMA 接收缓冲，同理。</td></tr>
+<tr class=''><td class='no'>29</td><td class='src'>static uint8_t flash_busy;//互斥标志 flash_busy：0 = 空闲，1 = 已被某个任务占用。</td><td class='exp'><b>flash_busy</b>：软件互斥标志（0 空闲/1 占用）——防止多个任务同时操作 SPI/DMA 缓冲。</td></tr>
+<tr class='blank'><td class='no'>30</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>31</td><td class='src'>/* 短暂关中断只用于原子地取得缓冲区使用权，不包住实际 SPI 传输。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>32</td><td class='src'>static HAL_StatusTypeDef flash_lock(void)//抢锁，抢到返回 HAL_OK，抢不到返回 HAL_BUSY。</td><td class='exp'><b>flash_lock()</b>：原子抢锁。</td></tr>
+<tr class=''><td class='no'>33</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>34</td><td class='src'>    uint32_t irq_state = __get_PRIMASK();//先读出 PRIMASK（中断屏蔽寄存器），记住"进来之前中断到底是开着的还是关着的"。</td><td class='exp'>先读 PRIMASK 记住进入前中断开关状态。</td></tr>
+<tr class=''><td class='no'>35</td><td class='src'>    __disable_irq();//关中断进入临界区，保证下面"检查 + 置位"两步不会被打断。</td><td class='exp'>关中断进入临界区（检查+置位两步不能被打断）。</td></tr>
+<tr class=''><td class='no'>36</td><td class='src'>    if (flash_busy != 0U)</td><td class='exp'>已被占用：</td></tr>
+<tr class=''><td class='no'>37</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>38</td><td class='src'>        if (irq_state == 0U) __enable_irq();//若进来前中断是开的（irq_state==0 表示 PRIMASK 为 0，即没被屏蔽）就恢复开中断——不能粗暴地一律打开。</td><td class='exp'>按进入前状态恢复中断（不粗暴一律打开）并返回 HAL_BUSY。</td></tr>
+<tr class='auto'><td class='no'>39</td><td class='src'>        return HAL_BUSY;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>HAL_BUSY</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>40</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>41</td><td class='src'>    flash_busy = 1U;</td><td class='exp'>抢锁成功：flash_busy=1。</td></tr>
+<tr class=''><td class='no'>42</td><td class='src'>    if (irq_state == 0U) __enable_irq();</td><td class='exp'>恢复中断。</td></tr>
+<tr class='auto'><td class='no'>43</td><td class='src'>    return HAL_OK;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>HAL_OK</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>44</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>45</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>46</td><td class='src'>static void flash_unlock(void)</td><td class='exp'><b>flash_unlock()</b>：释放锁。</td></tr>
+<tr class=''><td class='no'>47</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>48</td><td class='src'>    flash_busy = 0U;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>0U</code> 赋给 <code>flash_busy</code>。</td></tr>
+<tr class=''><td class='no'>49</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>50</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>51</td><td class='src'>/* SPI 发出多少字节就同时收到多少字节；纯读取时发送 0xFF 提供时钟。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>52</td><td class='src'>static HAL_StatusTypeDef flash_transfer(const uint8_t *tx, uint8_t *rx, uint16_t length)</td><td class='exp'><b>flash_transfer(tx, rx, length)</b>：SPI 全双工 DMA 收发封装。</td></tr>
+<tr class=''><td class='no'>53</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>54</td><td class='src'>    uint32_t started = HAL_GetTick();//记录起始时刻（毫秒），用于超时判断</td><td class='exp'>记录起始时刻（超时判断）。</td></tr>
+<tr class=''><td class='no'>55</td><td class='src'>    if (length == 0U || length &gt; W25Q64_PAGE_BYTES) return HAL_ERROR;</td><td class='exp'>长度为 0 或超页上限返回错误。</td></tr>
+<tr class=''><td class='no'>56</td><td class='src'>    if (tx != NULL) memcpy(dma_tx, tx, length);</td><td class='exp'>tx 非空：把数据拷进静态 DMA 缓冲。</td></tr>
+<tr class=''><td class='no'>57</td><td class='src'>    else memset(dma_tx, 0xFF, length);</td><td class='exp'>tx 为空（纯读）：填 0xFF——SPI 是全双工，读数据也要发字节提供时钟，0xFF 无副作用。</td></tr>
+<tr class=''><td class='no'>58</td><td class='src'>    if (HAL_SPI_TransmitReceive_DMA(&amp;hspi2, dma_tx, dma_rx, length) != HAL_OK)</td><td class='exp'>HAL_SPI_TransmitReceive_DMA 启动 DMA2 流的双向搬运（SPI2-TX=Stream4、RX=Stream3）。</td></tr>
+<tr class='auto'><td class='no'>59</td><td class='src'>        return HAL_ERROR;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>HAL_ERROR</code>，本函数调用结束。</td></tr>
+<tr class='comment'><td class='no'>60</td><td class='src'>    /* DMA 中断会让 HAL 恢复 READY；超时则中止本次传输。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>61</td><td class='src'>    while (HAL_SPI_GetState(&amp;hspi2) != HAL_SPI_STATE_READY)</td><td class='exp'>忙等 SPI 状态恢复 READY（DMA 完成中断会置 READY）。</td></tr>
+<tr class=''><td class='no'>62</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>63</td><td class='src'>        if ((uint32_t)(HAL_GetTick() - started) &gt;= W25_DMA_TIMEOUT_MS)</td><td class='exp'>超时 100ms：HAL_SPI_Abort 中止 DMA 并返回 HAL_TIMEOUT。</td></tr>
+<tr class=''><td class='no'>64</td><td class='src'>        {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>65</td><td class='src'>            (void)HAL_SPI_Abort(&amp;hspi2);//超过 100 ms 还没完成：调用 HAL_SPI_Abort 中止 DMA 和 SPI。</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>HAL_SPI_Abort()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>66</td><td class='src'>            return HAL_TIMEOUT;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>HAL_TIMEOUT</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>67</td><td class='src'>        }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>68</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>69</td><td class='src'>    if (HAL_SPI_GetError(&amp;hspi2) != HAL_SPI_ERROR_NONE) return HAL_ERROR;</td><td class='exp'>检查 SPI 错误寄存器。</td></tr>
+<tr class=''><td class='no'>70</td><td class='src'>    if (rx != NULL) memcpy(rx, dma_rx, length);</td><td class='exp'>把 DMA 接收缓冲拷回调用者的 rx。</td></tr>
+<tr class='auto'><td class='no'>71</td><td class='src'>    return HAL_OK;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>HAL_OK</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>72</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+</table><div class='summary'><b>小总结（SPI+DMA 传输封装）：</b>flash_transfer 完成一次全双工 DMA 传输：数据先拷进<b>静态缓冲</b>（DMA 要求物理地址恒定），启动 TX/RX 双 DMA 后忙等 SPI READY（完成中断置 READY），超时 100ms 就 Abort 返回 HAL_TIMEOUT，最后检查错误并把接收缓冲拷回。纯读取时发送 0xFF 的原因：SPI 主机必须产生时钟才能收数据。flash_lock 用“短暂关中断+标志位”实现多任务互斥，临界区只包住抢锁动作本身，实际的慢速 SPI 传输在锁内但不关中断地执行。</div><table class='code'><tr><th>行号</th><th>代码（Core/interface/W25Q64.c）</th><th>逐行讲解</th></tr>
+<tr class='blank'><td class='no'>73</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>74</td><td class='src'>static HAL_StatusTypeDef flash_command(const uint8_t *command, uint16_t length)//只发不收的封装（例如发指令字节）。</td><td class='exp'><b>flash_command</b>：只发不收的封装（发指令字节用）。</td></tr>
+<tr class=''><td class='no'>75</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>76</td><td class='src'>    return flash_transfer(command, NULL, length);</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>flash_transfer(command, NULL, length)</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>77</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>78</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>79</td><td class='src'>/* 片选在指令与返回的状态字节之间保持低电平。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>80</td><td class='src'>static HAL_StatusTypeDef flash_status(uint8_t *status)</td><td class='exp'><b>flash_status(&status)</b>：读状态寄存器一次。</td></tr>
+<tr class=''><td class='no'>81</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>82</td><td class='src'>    const uint8_t command = W25_CMD_STATUS;//局部常量：读状态指令 0x05。用 const 是为了让它有确定的存储地址，可以取地址传给下面的函数。</td><td class='exp'>指令字节 0x05。const 保证它有确定地址（要取地址传参）。</td></tr>
+<tr class='auto'><td class='no'>83</td><td class='src'>    HAL_StatusTypeDef result;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>result</code>（类型 <code>HAL_StatusTypeDef</code>）。</td></tr>
+<tr class=''><td class='no'>84</td><td class='src'>    HAL_GPIO_WritePin(SPI2_CS_GPIO_Port, SPI2_CS_Pin, GPIO_PIN_RESET);</td><td class='exp'>CS 拉低开始本次事务。</td></tr>
+<tr class=''><td class='no'>85</td><td class='src'>    result = flash_command(&amp;command, 1U);</td><td class='exp'>发读状态指令。</td></tr>
+<tr class=''><td class='no'>86</td><td class='src'>    if (result == HAL_OK) result = flash_transfer(NULL, status, 1U);</td><td class='exp'>再收 1 字节状态（CS 保持低——指令与状态字节必须连续传输）。</td></tr>
+<tr class=''><td class='no'>87</td><td class='src'>    HAL_GPIO_WritePin(SPI2_CS_GPIO_Port, SPI2_CS_Pin, GPIO_PIN_SET);</td><td class='exp'>CS 拉高结束事务。</td></tr>
+<tr class='auto'><td class='no'>88</td><td class='src'>    return result;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>result</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>89</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>90</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>91</td><td class='src'>/* 页编程、扇区擦除完成前，状态寄存器的 BUSY 位会保持为 1。读取到1说明W25Q64的工作已经完成，可以继续下一步 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>92</td><td class='src'>static HAL_StatusTypeDef flash_wait(uint32_t timeout_ms)</td><td class='exp'><b>flash_wait(timeout)</b>：轮询 BUSY 直到擦/写完成。</td></tr>
+<tr class=''><td class='no'>93</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>94</td><td class='src'>    uint32_t started = HAL_GetTick();</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>HAL_GetTick()</code> 赋给 <code>uint32_t started</code>。</td></tr>
+<tr class='auto'><td class='no'>95</td><td class='src'>    uint8_t status;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>status</code>（类型 <code>uint8_t</code>）。</td></tr>
+<tr class='auto'><td class='no'>96</td><td class='src'>    do</td><td class='exp'><span class='auto-tag'>自动</span>do-while 循环：先执行一遍循环体再判断条件。</td></tr>
+<tr class=''><td class='no'>97</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>98</td><td class='src'>        if (flash_status(&amp;status) != HAL_OK) return HAL_ERROR;</td><td class='exp'>读状态。</td></tr>
+<tr class=''><td class='no'>99</td><td class='src'>        if ((status &amp; W25_STATUS_BUSY) == 0U) return HAL_OK;</td><td class='exp'>BUSY=0 → 完成，返回 OK。</td></tr>
+<tr class=''><td class='no'>100</td><td class='src'>        HAL_Delay(1U);</td><td class='exp'>还忙则 HAL_Delay(1) 再查——1ms 轮询间隔（典型页编程 0.4~3ms，通常查 1~3 次）。</td></tr>
+<tr class='auto'><td class='no'>101</td><td class='src'>    } while ((uint32_t)(HAL_GetTick() - started) &lt; timeout_ms);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>while()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>102</td><td class='src'>    return HAL_TIMEOUT;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>HAL_TIMEOUT</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>103</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>104</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>105</td><td class='src'>/* 每次页编程或擦除前都要重新置位写使能，并确认 WEL 位。flash_status读状态寄存器，该寄存器每一位bit为1都代表一种功能使能成功 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>106</td><td class='src'>static HAL_StatusTypeDef flash_write_enable(void)</td><td class='exp'><b>flash_write_enable()</b>：发写使能并确认 WEL。</td></tr>
+<tr class=''><td class='no'>107</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>108</td><td class='src'>    const uint8_t command = W25_CMD_WRITE_ENABLE;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>W25_CMD_WRITE_ENABLE</code> 赋给 <code>const uint8_t command</code>。</td></tr>
+<tr class='auto'><td class='no'>109</td><td class='src'>    uint8_t status;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>status</code>（类型 <code>uint8_t</code>）。</td></tr>
+<tr class=''><td class='no'>110</td><td class='src'>    HAL_GPIO_WritePin(SPI2_CS_GPIO_Port, SPI2_CS_Pin, GPIO_PIN_RESET);</td><td class='exp'>CS 低。</td></tr>
+<tr class=''><td class='no'>111</td><td class='src'>    HAL_StatusTypeDef result = flash_command(&amp;command, 1U);</td><td class='exp'>发 0x06。</td></tr>
+<tr class=''><td class='no'>112</td><td class='src'>    HAL_GPIO_WritePin(SPI2_CS_GPIO_Port, SPI2_CS_Pin, GPIO_PIN_SET);</td><td class='exp'>CS 高。</td></tr>
+<tr class=''><td class='no'>113</td><td class='src'>    if (result != HAL_OK || flash_status(&amp;status) != HAL_OK) return HAL_ERROR;</td><td class='exp'>再读状态寄存器。</td></tr>
+<tr class=''><td class='no'>114</td><td class='src'>    return (status &amp; W25_STATUS_WEL) != 0U ? HAL_OK : HAL_ERROR;//读取W25Q64发回来的状态值确认是否收到数据</td><td class='exp'>检查 WEL 位确实置位——确认写使能生效才继续（读回验证，防误操作）。</td></tr>
+<tr class=''><td class='no'>115</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>116</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>117</td><td class='src'>static void flash_address_command(uint8_t command[4], uint8_t opcode, uint32_t address)//把指令码 + 24 位地址拼成 4 字节命令。</td><td class='exp'><b>flash_address_command</b>：拼“指令码+24 位地址”4 字节命令。</td></tr>
+<tr class=''><td class='no'>118</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>119</td><td class='src'>    command[0] = opcode;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>opcode</code> 赋给 <code>command[0]</code>。</td></tr>
+<tr class=''><td class='no'>120</td><td class='src'>    command[1] = (uint8_t)(address &gt;&gt; 16);//A23~A16</td><td class='exp'>地址高 8 位 A23~A16。</td></tr>
+<tr class=''><td class='no'>121</td><td class='src'>    command[2] = (uint8_t)(address &gt;&gt; 8);//A15~A8</td><td class='exp'>中 8 位 A15~A8。</td></tr>
+<tr class=''><td class='no'>122</td><td class='src'>    command[3] = (uint8_t)address;//A7~A0   4 字节命令缓冲（1 指令 + 3 地址）。</td><td class='exp'>低 8 位 A7~A0。</td></tr>
+<tr class=''><td class='no'>123</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>124</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>125</td><td class='src'>/* 一次 READ 指令可连续读取任意长度，DMA 按 256 字节分段。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>126</td><td class='src'>static HAL_StatusTypeDef flash_read_raw(uint32_t address, uint8_t *data, uint32_t length)</td><td class='exp'><b>flash_read_raw</b>：原始连续读。</td></tr>
+<tr class=''><td class='no'>127</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>128</td><td class='src'>    uint8_t command[4];</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>command</code>（类型 <code>uint8_t</code>，数组）。</td></tr>
+<tr class='auto'><td class='no'>129</td><td class='src'>    HAL_StatusTypeDef result;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>result</code>（类型 <code>HAL_StatusTypeDef</code>）。</td></tr>
+<tr class=''><td class='no'>130</td><td class='src'>    flash_address_command(command, W25_CMD_READ, address);</td><td class='exp'>拼 READ 命令。</td></tr>
+<tr class=''><td class='no'>131</td><td class='src'>    HAL_GPIO_WritePin(SPI2_CS_GPIO_Port, SPI2_CS_Pin, GPIO_PIN_RESET);</td><td class='exp'>CS 低。</td></tr>
+<tr class=''><td class='no'>132</td><td class='src'>    result = flash_command(command, sizeof(command));</td><td class='exp'>发命令+地址。</td></tr>
+<tr class=''><td class='no'>133</td><td class='src'>    while (result == HAL_OK &amp;&amp; length != 0U)</td><td class='exp'>循环按 256 字节分块收数据（DMA 缓冲只有 256B）。</td></tr>
+<tr class=''><td class='no'>134</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>135</td><td class='src'>        uint16_t count = length &gt; W25Q64_PAGE_BYTES ? W25Q64_PAGE_BYTES : (uint16_t)length;</td><td class='exp'>本块长度 = min(剩余, 256)。</td></tr>
+<tr class=''><td class='no'>136</td><td class='src'>        result = flash_transfer(NULL, data, count);</td><td class='exp'>flash_transfer(NULL, data, count)：tx 空=发 0xFF 提供时钟。</td></tr>
+<tr class='auto'><td class='no'>137</td><td class='src'>        data += count;</td><td class='exp'><span class='auto-tag'>自动</span>把 <code>data</code> 与 <code>count</code> 做相加运算后写回 <code>data</code>。</td></tr>
+<tr class='auto'><td class='no'>138</td><td class='src'>        length -= count;</td><td class='exp'><span class='auto-tag'>自动</span>把 <code>length</code> 与 <code>count</code> 做相减运算后写回 <code>length</code>。</td></tr>
+<tr class=''><td class='no'>139</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>140</td><td class='src'>    HAL_GPIO_WritePin(SPI2_CS_GPIO_Port, SPI2_CS_Pin, GPIO_PIN_SET);</td><td class='exp'>全部收完 CS 拉高。</td></tr>
+<tr class='auto'><td class='no'>141</td><td class='src'>    return result;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>result</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>142</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>143</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>144</td><td class='src'>/* 页编程不能跨越 256 字节页边界；每一页单独写使能并等待完成。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>145</td><td class='src'>static HAL_StatusTypeDef flash_program_raw(uint32_t address, const uint8_t *data, uint32_t length)</td><td class='exp'><b>flash_program_raw</b>：原始页编程（自动分页）。</td></tr>
+<tr class=''><td class='no'>146</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>147</td><td class='src'>    uint8_t command[4];</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>command</code>（类型 <code>uint8_t</code>，数组）。</td></tr>
+<tr class=''><td class='no'>148</td><td class='src'>    while (length != 0U)//前面一页写满了，还会回来继续编辑下一页</td><td class='exp'>还有数据要写就继续：</td></tr>
+<tr class=''><td class='no'>149</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>150</td><td class='src'>        uint32_t room = W25Q64_PAGE_BYTES - (address % W25Q64_PAGE_BYTES);//room = 当前页还剩多少字节</td><td class='exp'>room = 当前页剩余空间（页编程不能跨 256B 页边界，写到页尾硬件会回卷覆盖）。</td></tr>
+<tr class=''><td class='no'>151</td><td class='src'>        uint16_t count = length &lt; room ? (uint16_t)length : (uint16_t)room;//本次写入长度 = min(剩余数据长度, 本页剩余空间)。</td><td class='exp'>本次写长度 = min(剩余数据, 页内剩余)。</td></tr>
+<tr class=''><td class='no'>152</td><td class='src'>        HAL_StatusTypeDef result = flash_write_enable();</td><td class='exp'>每一页都要重新发写使能（写完一页 WEL 自动清零）。</td></tr>
+<tr class='auto'><td class='no'>153</td><td class='src'>        if (result != HAL_OK) return result;</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class=''><td class='no'>154</td><td class='src'>        flash_address_command(command, W25_CMD_PROGRAM, address);</td><td class='exp'>拼 PROGRAM 命令。</td></tr>
+<tr class=''><td class='no'>155</td><td class='src'>        HAL_GPIO_WritePin(SPI2_CS_GPIO_Port, SPI2_CS_Pin, GPIO_PIN_RESET);</td><td class='exp'>CS 低。</td></tr>
+<tr class=''><td class='no'>156</td><td class='src'>        result = flash_command(command, sizeof(command));</td><td class='exp'>发命令+地址。</td></tr>
+<tr class=''><td class='no'>157</td><td class='src'>        if (result == HAL_OK) result = flash_transfer(data, NULL, count);</td><td class='exp'>发本页数据。</td></tr>
+<tr class='auto'><td class='no'>158</td><td class='src'>        HAL_GPIO_WritePin(SPI2_CS_GPIO_Port, SPI2_CS_Pin, GPIO_PIN_SET);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>HAL_GPIO_WritePin()</code>：向指定 GPIO 引脚写电平（GPIO_PIN_SET 拉高 / GPIO_PIN_RESET 拉低）。</td></tr>
+<tr class='auto'><td class='no'>159</td><td class='src'>        if (result != HAL_OK) return result;</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class=''><td class='no'>160</td><td class='src'>        result = flash_wait(W25_PROGRAM_TIMEOUT_MS);</td><td class='exp'>flash_wait 轮询 BUSY 等内部编程完成（≤10ms）。</td></tr>
+<tr class='auto'><td class='no'>161</td><td class='src'>        if (result != HAL_OK) return result;</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class=''><td class='no'>162</td><td class='src'>        address += count;</td><td class='exp'>地址/数据指针前移。</td></tr>
+<tr class='auto'><td class='no'>163</td><td class='src'>        data += count;</td><td class='exp'><span class='auto-tag'>自动</span>把 <code>data</code> 与 <code>count</code> 做相加运算后写回 <code>data</code>。</td></tr>
+<tr class='auto'><td class='no'>164</td><td class='src'>        length -= count;</td><td class='exp'><span class='auto-tag'>自动</span>把 <code>length</code> 与 <code>count</code> 做相减运算后写回 <code>length</code>。</td></tr>
+<tr class=''><td class='no'>165</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='auto'><td class='no'>166</td><td class='src'>    return HAL_OK;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>HAL_OK</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>167</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>168</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>169</td><td class='src'>/* W25Q64 的最小擦除单位为 4 KB。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>170</td><td class='src'>static HAL_StatusTypeDef flash_erase_raw(uint32_t address)</td><td class='exp'><b>flash_erase_raw</b>：4KB 扇区擦除。</td></tr>
+<tr class=''><td class='no'>171</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>172</td><td class='src'>    uint8_t command[4];</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>command</code>（类型 <code>uint8_t</code>，数组）。</td></tr>
+<tr class=''><td class='no'>173</td><td class='src'>    HAL_StatusTypeDef result = flash_write_enable();</td><td class='exp'>擦除同样要先写使能。</td></tr>
+<tr class='auto'><td class='no'>174</td><td class='src'>    if (result != HAL_OK) return result;</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='auto'><td class='no'>175</td><td class='src'>    flash_address_command(command, W25_CMD_ERASE_4K, address);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>flash_address_command()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>176</td><td class='src'>    HAL_GPIO_WritePin(SPI2_CS_GPIO_Port, SPI2_CS_Pin, GPIO_PIN_RESET);</td><td class='exp'>CS 低、发 0x20+地址、CS 高。</td></tr>
+<tr class='auto'><td class='no'>177</td><td class='src'>    result = flash_command(command, sizeof(command));</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>flash_command(command, sizeof(command))</code> 赋给 <code>result</code>。</td></tr>
+<tr class='auto'><td class='no'>178</td><td class='src'>    HAL_GPIO_WritePin(SPI2_CS_GPIO_Port, SPI2_CS_Pin, GPIO_PIN_SET);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>HAL_GPIO_WritePin()</code>：向指定 GPIO 引脚写电平（GPIO_PIN_SET 拉高 / GPIO_PIN_RESET 拉低）。</td></tr>
+<tr class='auto'><td class='no'>179</td><td class='src'>    if (result != HAL_OK) return result;</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class=''><td class='no'>180</td><td class='src'>    return flash_wait(W25_ERASE_TIMEOUT_MS);</td><td class='exp'>等待擦除完成（≤3s）。</td></tr>
+<tr class=''><td class='no'>181</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>182</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>183</td><td class='src'>/* 标准 CRC32：先以 0xFFFFFFFF 初始化，最后再异或 0xFFFFFFFF。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>184</td><td class='src'>static uint32_t flash_crc(uint32_t crc, const uint8_t *data, uint32_t length)</td><td class='exp'><b>flash_crc</b>：标准 CRC32（逐位实现）。</td></tr>
+<tr class=''><td class='no'>185</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>186</td><td class='src'>    while (length-- != 0U)</td><td class='exp'>逐字节异或。</td></tr>
+<tr class=''><td class='no'>187</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>188</td><td class='src'>        crc ^= *data++;</td><td class='exp'>CRC32 逐字节核心：把当前字节异或进 CRC 的低 8 位，data 指针后移。CRC 本质是把整个数据流当作一个超大二进制数做模 2 除法取余数，这里每次消化 1 字节。</td></tr>
+<tr class=''><td class='no'>189</td><td class='src'>        for (uint8_t bit = 0U; bit &lt; 8U; ++bit)</td><td class='exp'>8 次移位：多项式 0xEDB88320（反射型 CRC32）。</td></tr>
+<tr class=''><td class='no'>190</td><td class='src'>            crc = (crc &gt;&gt; 1) ^ ((crc &amp; 1U) != 0U ? 0xEDB88320UL : 0U);</td><td class='exp'>CRC 移位与反馈：每字节做 8 轮——CRC 右移 1 位；若移出的最低位是 1，把多项式 0xEDB88320 异或进来，否则补 0。这是反射型 CRC32 的标准实现。</td></tr>
+<tr class=''><td class='no'>191</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>192</td><td class='src'>    return crc;</td><td class='exp'>返回最终 CRC32 校验值（注意标准 CRC32 最后还要异或 0xFFFFFFFF 收尾，见第 247 行）。</td></tr>
+<tr class=''><td class='no'>193</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+</table><div class='summary'><b>小总结（指令层五件套）：</b>对 W25Q64 的底层操作就是 5 条 SPI 指令的组合：READ(0x03 连续读)、WRITE_ENABLE(0x06 每次写/擦前必发)、PAGE_PROGRAM(0x02 最多 256 字节/次且不能跨页)、SECTOR_ERASE(0x20 整 4KB 擦)、READ_STATUS(0x05 轮询 BUSY)。关键硬件规则：Flash 只能把 1 写成 0，所以要改数据必须先整扇区擦回全 1；页编程不能跨页边界，flash_program_raw 自动按页剩余空间分段并每段重新写使能、等待完成。</div><table class='code'><tr><th>行号</th><th>代码（Core/interface/W25Q64.c）</th><th>逐行讲解</th></tr>
+<tr class='blank'><td class='no'>194</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>195</td><td class='src'>/* 参数包头的整数固定按小端字节序存放。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>196</td><td class='src'>static uint32_t flash_u32(const uint8_t *bytes)</td><td class='exp'><b>flash_u32</b>：小端读 4 字节（包头字段固定小端存储，与 CPU 无关）。</td></tr>
+<tr class=''><td class='no'>197</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>198</td><td class='src'>    return (uint32_t)bytes[0] | ((uint32_t)bytes[1] &lt;&lt; 8)</td><td class='exp'>flash_u32：把 4 个字节按小端顺序拼回 32 位整数——bytes[0] 是最低字节，Flash 里的多字节数值统一小端存放，读写必须对称。</td></tr>
+<tr class=''><td class='no'>199</td><td class='src'>        | ((uint32_t)bytes[2] &lt;&lt; 16) | ((uint32_t)bytes[3] &lt;&lt; 24);</td><td class='exp'>高 3 字节依次左移 8/16/24 位后按位或合并，与上一行共同完成小端反序列化。</td></tr>
+<tr class=''><td class='no'>200</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>201</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>202</td><td class='src'>static void flash_put_u32(uint8_t *bytes, uint32_t value)</td><td class='exp'><b>flash_put_u32</b>：小端写 4 字节。</td></tr>
+<tr class=''><td class='no'>203</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>204</td><td class='src'>    bytes[0] = (uint8_t)value;</td><td class='exp'>小端序列化第 1 步：取最低 8 位放入 bytes[0]。</td></tr>
+<tr class=''><td class='no'>205</td><td class='src'>    bytes[1] = (uint8_t)(value &gt;&gt; 8);</td><td class='exp'>第 2 步：右移 8 位取次低字节放入 bytes[1]。</td></tr>
+<tr class=''><td class='no'>206</td><td class='src'>    bytes[2] = (uint8_t)(value &gt;&gt; 16);</td><td class='exp'>第 3 步：右移 16 位放入 bytes[2]。</td></tr>
+<tr class=''><td class='no'>207</td><td class='src'>    bytes[3] = (uint8_t)(value &gt;&gt; 24);</td><td class='exp'>第 4 步：右移 24 位放入 bytes[3]，32 位数值按小端完整落盘。</td></tr>
+<tr class=''><td class='no'>208</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>209</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>210</td><td class='src'>/* 包头为标记、序号、长度、CRC 各 4 字节；CRC 覆盖前 12 字节与全部参数。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>211</td><td class='src'>/* HAL_OK 表示有效，HAL_BUSY 表示空白或校验不符，HAL_ERROR 表示总线读取失败。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>212</td><td class='src'>static HAL_StatusTypeDef flash_check_slot(uint32_t slot, uint32_t length, uint32_t *sequence)//检查某一个槽（slot）里的记录是否完整可信。sequence是序号</td><td class='exp'><b>flash_check_slot(slot, length, &sequence)</b>：校验一个槽的记录可信性。返回 HAL_OK=有效；HAL_BUSY=空白或 CRC 不符；HAL_ERROR=总线读失败。</td></tr>
+<tr class=''><td class='no'>213</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>214</td><td class='src'>    uint8_t header[16];//16 字节包头缓冲区。</td><td class='exp'>16 字节包头缓冲。</td></tr>
+<tr class=''><td class='no'>215</td><td class='src'>    uint8_t block[W25Q64_PAGE_BYTES];//256 字节分块缓冲，用于分段喂给 CRC。</td><td class='exp'>256 字节分块缓冲（喂 CRC 用）。</td></tr>
+<tr class=''><td class='no'>216</td><td class='src'>    uint32_t crc = 0xFFFFFFFFUL;//CRC 初值 0xFFFFFFFF（标准 CRC32 的规定初值）。</td><td class='exp'>CRC 初值 0xFFFFFFFF（标准规定）。</td></tr>
+<tr class=''><td class='no'>217</td><td class='src'>    uint32_t remaining = length;//还剩多少字节参数没参与 CRC。</td><td class='exp'>remaining 记录尚未参与 CRC 计算的参数字节数（初值=整个参数长度）。</td></tr>
+<tr class=''><td class='no'>218</td><td class='src'>    uint32_t address = slot + sizeof(header);//参数数据的起始地址 = 槽地址 + 16（跳过包头）。</td><td class='exp'>数据区地址 = 槽地址+16（跳过包头）。</td></tr>
+<tr class=''><td class='no'>219</td><td class='src'>    if (flash_read_raw(slot, header, sizeof(header)) != HAL_OK) return HAL_ERROR;//读包头</td><td class='exp'>读 16 字节包头。</td></tr>
+<tr class=''><td class='no'>220</td><td class='src'>    if (flash_u32(header) != W25_RECORD_MAGIC || flash_u32(header + 8) != length)</td><td class='exp'>标签或长度不符 → 该槽是空白/异构数据，返回 HAL_BUSY（不算硬件错误）。</td></tr>
+<tr class=''><td class='no'>221</td><td class='src'>        return HAL_BUSY;</td><td class='exp'>魔数或长度与预期不符 → 返回 HAL_BUSY：该槽没有有效记录或已被破坏。上层把它当作'无效槽'处理，不算硬件故障。</td></tr>
+<tr class=''><td class='no'>222</td><td class='src'>    crc = flash_crc(crc, header, 12U);</td><td class='exp'>CRC 覆盖包头前 12 字节（标签+序号+长度）。</td></tr>
+<tr class=''><td class='no'>223</td><td class='src'>    while (remaining != 0U)</td><td class='exp'>再分块读入全部参数并累加 CRC。</td></tr>
+<tr class=''><td class='no'>224</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>225</td><td class='src'>        uint32_t count = remaining &gt; sizeof(block) ? sizeof(block) : remaining;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>remaining > sizeof(block) ? sizeof(block) : remaining</code> 赋给 <code>uint32_t count</code>。</td></tr>
+<tr class='auto'><td class='no'>226</td><td class='src'>        if (flash_read_raw(address, block, count) != HAL_OK) return HAL_ERROR;</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='auto'><td class='no'>227</td><td class='src'>        crc = flash_crc(crc, block, count);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>flash_crc(crc, block, count)</code> 赋给 <code>crc</code>。</td></tr>
+<tr class='auto'><td class='no'>228</td><td class='src'>        address += count;</td><td class='exp'><span class='auto-tag'>自动</span>把 <code>address</code> 与 <code>count</code> 做相加运算后写回 <code>address</code>。</td></tr>
+<tr class='auto'><td class='no'>229</td><td class='src'>        remaining -= count;</td><td class='exp'><span class='auto-tag'>自动</span>把 <code>remaining</code> 与 <code>count</code> 做相减运算后写回 <code>remaining</code>。</td></tr>
+<tr class=''><td class='no'>230</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>231</td><td class='src'>    if ((crc ^ 0xFFFFFFFFUL) != flash_u32(header + 12)) return HAL_BUSY;</td><td class='exp'>最终 CRC（异或 0xFFFFFFFF）与包头记录不符 → 数据损坏，返回 HAL_BUSY。</td></tr>
+<tr class=''><td class='no'>232</td><td class='src'>    *sequence = flash_u32(header + 4);</td><td class='exp'>校验通过：取出版本序号。</td></tr>
+<tr class='auto'><td class='no'>233</td><td class='src'>    return HAL_OK;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>HAL_OK</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>234</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>235</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>236</td><td class='src'>/* 先擦除目标扇区，再写包头和数据，最后读回计算 CRC 确认。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>237</td><td class='src'>static HAL_StatusTypeDef flash_save_slot(uint32_t slot, uint32_t sequence,</td><td class='exp'><b>flash_save_slot(slot, sequence, data, length)</b>：完整写一个槽。</td></tr>
+<tr class=''><td class='no'>238</td><td class='src'>                                         const uint8_t *data, uint32_t length)</td><td class='exp'>flash_save_slot 函数定义：向一个槽位完整保存一条记录——组装包头 → 擦除扇区 → 写包头 → 写参数 → 读回校验。这是双槽存储的写入核心。</td></tr>
+<tr class=''><td class='no'>239</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>240</td><td class='src'>    uint8_t header[16];//16 字节包头。</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>header</code>（类型 <code>uint8_t</code>，数组）。</td></tr>
+<tr class='auto'><td class='no'>241</td><td class='src'>    uint32_t checked_sequence;//用于接收"回读校验"时得到的序号（本函数不关心，但接口要求给个变量）。</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>checked_sequence</code>（类型 <code>uint32_t</code>）。</td></tr>
+<tr class='auto'><td class='no'>242</td><td class='src'>    uint32_t crc;//CRC 值。</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>crc</code>（类型 <code>uint32_t</code>）。</td></tr>
+<tr class=''><td class='no'>243</td><td class='src'>    flash_put_u32(header, W25_RECORD_MAGIC);</td><td class='exp'>填包头：标签、序号、长度。</td></tr>
+<tr class='auto'><td class='no'>244</td><td class='src'>    flash_put_u32(header + 4, sequence);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>flash_put_u32()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>245</td><td class='src'>    flash_put_u32(header + 8, length);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>flash_put_u32()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>246</td><td class='src'>    crc = flash_crc(0xFFFFFFFFUL, header, 12U);</td><td class='exp'>算 CRC（包头前 12 字节+全部数据，最后异或 0xFFFFFFFF）。</td></tr>
+<tr class=''><td class='no'>247</td><td class='src'>    crc = flash_crc(crc, data, length) ^ 0xFFFFFFFFUL;</td><td class='exp'>把参数本体累进 CRC，最后异或 0xFFFFFFFF 完成 CRC32 标准收尾，得到最终校验值写入包头。</td></tr>
+<tr class=''><td class='no'>248</td><td class='src'>    flash_put_u32(header + 12, crc);</td><td class='exp'>CRC 写进包头。</td></tr>
+<tr class=''><td class='no'>249</td><td class='src'>    if (flash_erase_raw(slot) != HAL_OK) return HAL_ERROR;</td><td class='exp'>先擦除整个扇区（Flash 只能整擦）。</td></tr>
+<tr class=''><td class='no'>250</td><td class='src'>    if (flash_program_raw(slot, header, sizeof(header)) != HAL_OK) return HAL_ERROR;</td><td class='exp'>写包头 16 字节。</td></tr>
+<tr class=''><td class='no'>251</td><td class='src'>    if (flash_program_raw(slot + sizeof(header), data, length) != HAL_OK) return HAL_ERROR;</td><td class='exp'>写参数数据。</td></tr>
+<tr class=''><td class='no'>252</td><td class='src'>    return flash_check_slot(slot, length, &amp;checked_sequence);</td><td class='exp'><b>读回校验</b>：flash_check_slot 重新读取并验证 CRC——这是“写失败怎么办”的第一道答案：写完立刻读回验证，失败就报错，而由于 A/B 双槽结构，旧版本仍完好地留在另一槽里，数据不会丢。</td></tr>
+<tr class=''><td class='no'>253</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>254</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>255</td><td class='src'>/* 比较出厂记录与代码默认值，内容一致时避免重复擦写。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>256</td><td class='src'>static HAL_StatusTypeDef flash_compare_slot(uint32_t slot,</td><td class='exp'>flash_compare_slot 函数定义：逐字节比较槽内已存参数与内存中的期望值是否完全一致。</td></tr>
+<tr class='auto'><td class='no'>257</td><td class='src'>                                            const uint8_t *data, uint32_t length)</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>258</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>259</td><td class='src'>    uint8_t block[W25Q64_PAGE_BYTES];</td><td class='exp'>256 字节分块比较缓冲（Flash 一次读太多没必要，分块走）。</td></tr>
+<tr class=''><td class='no'>260</td><td class='src'>    uint32_t offset = 0U;</td><td class='exp'>offset 记录已比较到的偏移。</td></tr>
+<tr class=''><td class='no'>261</td><td class='src'>    while (offset &lt; length)</td><td class='exp'>循环比较整个数据区。</td></tr>
+<tr class=''><td class='no'>262</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>263</td><td class='src'>        uint32_t count = length - offset;</td><td class='exp'>本块要比较的字节数 = 总长 − 已比较。</td></tr>
+<tr class=''><td class='no'>264</td><td class='src'>        if (count &gt; sizeof(block)) count = sizeof(block);</td><td class='exp'>超过 256 字节则截断为本块上限。</td></tr>
+<tr class=''><td class='no'>265</td><td class='src'>        if (flash_read_raw(slot + 16U + offset, block, count) != HAL_OK)//+16U跳过包头</td><td class='exp'>跳过包头逐块读。</td></tr>
+<tr class=''><td class='no'>266</td><td class='src'>            return HAL_ERROR;</td><td class='exp'>从槽内读取一块失败（+16 跳过包头），返回 HAL_ERROR 总线级错误。</td></tr>
+<tr class=''><td class='no'>267</td><td class='src'>        if (memcmp(block, data + offset, count) != 0) return HAL_BUSY;</td><td class='exp'>内容不同返回 HAL_BUSY（一致返回 OK）。</td></tr>
+<tr class=''><td class='no'>268</td><td class='src'>        offset += count;</td><td class='exp'>偏移推进，继续比较下一块。</td></tr>
+<tr class=''><td class='no'>269</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>270</td><td class='src'>    return HAL_OK;</td><td class='exp'>全部块比较一致，返回 HAL_OK——上层据此跳过重复擦写，保护 Flash 寿命（约 10 万次/扇区）。</td></tr>
+<tr class=''><td class='no'>271</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+</table><div class='summary'><b>小总结（CRC 与槽校验）：</b>每个槽的记录 = 16 字节包头（标签/序号/长度/CRC32）+ 数据载荷。flash_check_slot 读回后重算 CRC 比对——CRC 覆盖包头前 12 字节与全部数据，任何位翻转都会被发现。返回值三分法：HAL_OK 可信、HAL_BUSY 空白或校验不符（不是硬件故障）、HAL_ERROR 总线级失败。序号比较特意用 (int32_t)(b−a) 的回绕减法，避免版本号溢出后误判新旧。</div><table class='code'><tr><th>行号</th><th>代码（Core/interface/W25Q64.c）</th><th>逐行讲解</th></tr>
+<tr class='blank'><td class='no'>272</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>273</td><td class='src'>/* 读取 JEDEC ID，确认连接的是 Winbond 64 Mbit 容量芯片。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>274</td><td class='src'>HAL_StatusTypeDef W25Q64_Init(void)</td><td class='exp'><b>W25Q64_Init()</b>：读 JEDEC ID 校验芯片。</td></tr>
+<tr class=''><td class='no'>275</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>276</td><td class='src'>    const uint8_t command = W25_CMD_JEDEC_ID;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>W25_CMD_JEDEC_ID</code> 赋给 <code>const uint8_t command</code>。</td></tr>
+<tr class='auto'><td class='no'>277</td><td class='src'>    uint8_t id[3];</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>id</code>（类型 <code>uint8_t</code>，数组）。</td></tr>
+<tr class='auto'><td class='no'>278</td><td class='src'>    HAL_StatusTypeDef result = flash_lock();</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>flash_lock()</code> 赋给 <code>HAL_StatusTypeDef result</code>。</td></tr>
+<tr class='auto'><td class='no'>279</td><td class='src'>    if (result != HAL_OK) return result;</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class=''><td class='no'>280</td><td class='src'>    HAL_GPIO_WritePin(SPI2_CS_GPIO_Port, SPI2_CS_Pin, GPIO_PIN_RESET);</td><td class='exp'>CS 低、发 0x9F、收 3 字节 ID、CS 高。</td></tr>
+<tr class='auto'><td class='no'>281</td><td class='src'>    result = flash_command(&amp;command, 1U);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>flash_command(&command, 1U)</code> 赋给 <code>result</code>。</td></tr>
+<tr class='auto'><td class='no'>282</td><td class='src'>    if (result == HAL_OK) result = flash_transfer(NULL, id, sizeof(id));</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='auto'><td class='no'>283</td><td class='src'>    HAL_GPIO_WritePin(SPI2_CS_GPIO_Port, SPI2_CS_Pin, GPIO_PIN_SET);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>HAL_GPIO_WritePin()</code>：向指定 GPIO 引脚写电平（GPIO_PIN_SET 拉高 / GPIO_PIN_RESET 拉低）。</td></tr>
+<tr class='auto'><td class='no'>284</td><td class='src'>    flash_unlock();</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>flash_unlock()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>285</td><td class='src'>    if (result != HAL_OK) return result;</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class=''><td class='no'>286</td><td class='src'>    return (id[0] == 0xEFU &amp;&amp; id[2] == 0x17U) ? HAL_OK : HAL_ERROR;</td><td class='exp'>厂商字节须为 0xEF(Winbond)、容量字节 0x17(64Mbit=8MB)——不匹配说明接线/型号错误。</td></tr>
+<tr class=''><td class='no'>287</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>288</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>289</td><td class='src'>/* 原始读取允许访问整个芯片，包括参数扇区。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>290</td><td class='src'>HAL_StatusTypeDef W25Q64_Read(uint32_t address, void *data, uint32_t length)</td><td class='exp'><b>W25Q64_Read</b>：带保护的原始读。</td></tr>
+<tr class=''><td class='no'>291</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>292</td><td class='src'>    HAL_StatusTypeDef result;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>result</code>（类型 <code>HAL_StatusTypeDef</code>）。</td></tr>
+<tr class=''><td class='no'>293</td><td class='src'>    if (data == NULL || length == 0U || address &gt;= W25Q64_CAPACITY_BYTES</td><td class='exp'>参数防御：空指针/长度 0/越界。</td></tr>
+<tr class='auto'><td class='no'>294</td><td class='src'>        || length &gt; W25Q64_CAPACITY_BYTES - address) return HAL_ERROR;</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>295</td><td class='src'>    result = flash_lock();</td><td class='exp'>抢锁→读→解锁。</td></tr>
+<tr class='auto'><td class='no'>296</td><td class='src'>    if (result != HAL_OK) return result;</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='auto'><td class='no'>297</td><td class='src'>    result = flash_read_raw(address, data, length);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>flash_read_raw(address, data, length)</code> 赋给 <code>result</code>。</td></tr>
+<tr class='auto'><td class='no'>298</td><td class='src'>    flash_unlock();</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>flash_unlock()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>299</td><td class='src'>    return result;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>result</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>300</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>301</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>302</td><td class='src'>/* 原始编程限制在参数区之前；调用者须先擦除目标扇区。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>303</td><td class='src'>HAL_StatusTypeDef W25Q64_Program(uint32_t address, const void *data, uint32_t length)</td><td class='exp'><b>W25Q64_Program</b>：带保护的原始编程（限制在参数区之前，调用者须先擦）。</td></tr>
+<tr class=''><td class='no'>304</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>305</td><td class='src'>    HAL_StatusTypeDef result;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>result</code>（类型 <code>HAL_StatusTypeDef</code>）。</td></tr>
+<tr class='auto'><td class='no'>306</td><td class='src'>    if (data == NULL || length == 0U || address &gt;= W25Q64_FIRMWARE_END</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='auto'><td class='no'>307</td><td class='src'>        || length &gt; W25Q64_FIRMWARE_END - address) return HAL_ERROR;</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>308</td><td class='src'>    result = flash_lock();</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>flash_lock()</code> 赋给 <code>result</code>。</td></tr>
+<tr class='auto'><td class='no'>309</td><td class='src'>    if (result != HAL_OK) return result;</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='auto'><td class='no'>310</td><td class='src'>    result = flash_program_raw(address, data, length);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>flash_program_raw(address, data, length)</code> 赋给 <code>result</code>。</td></tr>
+<tr class='auto'><td class='no'>311</td><td class='src'>    flash_unlock();</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>flash_unlock()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>312</td><td class='src'>    return result;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>result</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>313</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>314</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>315</td><td class='src'>/* 只允许擦除 4 KB 对齐的非参数扇区。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>316</td><td class='src'>HAL_StatusTypeDef W25Q64_EraseSector(uint32_t address)</td><td class='exp'><b>W25Q64_EraseSector</b>：只允许 4KB 对齐的非参数扇区。</td></tr>
+<tr class=''><td class='no'>317</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>318</td><td class='src'>    HAL_StatusTypeDef result;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>result</code>（类型 <code>HAL_StatusTypeDef</code>）。</td></tr>
+<tr class='auto'><td class='no'>319</td><td class='src'>    if ((address % W25Q64_SECTOR_BYTES) != 0U || address &gt;= W25Q64_FIRMWARE_END)</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='auto'><td class='no'>320</td><td class='src'>        return HAL_ERROR;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>HAL_ERROR</code>，本函数调用结束。</td></tr>
+<tr class='auto'><td class='no'>321</td><td class='src'>    result = flash_lock();</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>flash_lock()</code> 赋给 <code>result</code>。</td></tr>
+<tr class='auto'><td class='no'>322</td><td class='src'>    if (result != HAL_OK) return result;</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='auto'><td class='no'>323</td><td class='src'>    result = flash_erase_raw(address);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>flash_erase_raw(address)</code> 赋给 <code>result</code>。</td></tr>
+<tr class='auto'><td class='no'>324</td><td class='src'>    flash_unlock();</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>flash_unlock()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>325</td><td class='src'>    return result;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>result</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>326</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>327</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>328</td><td class='src'>/* 校验两个槽的记录头、长度和 CRC，再按序号选择最新版或旧版。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>329</td><td class='src'>/* previous=0 取最新有效槽；previous!=0 要求两槽均有效并读取较旧槽。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>330</td><td class='src'>/* 返回 HAL_BUSY 表示所需版本不存在；此函数只读，不自动修复或覆盖旧槽。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>331</td><td class='src'>static HAL_StatusTypeDef flash_load_pair(uint32_t first, uint32_t second,</td><td class='exp'><b>flash_load_pair</b>：双槽读取策略。previous=0 取最新有效槽；previous≠0 要求两槽都有效并读较旧槽。</td></tr>
+<tr class='auto'><td class='no'>332</td><td class='src'>                                          uint8_t previous, uint8_t *data, uint32_t length)</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>333</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>334</td><td class='src'>    uint32_t sequence_a = 0U, sequence_b = 0U;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>0U, sequence_b = 0U</code> 赋给 <code>uint32_t sequence_a</code>。</td></tr>
+<tr class='auto'><td class='no'>335</td><td class='src'>    HAL_StatusTypeDef a, b, result;</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>336</td><td class='src'>    a = flash_check_slot(first, length, &amp;sequence_a);</td><td class='exp'>分别校验两个槽（得到各自有效性与序号）。</td></tr>
+<tr class='auto'><td class='no'>337</td><td class='src'>    b = flash_check_slot(second, length, &amp;sequence_b);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>flash_check_slot(second, length, &sequence_b)</code> 赋给 <code>b</code>。</td></tr>
+<tr class=''><td class='no'>338</td><td class='src'>    if (a == HAL_ERROR || b == HAL_ERROR) result = HAL_ERROR;</td><td class='exp'>任一槽总线错误 → 整体 HAL_ERROR。</td></tr>
+<tr class=''><td class='no'>339</td><td class='src'>    else if (a != HAL_OK &amp;&amp; b != HAL_OK) result = HAL_BUSY;</td><td class='exp'>两槽都无效 → HAL_BUSY（没有可用记录）。</td></tr>
+<tr class=''><td class='no'>340</td><td class='src'>    else if (previous != 0U &amp;&amp; (a != HAL_OK || b != HAL_OK)) result = HAL_BUSY;</td><td class='exp'>要读旧版但只有一槽有效 → HAL_BUSY。</td></tr>
+<tr class='auto'><td class='no'>341</td><td class='src'>    else</td><td class='exp'><span class='auto-tag'>自动</span>否则分支：上面所有条件都不满足时执行这里。</td></tr>
+<tr class=''><td class='no'>342</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>343</td><td class='src'>        uint32_t slot = (b == HAL_OK &amp;&amp; (a != HAL_OK</td><td class='exp'>选择槽：B 有效且(序号差>0 或 A 无效)选 B，否则选 A。<b>序号比较用 (int32_t)(seq_b−seq_a)</b>——有符号回绕比较，避免序号溢出 0xFFFFFFFF 时判错。</td></tr>
+<tr class='auto'><td class='no'>344</td><td class='src'>            || (int32_t)(sequence_b - sequence_a) &gt; 0)) ? second : first;</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>345</td><td class='src'>        if (previous != 0U) slot = slot == first ? second : first;</td><td class='exp'>要旧版则取另一槽。</td></tr>
+<tr class=''><td class='no'>346</td><td class='src'>        result = flash_read_raw(slot + 16U, data, length);</td><td class='exp'>跳过包头读出参数。</td></tr>
+<tr class=''><td class='no'>347</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='auto'><td class='no'>348</td><td class='src'>    return result;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>result</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>349</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>350</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>351</td><td class='src'>/* 保存前比较最新版内容：相同则跳过擦写，避免无意义保存挤掉真正旧版。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>352</td><td class='src'>/* 内容不同时只擦写较旧或无效槽，并赋予比现有最新版更大的序号。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>353</td><td class='src'>/* 首次两个槽都无效时先写 A 槽，B 槽保持空白，直到下一次内容变化。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>354</td><td class='src'>static HAL_StatusTypeDef flash_save_pair(uint32_t first, uint32_t second,</td><td class='exp'><b>flash_save_pair</b>：双槽保存策略。</td></tr>
+<tr class='auto'><td class='no'>355</td><td class='src'>                                          const uint8_t *data, uint32_t length)</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>356</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>357</td><td class='src'>    uint32_t sequence_a = 0U, sequence_b = 0U;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>0U, sequence_b = 0U</code> 赋给 <code>uint32_t sequence_a</code>。</td></tr>
+<tr class='auto'><td class='no'>358</td><td class='src'>    HAL_StatusTypeDef a, b, result;</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>359</td><td class='src'>    a = flash_check_slot(first, length, &amp;sequence_a);</td><td class='exp'>先校验两槽现状。</td></tr>
+<tr class='auto'><td class='no'>360</td><td class='src'>    b = flash_check_slot(second, length, &amp;sequence_b);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>flash_check_slot(second, length, &sequence_b)</code> 赋给 <code>b</code>。</td></tr>
+<tr class='auto'><td class='no'>361</td><td class='src'>    if (a == HAL_ERROR || b == HAL_ERROR) return HAL_ERROR;</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class=''><td class='no'>362</td><td class='src'>    if (a == HAL_OK || b == HAL_OK)</td><td class='exp'>存在有效版本：比较内容——</td></tr>
+<tr class=''><td class='no'>363</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>364</td><td class='src'>        uint32_t latest = b == HAL_OK &amp;&amp; (a != HAL_OK</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>365</td><td class='src'>            || (int32_t)(sequence_b - sequence_a) &gt; 0) ? second : first;</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>366</td><td class='src'>        result = flash_compare_slot(latest, data, length);</td><td class='exp'>内容与最新版一致 → 直接返回成功，<b>不擦写</b>（避免无意义的擦写把真正旧版挤掉，Flash 寿命也省了）。</td></tr>
+<tr class='auto'><td class='no'>367</td><td class='src'>        if (result != HAL_BUSY) return result;</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class=''><td class='no'>368</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>369</td><td class='src'>    if (a != HAL_OK &amp;&amp; b != HAL_OK)</td><td class='exp'>两槽都无效（首次保存）：写 A 槽、序号 1。</td></tr>
+<tr class='auto'><td class='no'>370</td><td class='src'>        result = flash_save_slot(first, 1U, data, length);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>flash_save_slot(first, 1U, data, length)</code> 赋给 <code>result</code>。</td></tr>
+<tr class=''><td class='no'>371</td><td class='src'>    else if (a != HAL_OK || (b == HAL_OK &amp;&amp; (int32_t)(sequence_b - sequence_a) &gt; 0))</td><td class='exp'>A 无效或 B 更新 → 写 A 槽、序号=B+1（写到较旧/无效槽，保留 B 里的旧版本）。</td></tr>
+<tr class='auto'><td class='no'>372</td><td class='src'>        result = flash_save_slot(first, sequence_b + 1U, data, length);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>flash_save_slot(first, sequence_b + 1U, data, length)</code> 赋给 <code>result</code>。</td></tr>
+<tr class='auto'><td class='no'>373</td><td class='src'>    else</td><td class='exp'><span class='auto-tag'>自动</span>否则分支：上面所有条件都不满足时执行这里。</td></tr>
+<tr class=''><td class='no'>374</td><td class='src'>        result = flash_save_slot(second, sequence_a + 1U, data, length);</td><td class='exp'>否则写 B 槽、序号=A+1。这就是 A/B 轮换：永远保留上一完整版本。</td></tr>
+<tr class='auto'><td class='no'>375</td><td class='src'>    return result;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>result</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>376</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>377</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>378</td><td class='src'>/* 电机双槽与用户双槽共用的入口：检查载荷长度并独占 SPI/DMA 缓冲区。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>379</td><td class='src'>/* first、second 为两槽地址；save 为 1 时写入，为 0 时按 previous 读取。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>380</td><td class='src'>static HAL_StatusTypeDef flash_pair_access(uint32_t first, uint32_t second,</td><td class='exp'><b>flash_pair_access</b>：双槽入口：参数检查→抢锁→保存或读取→解锁。</td></tr>
+<tr class='auto'><td class='no'>381</td><td class='src'>    void *data, uint32_t length, uint8_t previous, uint8_t save)</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>382</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>383</td><td class='src'>    HAL_StatusTypeDef result;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>result</code>（类型 <code>HAL_StatusTypeDef</code>）。</td></tr>
+<tr class='auto'><td class='no'>384</td><td class='src'>    if (data == NULL || length == 0U || length &gt; W25Q64_PARAMETER_MAX_BYTES)</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='auto'><td class='no'>385</td><td class='src'>        return HAL_ERROR;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>HAL_ERROR</code>，本函数调用结束。</td></tr>
+<tr class='auto'><td class='no'>386</td><td class='src'>    result = flash_lock();</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>flash_lock()</code> 赋给 <code>result</code>。</td></tr>
+<tr class='auto'><td class='no'>387</td><td class='src'>    if (result != HAL_OK) return result;</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='auto'><td class='no'>388</td><td class='src'>    result = save != 0U ? flash_save_pair(first, second, data, length)</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>389</td><td class='src'>        : flash_load_pair(first, second, previous, data, length);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>flash_load_pair()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>390</td><td class='src'>    flash_unlock();</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>flash_unlock()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>391</td><td class='src'>    return result;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>result</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>392</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>393</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>394</td><td class='src'>/* 电机偏移量：从原 A/B 扇区读取最新完整记录。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>395</td><td class='src'>HAL_StatusTypeDef W25Q64_LoadParameters(void *data, uint32_t length)</td><td class='exp'><b>W25Q64_LoadParameters</b>：电机偏移读最新槽。</td></tr>
+<tr class=''><td class='no'>396</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>397</td><td class='src'>    return flash_pair_access(W25_SLOT_A, W25_SLOT_B, data, length, 0U, 0U);</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>flash_pair_access(W25_SLOT_A, W25_SLOT_B, data, length, 0U, 0U)</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>398</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>399</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>400</td><td class='src'>/* 电机偏移量：新数据写到较旧槽，保留另一槽的上一版本。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>401</td><td class='src'>HAL_StatusTypeDef W25Q64_SaveParameters(const void *data, uint32_t length)</td><td class='exp'><b>W25Q64_SaveParameters</b>：电机偏移存较旧槽。</td></tr>
+<tr class=''><td class='no'>402</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>403</td><td class='src'>    return flash_pair_access(W25_SLOT_A, W25_SLOT_B, (void *)data, length, 0U, 1U);</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>flash_pair_access(W25_SLOT_A, W25_SLOT_B, (void *)data, length, 0U, 1U)</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>404</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>405</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>406</td><td class='src'>/* 用户参数：previous 控制读取最新记录或上一完整记录。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>407</td><td class='src'>HAL_StatusTypeDef W25Q64_LoadUserParameters(void *data, uint32_t length, uint8_t previous)</td><td class='exp'><b>W25Q64_LoadUserParameters</b>：用户参数，可指定读最新或旧版。</td></tr>
+<tr class=''><td class='no'>408</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>409</td><td class='src'>    return flash_pair_access(W25_USER_A, W25_USER_B, data, length, previous, 0U);</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>flash_pair_access(W25_USER_A, W25_USER_B, data, length, previous, 0U)</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>410</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>411</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>412</td><td class='src'>/* 用户参数：仅在内容变化时轮换 A/B 槽，保留旧版本用于回归。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>413</td><td class='src'>HAL_StatusTypeDef W25Q64_SaveUserParameters(const void *data, uint32_t length)</td><td class='exp'><b>W25Q64_SaveUserParameters</b>：用户参数轮换保存。</td></tr>
+<tr class=''><td class='no'>414</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>415</td><td class='src'>    return flash_pair_access(W25_USER_A, W25_USER_B, (void *)data, length, 0U, 1U);</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>flash_pair_access(W25_USER_A, W25_USER_B, (void *)data, length, 0U, 1U)</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>416</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+</table><div class='summary'><b>小总结（双槽轮换与失败处理——回答“存储失败会不会丢数据”）：</b>策略是 A/B 两槽轮流写：新数据永远写到“较旧或无效”的槽，另一槽保留上一完整版本。因此：①写入后读回校验失败 → 报 HAL_ERROR，但旧版本完好；②写入中途断电 → 新槽 CRC 不过被判定无效，系统读取时自动回落到旧槽；③两槽都坏 → 返回 HAL_BUSY，上层（如电机模块）会触发重新校准；④内容没变 → 直接跳过擦写（省寿命）。此外 App_Parameters_Init 对 HAL_BUSY 有 20×10ms 的重试循环——“重传”体现在上层的重试与双槽冗余两层机制中，底层本身单次失败即返回错误码。</div><table class='code'><tr><th>行号</th><th>代码（Core/interface/W25Q64.c）</th><th>逐行讲解</th></tr>
+<tr class='blank'><td class='no'>417</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>418</td><td class='src'>/* 出厂参数：先验证独立扇区的记录，再跳过 16 字节包头读取参数载荷。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>419</td><td class='src'>HAL_StatusTypeDef W25Q64_LoadFactoryParameters(void *data, uint32_t length)</td><td class='exp'><b>W25Q64_LoadFactoryParameters</b>：读出厂扇区（先校验再读载荷）。</td></tr>
+<tr class=''><td class='no'>420</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>421</td><td class='src'>    uint32_t sequence;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>sequence</code>（类型 <code>uint32_t</code>）。</td></tr>
+<tr class='auto'><td class='no'>422</td><td class='src'>    HAL_StatusTypeDef result;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>result</code>（类型 <code>HAL_StatusTypeDef</code>）。</td></tr>
+<tr class='auto'><td class='no'>423</td><td class='src'>    if (data == NULL || length == 0U || length &gt; W25Q64_PARAMETER_MAX_BYTES)</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='auto'><td class='no'>424</td><td class='src'>        return HAL_ERROR;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>HAL_ERROR</code>，本函数调用结束。</td></tr>
+<tr class='auto'><td class='no'>425</td><td class='src'>    result = flash_lock();</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>flash_lock()</code> 赋给 <code>result</code>。</td></tr>
+<tr class='auto'><td class='no'>426</td><td class='src'>    if (result != HAL_OK) return result;</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='auto'><td class='no'>427</td><td class='src'>    result = flash_check_slot(W25_FACTORY, length, &amp;sequence);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>flash_check_slot(W25_FACTORY, length, &sequence)</code> 赋给 <code>result</code>。</td></tr>
+<tr class='auto'><td class='no'>428</td><td class='src'>    if (result == HAL_OK) result = flash_read_raw(W25_FACTORY + 16U, data, length);</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='auto'><td class='no'>429</td><td class='src'>    flash_unlock();</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>flash_unlock()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>430</td><td class='src'>    return result;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>result</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>431</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>432</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>433</td><td class='src'>/* 出厂参数：每次启动核对固件默认值；一致时不擦除，变化或损坏时重写。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>434</td><td class='src'>HAL_StatusTypeDef W25Q64_SyncFactoryParameters(const void *data, uint32_t length)</td><td class='exp'><b>W25Q64_SyncFactoryParameters</b>：上电同步出厂扇区：校验→比较→不一致才重写。</td></tr>
+<tr class=''><td class='no'>435</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>436</td><td class='src'>    uint32_t sequence;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>sequence</code>（类型 <code>uint32_t</code>）。</td></tr>
+<tr class='auto'><td class='no'>437</td><td class='src'>    HAL_StatusTypeDef result;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>result</code>（类型 <code>HAL_StatusTypeDef</code>）。</td></tr>
+<tr class='auto'><td class='no'>438</td><td class='src'>    if (data == NULL || length == 0U || length &gt; W25Q64_PARAMETER_MAX_BYTES)</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='auto'><td class='no'>439</td><td class='src'>        return HAL_ERROR;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>HAL_ERROR</code>，本函数调用结束。</td></tr>
+<tr class='auto'><td class='no'>440</td><td class='src'>    result = flash_lock();</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>flash_lock()</code> 赋给 <code>result</code>。</td></tr>
+<tr class='auto'><td class='no'>441</td><td class='src'>    if (result != HAL_OK) return result;</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='auto'><td class='no'>442</td><td class='src'>    result = flash_check_slot(W25_FACTORY, length, &amp;sequence);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>flash_check_slot(W25_FACTORY, length, &sequence)</code> 赋给 <code>result</code>。</td></tr>
+<tr class='auto'><td class='no'>443</td><td class='src'>    if (result == HAL_OK) result = flash_compare_slot(W25_FACTORY, data, length);</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class=''><td class='no'>444</td><td class='src'>    if (result == HAL_BUSY) result = flash_save_slot(W25_FACTORY, 1U, data, length);</td><td class='exp'>空白或损坏（HAL_BUSY）→ 用序号 1 重写出厂记录。</td></tr>
+<tr class='auto'><td class='no'>445</td><td class='src'>    flash_unlock();</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>flash_unlock()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>446</td><td class='src'>    return result;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>result</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>447</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+</table>
+<div class='summary'><h4>本文件小总结</h4><b>W25Q64.c 全文总结：</b>SPI2+DMA 的指令级驱动（读/写使能/页编程/扇区擦/状态轮询），上层是 CRC32 校验的 A/B 双槽轮换存储（电机偏移 + 用户参数）和独立出厂扇区同步。失败处理三层防线：单次操作返回错误码、写后读回校验、双槽互为备份——单点写入失败永不导致数据全丢。</div>
+</div>
+<div class='summary'><h4>本章总结</h4><b>本章总结：</b>记住存储地图（末 5 扇区）、包头 16 字节格式、A/B 轮换规则（写旧保新）与三级失败防线。W25Q64 的擦写寿命约 10 万次/扇区，双槽+内容比对跳写的设计正是为延长寿命与断电安全服务的。</div>
+</div></body></html>

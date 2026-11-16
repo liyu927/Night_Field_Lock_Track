@@ -1,0 +1,302 @@
+<!DOCTYPE html><html lang='zh-CN'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>第 16 章 · 传感器驱动：AS5600 磁编码器与 FT6336 触摸芯片（AS5600.c/h、FT6336.c/h） - 项目代码逐行详解</title><style>
+:root{
+  --bg:#14161a; --panel:#1d2026; --panel2:#22262e; --code:#171a20;
+  --text:#d8dde5; --dim:#8b93a1; --accent:#4da3ff; --accent2:#7ee2b8;
+  --line:#2c313b; --warn:#f0b429;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:"Microsoft YaHei","PingFang SC",Segoe UI,sans-serif;font-size:15px;line-height:1.75}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px 80px}
+nav.topbar{position:sticky;top:0;z-index:9;background:rgba(20,22,26,.96);
+  border-bottom:1px solid var(--line);padding:10px 0;backdrop-filter:blur(6px)}
+nav.topbar .wrap{padding:0 20px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+nav.topbar a{background:var(--panel2);color:var(--text);padding:4px 12px;border-radius:16px;
+  font-size:13px;border:1px solid var(--line);white-space:nowrap}
+nav.topbar a.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+nav.topbar a:hover{text-decoration:none;filter:brightness(1.15)}
+header.chapter{margin:28px 0 8px}
+header.chapter h1{font-size:26px;margin:0 0 6px;color:#fff}
+header.chapter .meta{color:var(--dim);font-size:13px}
+.intro{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);
+  border-radius:8px;padding:14px 18px;margin:18px 0}
+.summary{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent2);
+  border-radius:8px;padding:14px 18px;margin:18px 0}
+.summary h4,.intro h4{margin:0 0 8px;font-size:15px;color:var(--accent2)}
+.intro h4{color:var(--accent)}
+.section{margin:34px 0}
+.section > h2{font-size:20px;color:#fff;border-bottom:1px solid var(--line);padding-bottom:8px}
+.section .filepath{font-family:Consolas,monospace;color:var(--warn);font-size:14px}
+.section .filedesc{color:var(--dim);font-size:14px;margin:6px 0 10px}
+table.code{width:100%;border-collapse:collapse;background:var(--code);
+  border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:13px}
+table.code th{background:var(--panel2);color:var(--dim);font-weight:600;text-align:left;
+  padding:7px 10px;font-size:12px;position:sticky;top:44px}
+table.code td{padding:3px 10px;vertical-align:top;border-top:1px solid #20242c}
+td.no{width:52px;text-align:right;color:#5c6575;font-family:Consolas,monospace;user-select:none}
+td.src{width:46%;font-family:Consolas,"Courier New",monospace;color:#c9d2e0;white-space:pre;
+  overflow-x:auto}
+td.exp{color:var(--text);font-size:13.5px}
+tr.comment td.src{color:#5f7060}
+tr.comment td.exp{color:var(--dim);font-style:normal}
+tr.blank td.src{color:#3a4150}
+.pill{display:inline-block;background:var(--panel2);border:1px solid var(--line);color:var(--dim);
+  border-radius:12px;padding:1px 10px;font-size:12px;margin-right:6px}
+.diagram{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;
+  margin:18px 0;font-family:Consolas,monospace;white-space:pre;overflow-x:auto;color:#bcd3f5;font-size:13px;line-height:1.55}
+.toc{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 18px;margin:14px 0}
+.toc a{display:block;padding:3px 0;font-size:14px}
+.badge{display:inline-block;background:#2b3a55;color:#9ecbff;border-radius:4px;padding:0 8px;font-size:12px;margin-right:6px}
+tr.auto td.exp{color:#9aa6b8}
+.auto-tag{display:inline-block;background:#2c3140;color:#8fa0b8;border:1px solid #3a4150;
+  border-radius:10px;padding:0 7px;font-size:11px;margin-right:5px;font-style:normal}
+</style></head><body><nav class='topbar'><div class='wrap'><a href='index.html'>目录</a><a href='ch01_startup.html'>01 启动流程</a><a href='ch02_interrupt.html'>02 中断与时基</a><a href='ch03_gpio_dma.html'>03 GPIO/DMA</a><a href='ch04_adc.html'>04 ADC 采样</a><a href='ch05_i2c.html'>05 I2C 底层</a><a href='ch06_spi.html'>06 SPI 底层</a><a href='ch07_tim.html'>07 定时器PWM</a><a href='ch08_usart_rtc.html'>08 串口/RTC</a><a href='ch09_rtos.html'>09 RTOS骨架</a><a href='ch10_appframe.html'>10 应用框架</a><a href='ch11_systemtask.html'>11 SystemTask</a><a href='ch12_algorithm.html'>12 PID/滤波</a><a href='ch13_foc.html'>13 FOC/SVPWM</a><a href='ch14_w25q64.html'>14 W25Q64存储</a><a href='ch15_parameters.html'>15 参数管理</a><a href='ch16_sensors.html' class='active'>16 传感器驱动</a><a href='ch17_lvgl_port.html'>17 LVGL移植</a><a href='ch18_ui.html'>18 UI界面</a><a href='ch19.html'>19 调试与VOFA</a></div></nav>
+<div class='wrap'>
+<header class='chapter'><h1>第 16 章 · 传感器驱动：AS5600 磁编码器与 FT6336 触摸芯片（AS5600.c/h、FT6336.c/h）</h1><div class='meta'>文件：Core/interface/AS5600.c（54 行）、AS5600.h（37 行）、FT6336.c（91 行）、FT6336.h（27 行）</div></header>
+<div class='intro'><h4>本章导读</h4><p>AS5600 是磁编码器：磁铁随电机转动，芯片输出 12 位角度（I2C 寄存器 0x0E/0x0F）。FT6336 是电容触摸控制器：触摸时 INT 脚产生下降沿中断，坐标数据在 I2C 寄存器 0x02/0x03 起。本章逐行讲解两个驱动的寄存器读取、坐标换算与中断回调。</div>
+<div class='section'>
+<h2><span class='filepath'>Core/interface/AS5600.h</span> <span class='pill'>0 行</span></h2>
+<div class='filedesc'>编码器地址/寄存器定义与句柄。</div>
+<table class='code'>
+<tr><th>行号</th><th>代码（Core/interface/AS5600.h）</th><th>逐行讲解</th></tr>
+<tr class='auto'><td class='no'>1</td><td class='src'>#ifndef AS5600_H</td><td class='exp'><span class='auto-tag'>自动</span>条件编译入口（ifndef）：满足条件才编译下面的内容，不满足则整段跳过。</td></tr>
+<tr class='auto'><td class='no'>2</td><td class='src'>#define AS5600_H</td><td class='exp'><span class='auto-tag'>自动</span>定义宏 <code>AS5600_H</code>：编译前做纯文本替换，详见对应头文件小总结。</td></tr>
+<tr class='blank'><td class='no'>3</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>4</td><td class='src'>#ifdef __cplusplus</td><td class='exp'><span class='auto-tag'>自动</span>条件编译入口（ifdef）：满足条件才编译下面的内容，不满足则整段跳过。</td></tr>
+<tr class='auto'><td class='no'>5</td><td class='src'>extern "C" {</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>6</td><td class='src'>#endif</td><td class='exp'><span class='auto-tag'>自动</span>结束一个条件编译块。</td></tr>
+<tr class='blank'><td class='no'>7</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>8</td><td class='src'>#include "main.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "main.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='blank'><td class='no'>9</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>10</td><td class='src'>/* AS5600 默认 7 位 I2C 地址；HAL 传输时需左移一位。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>11</td><td class='src'>#define AS5600_I2C_ADDRESS          0x36U</td><td class='exp'>AS5600 默认 7 位 I2C 地址 0x36（HAL 传输时要左移 1 位变成 0x6C）。</td></tr>
+<tr class='comment'><td class='no'>12</td><td class='src'>/* 滤波后的 ANGLE 高字节地址；下一字节 0x0F 是低字节。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>13</td><td class='src'>#define AS5600_ANGLE_REGISTER       0x0EU</td><td class='exp'>滤波后 ANGLE 高字节寄存器 0x0E（下一字节 0x0F 是低字节）。</td></tr>
+<tr class='comment'><td class='no'>14</td><td class='src'>/* 12 位计数值覆盖一圈，范围为 0～4095。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>15</td><td class='src'>#define AS5600_ANGLE_RESOLUTION     4096.0f</td><td class='exp'>12 位计数对应一圈，分辨率 4096。</td></tr>
+<tr class='blank'><td class='no'>16</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>17</td><td class='src'>/* 一个编码器句柄对应一条 I2C 总线；两轴地址相同但位于不同总线上。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>18</td><td class='src'>typedef struct</td><td class='exp'>AS5600_Handle_t：一条 I2C 总线+地址。两个编码器地址相同但分属 I2C1/I2C3，互不冲突。</td></tr>
+<tr class=''><td class='no'>19</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>20</td><td class='src'>    I2C_HandleTypeDef *i2c;  /* 对应轴的 HAL I2C 句柄，不由本驱动创建。 */</td><td class='exp'>i2c：HAL 句柄指针（由使用者绑定，驱动不创建）。</td></tr>
+<tr class=''><td class='no'>21</td><td class='src'>    uint16_t address;        /* 未左移的 7 位器件地址。 */</td><td class='exp'>address：未左移的 7 位地址。</td></tr>
+<tr class='auto'><td class='no'>22</td><td class='src'>} AS5600_Handle_t;</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='blank'><td class='no'>23</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>24</td><td class='src'>/* 连续读取 ANGLE 高、低字节，输出 0～4095 的滤波角度计数。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>25</td><td class='src'>/* handle 或输出指针无效、I2C 读取失败时返回 HAL_ERROR。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>26</td><td class='src'>HAL_StatusTypeDef AS5600_ReadFilteredAngle(const AS5600_Handle_t *handle,</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>27</td><td class='src'>                                           uint16_t *filtered_angle);</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='blank'><td class='no'>28</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>29</td><td class='src'>/* 将滤波计数换算成 [0, 2π) 的单圈机械角，单位为弧度；不负责跨圈累计。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>30</td><td class='src'>HAL_StatusTypeDef AS5600_ReadMechanicalAngle(const AS5600_Handle_t *handle,</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>31</td><td class='src'>                                              float *angle_rad);</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='blank'><td class='no'>32</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>33</td><td class='src'>#ifdef __cplusplus</td><td class='exp'><span class='auto-tag'>自动</span>条件编译入口（ifdef）：满足条件才编译下面的内容，不满足则整段跳过。</td></tr>
+<tr class=''><td class='no'>34</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='auto'><td class='no'>35</td><td class='src'>#endif</td><td class='exp'><span class='auto-tag'>自动</span>结束一个条件编译块。</td></tr>
+<tr class='blank'><td class='no'>36</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>37</td><td class='src'>#endif /* AS5600_H */</td><td class='exp'><span class='auto-tag'>自动</span>结束一个条件编译块。</td></tr>
+</table>
+<div class='summary'><h4>本文件小总结</h4><b>AS5600.h 总结：</b>极简驱动头：地址 0x36、寄存器 0x0E 起 2 字节、4096 计数/圈。</div>
+</div>
+<div class='section'>
+<h2><span class='filepath'>Core/interface/AS5600.c</span> <span class='pill'>0 行</span></h2>
+<div class='filedesc'>读取滤波角度并换算弧度。</div>
+<table class='code'>
+<tr><th>行号</th><th>代码（Core/interface/AS5600.c）</th><th>逐行讲解</th></tr>
+<tr class='auto'><td class='no'>1</td><td class='src'>#include "AS5600.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "AS5600.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='blank'><td class='no'>2</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>3</td><td class='src'>/* 机械一圈的弧度值；I2C 超时以毫秒计，防止控制任务长期阻塞。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>4</td><td class='src'>#define AS5600_TWO_PI               6.28318530717958647692f</td><td class='exp'>2π 常量。</td></tr>
+<tr class=''><td class='no'>5</td><td class='src'>#define AS5600_I2C_TIMEOUT_MS       2U</td><td class='exp'>I2C 超时 2ms——电机任务 5ms 一拍，读取超时不能超过控制周期，否则会拖慢闭环。</td></tr>
+<tr class='blank'><td class='no'>6</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>7</td><td class='src'>/* 从 0x0E/0x0F 连续读取滤波后的 12 位 ANGLE，成功后才写输出参数。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>8</td><td class='src'>HAL_StatusTypeDef AS5600_ReadFilteredAngle(const AS5600_Handle_t *handle,</td><td class='exp'><b>AS5600_ReadFilteredAngle</b>：读 0x0E/0x0F 两字节。</td></tr>
+<tr class='auto'><td class='no'>9</td><td class='src'>                                           uint16_t *filtered_angle)</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>10</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>11</td><td class='src'>    uint8_t data[2];</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>data</code>（类型 <code>uint8_t</code>，数组）。</td></tr>
+<tr class='blank'><td class='no'>12</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>13</td><td class='src'>    if ((handle == 0) || (handle-&gt;i2c == 0) || (filtered_angle == 0))</td><td class='exp'>指针防御。</td></tr>
+<tr class=''><td class='no'>14</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>15</td><td class='src'>        return HAL_ERROR;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>HAL_ERROR</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>16</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>17</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>18</td><td class='src'>    /* HAL 接收 8 位地址格式，故 7 位器件地址左移；寄存器地址宽度为 8 位。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>19</td><td class='src'>    if (HAL_I2C_Mem_Read(handle-&gt;i2c,</td><td class='exp'>HAL_I2C_Mem_Read：7 位地址左移成 8 位格式(0x6C)、寄存器地址 8 位宽、读 2 字节、2ms 超时。线上过程见第 5 章小总结（START→0x6C→0x0E→重复START→读2字节→STOP）。</td></tr>
+<tr class='auto'><td class='no'>20</td><td class='src'>                         (uint16_t)(handle-&gt;address &lt;&lt; 1U),</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>21</td><td class='src'>                         AS5600_ANGLE_REGISTER,</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>22</td><td class='src'>                         I2C_MEMADD_SIZE_8BIT,</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>23</td><td class='src'>                         data,</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>24</td><td class='src'>                         sizeof(data),</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>25</td><td class='src'>                         AS5600_I2C_TIMEOUT_MS) != HAL_OK)</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>26</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>27</td><td class='src'>        return HAL_ERROR;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>HAL_ERROR</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>28</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>29</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>30</td><td class='src'>    /* 高、低字节合并后屏蔽高 4 位，只保留 0～4095 的有效计数。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>31</td><td class='src'>    *filtered_angle = (uint16_t)((((uint16_t)data[0] &lt;&lt; 8U) | data[1]) &amp; 0x0FFFU);</td><td class='exp'>高字节<<8 | 低字节，再 &0x0FFF 屏蔽高 4 位（寄存器高 4 位是状态位）→ 0~4095。</td></tr>
+<tr class='auto'><td class='no'>32</td><td class='src'>    return HAL_OK;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>HAL_OK</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>33</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>34</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>35</td><td class='src'>/* 4096 个计数对应机械一圈；这里只给单圈角，跨圈累计由控制任务完成。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>36</td><td class='src'>HAL_StatusTypeDef AS5600_ReadMechanicalAngle(const AS5600_Handle_t *handle,</td><td class='exp'><b>AS5600_ReadMechanicalAngle</b>：换算单圈弧度。</td></tr>
+<tr class='auto'><td class='no'>37</td><td class='src'>                                              float *angle_rad)</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>38</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>39</td><td class='src'>    uint16_t filtered_angle;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>filtered_angle</code>（类型 <code>uint16_t</code>）。</td></tr>
+<tr class='blank'><td class='no'>40</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>41</td><td class='src'>    if (angle_rad == 0)</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class=''><td class='no'>42</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>43</td><td class='src'>        return HAL_ERROR;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>HAL_ERROR</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>44</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>45</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>46</td><td class='src'>    if (AS5600_ReadFilteredAngle(handle, &amp;filtered_angle) != HAL_OK)</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class=''><td class='no'>47</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>48</td><td class='src'>        return HAL_ERROR;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>HAL_ERROR</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>49</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>50</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>51</td><td class='src'>    /* 每计数为 2π/4096 rad；最大计数 4095，因此结果始终小于 2π。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>52</td><td class='src'>    *angle_rad = (float)filtered_angle * AS5600_TWO_PI / AS5600_ANGLE_RESOLUTION;</td><td class='exp'>角度 = 计数×2π/4096。最大 4095 → 结果略小于 2π。跨圈累计由电机控制任务完成（第 13 章）。</td></tr>
+<tr class='auto'><td class='no'>53</td><td class='src'>    return HAL_OK;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>HAL_OK</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>54</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+</table>
+<div class='summary'><h4>本文件小总结</h4><b>AS5600.c 总结：</b>两次 I2C 读封装：原始计数→&0x0FFF→弧度。2ms 超时保证电机任务 5ms 周期不被拖垮；读失败返回 HAL_ERROR，电机任务将其升级为传感器故障。</div>
+</div>
+<div class='section'>
+<h2><span class='filepath'>Core/interface/FT6336.h</span> <span class='pill'>0 行</span></h2>
+<div class='filedesc'>触摸驱动接口。</div>
+<table class='code'>
+<tr><th>行号</th><th>代码（Core/interface/FT6336.h）</th><th>逐行讲解</th></tr>
+<tr class='auto'><td class='no'>1</td><td class='src'>#ifndef FT6336_H</td><td class='exp'><span class='auto-tag'>自动</span>条件编译入口（ifndef）：满足条件才编译下面的内容，不满足则整段跳过。</td></tr>
+<tr class='auto'><td class='no'>2</td><td class='src'>#define FT6336_H</td><td class='exp'><span class='auto-tag'>自动</span>定义宏 <code>FT6336_H</code>：编译前做纯文本替换，详见对应头文件小总结。</td></tr>
+<tr class='blank'><td class='no'>3</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>4</td><td class='src'>#include "main.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "main.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='auto'><td class='no'>5</td><td class='src'>#include &lt;stdbool.h&gt;</td><td class='exp'><span class='auto-tag'>自动</span>包含系统头文件 &lt;stdbool.h&gt;：引入标准库/库的声明。</td></tr>
+<tr class='auto'><td class='no'>6</td><td class='src'>#include &lt;stdint.h&gt;</td><td class='exp'><span class='auto-tag'>自动</span>包含系统头文件 &lt;stdint.h&gt;：引入标准库/库的声明。</td></tr>
+<tr class='blank'><td class='no'>7</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>8</td><td class='src'>/**</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>9</td><td class='src'> * @brief 复位并初始化 FT6336 触摸控制器。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>10</td><td class='src'> */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>11</td><td class='src'>void FT6336_Init(void);</td><td class='exp'>FT6336_Init：复位并初始化触摸控制器。</td></tr>
+<tr class='blank'><td class='no'>12</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>13</td><td class='src'>/**</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>14</td><td class='src'> * @brief 通过 I2C 轮询当前是否存在触摸点。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>15</td><td class='src'> * @return true 表示当前存在有效触摸点，false 表示无触摸或读取失败。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>16</td><td class='src'> */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>17</td><td class='src'>bool FT6336_IsTouched(void);</td><td class='exp'>FT6336_IsTouched：轮询是否有触摸点。</td></tr>
+<tr class='blank'><td class='no'>18</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>19</td><td class='src'>/**</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>20</td><td class='src'> * @brief 读取当前第一个触摸点的显示坐标。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>21</td><td class='src'> * @param x 返回触摸点的 X 坐标。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>22</td><td class='src'> * @param y 返回触摸点的 Y 坐标。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>23</td><td class='src'> * @return true 表示坐标读取成功，false 表示无触摸或读取失败。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>24</td><td class='src'> */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>25</td><td class='src'>bool FT6336_Read(uint16_t *x, uint16_t *y);</td><td class='exp'>FT6336_Read：读取第一个触摸点坐标。</td></tr>
+<tr class='blank'><td class='no'>26</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>27</td><td class='src'>#endif</td><td class='exp'><span class='auto-tag'>自动</span>结束一个条件编译块。</td></tr>
+</table>
+<div class='summary'><h4>本文件小总结</h4><b>FT6336.h 总结：</b>三个接口：初始化、有无触摸、读坐标。LVGL 输入层每轮调用后两个。</div>
+</div>
+<div class='section'>
+<h2><span class='filepath'>Core/interface/FT6336.c</span> <span class='pill'>0 行</span></h2>
+<div class='filedesc'>触摸复位、I2C 轮询、坐标转换与 EXTI 中断回调。</div>
+<table class='code'>
+<tr><th>行号</th><th>代码（Core/interface/FT6336.c）</th><th>逐行讲解</th></tr>
+<tr class='auto'><td class='no'>1</td><td class='src'>#include "FT6336.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "FT6336.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='auto'><td class='no'>2</td><td class='src'>#include "app_system.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "app_system.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='auto'><td class='no'>3</td><td class='src'>#include "i2c.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "i2c.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='auto'><td class='no'>4</td><td class='src'>#include &lt;stddef.h&gt;</td><td class='exp'><span class='auto-tag'>自动</span>包含系统头文件 &lt;stddef.h&gt;：引入标准库/库的声明。</td></tr>
+<tr class='blank'><td class='no'>5</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>6</td><td class='src'>#define FT6336_I2C_ADDR          (0x38U &lt;&lt; 1)</td><td class='exp'>FT6336 的 8 位 I2C 地址（0x38 左移）。</td></tr>
+<tr class=''><td class='no'>7</td><td class='src'>#define FT6336_REG_NUM_TOUCHES   0x02U</td><td class='exp'>触摸点数量寄存器 0x02。</td></tr>
+<tr class=''><td class='no'>8</td><td class='src'>#define FT6336_REG_TOUCH_1       0x03U</td><td class='exp'>第一个触摸点数据寄存器 0x03 起。</td></tr>
+<tr class='blank'><td class='no'>9</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>10</td><td class='src'>#define FT6336_LCD_WIDTH         240U</td><td class='exp'>屏宽 240。</td></tr>
+<tr class=''><td class='no'>11</td><td class='src'>#define FT6336_LCD_HEIGHT        320U</td><td class='exp'>屏高 320。</td></tr>
+<tr class='blank'><td class='no'>12</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>13</td><td class='src'>static uint8_t touch_count;                    /* 当前 I2C 轮询得到的有效触摸点数量。 */</td><td class='exp'>touch_count：上次轮询到的有效触摸点数（Read 与 IsTouched 之间共享）。</td></tr>
+<tr class='blank'><td class='no'>14</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>15</td><td class='src'>/**</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>16</td><td class='src'> * @brief 复位触摸控制器并清空轮询触摸状态。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>17</td><td class='src'> */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>18</td><td class='src'>void FT6336_Init(void)</td><td class='exp'><b>FT6336_Init()</b>：硬件复位。</td></tr>
+<tr class=''><td class='no'>19</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>20</td><td class='src'>    HAL_GPIO_WritePin(CTP_RST_GPIO_Port, CTP_RST_Pin, GPIO_PIN_RESET);</td><td class='exp'>RST 拉低 20ms——芯片进入复位态。</td></tr>
+<tr class='auto'><td class='no'>21</td><td class='src'>    HAL_Delay(20);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>HAL_Delay()</code>：阻塞式毫秒延时（基于 HAL 时基节拍），当前执行流原地等待指定毫秒数。</td></tr>
+<tr class=''><td class='no'>22</td><td class='src'>    HAL_GPIO_WritePin(CTP_RST_GPIO_Port, CTP_RST_Pin, GPIO_PIN_SET);</td><td class='exp'>RST 拉高后等 300ms 让芯片完成内部初始化。</td></tr>
+<tr class='auto'><td class='no'>23</td><td class='src'>    HAL_Delay(300);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>HAL_Delay()</code>：阻塞式毫秒延时（基于 HAL 时基节拍），当前执行流原地等待指定毫秒数。</td></tr>
+<tr class=''><td class='no'>24</td><td class='src'>    touch_count = 0;</td><td class='exp'>触摸点计数清零。</td></tr>
+<tr class=''><td class='no'>25</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>26</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>27</td><td class='src'>/**</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>28</td><td class='src'> * @brief 轮询 FT6336 的触摸点数量寄存器。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>29</td><td class='src'> * @note 此函数保持原有轮询机制，用于向 LVGL 提供实时触摸状态。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>30</td><td class='src'> */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>31</td><td class='src'>bool FT6336_IsTouched(void)</td><td class='exp'><b>FT6336_IsTouched()</b>：轮询触摸数量寄存器。</td></tr>
+<tr class=''><td class='no'>32</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>33</td><td class='src'>    uint8_t count = 0;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>0</code> 赋给 <code>uint8_t count</code>。</td></tr>
+<tr class='blank'><td class='no'>34</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>35</td><td class='src'>    if (HAL_I2C_Mem_Read(&amp;hi2c2, FT6336_I2C_ADDR, FT6336_REG_NUM_TOUCHES,</td><td class='exp'>HAL_I2C_Mem_Read 读 0x02 寄存器 1 字节（100ms 超时）。这就是“触摸 I2C 传输信息的过程”：START→地址 0x70→寄存器 0x02→重复 START→收 1 字节→STOP。</td></tr>
+<tr class='auto'><td class='no'>36</td><td class='src'>                         I2C_MEMADD_SIZE_8BIT, &amp;count, 1, 100) != HAL_OK) {</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>37</td><td class='src'>        touch_count = 0;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>0</code> 赋给 <code>touch_count</code>。</td></tr>
+<tr class='auto'><td class='no'>38</td><td class='src'>        return false;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>false</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>39</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>40</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>41</td><td class='src'>    touch_count = count &amp; 0x0FU;</td><td class='exp'>低 4 位是有效点数（0~5）。</td></tr>
+<tr class=''><td class='no'>42</td><td class='src'>    return touch_count &gt; 0U &amp;&amp; touch_count &lt;= 5U;</td><td class='exp'>1~5 点视为有触摸；0 点或读取失败返回 false。</td></tr>
+<tr class=''><td class='no'>43</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>44</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>45</td><td class='src'>/**</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>46</td><td class='src'> * @brief 读取 FT6336 的第一个触摸点并转换为显示坐标。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>47</td><td class='src'> */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>48</td><td class='src'>bool FT6336_Read(uint16_t *x, uint16_t *y)</td><td class='exp'><b>FT6336_Read(x, y)</b>：读第一个触摸点并转换坐标。</td></tr>
+<tr class=''><td class='no'>49</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>50</td><td class='src'>    uint8_t buf[4];</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>buf</code>（类型 <code>uint8_t</code>，数组）。</td></tr>
+<tr class='auto'><td class='no'>51</td><td class='src'>    uint16_t raw_x;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>raw_x</code>（类型 <code>uint16_t</code>）。</td></tr>
+<tr class='auto'><td class='no'>52</td><td class='src'>    uint16_t raw_y;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>raw_y</code>（类型 <code>uint16_t</code>）。</td></tr>
+<tr class='blank'><td class='no'>53</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>54</td><td class='src'>    if (x == NULL || y == NULL || touch_count == 0U) {</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='auto'><td class='no'>55</td><td class='src'>        return false;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>false</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>56</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>57</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>58</td><td class='src'>    if (HAL_I2C_Mem_Read(&amp;hi2c2, FT6336_I2C_ADDR, FT6336_REG_TOUCH_1,</td><td class='exp'>从 0x03 连续读 4 字节：[0]=事件+X 高 4 位、[1]=X 低 8 位、[2]=Y 高 4 位、[3]=Y 低 8 位。</td></tr>
+<tr class='auto'><td class='no'>59</td><td class='src'>                         I2C_MEMADD_SIZE_8BIT, buf, sizeof(buf), 100) != HAL_OK) {</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>60</td><td class='src'>        touch_count = 0;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>0</code> 赋给 <code>touch_count</code>。</td></tr>
+<tr class='auto'><td class='no'>61</td><td class='src'>        return false;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>false</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>62</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>63</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>64</td><td class='src'>    /* 00 为按下，10 为持续接触，抬起和无效事件不产生坐标。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>65</td><td class='src'>    if ((buf[0] &amp; 0xC0U) == 0x40U || (buf[0] &amp; 0xC0U) == 0xC0U) {</td><td class='exp'>事件码检查：10=持续接触、C0=抬起——抬起和无效事件不产生坐标（00=按下 才有效）。</td></tr>
+<tr class='auto'><td class='no'>66</td><td class='src'>        touch_count = 0;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>0</code> 赋给 <code>touch_count</code>。</td></tr>
+<tr class='auto'><td class='no'>67</td><td class='src'>        return false;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>false</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>68</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>69</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>70</td><td class='src'>    raw_x = (uint16_t)(((buf[0] &amp; 0x0FU) &lt;&lt; 8) | buf[1]);</td><td class='exp'>X = ((buf[0]&0x0F)<<8)|buf[1]，拼出 12 位 X。</td></tr>
+<tr class=''><td class='no'>71</td><td class='src'>    raw_y = (uint16_t)(((buf[2] &amp; 0x0FU) &lt;&lt; 8) | buf[3]);</td><td class='exp'>Y 同理。</td></tr>
+<tr class='blank'><td class='no'>72</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>73</td><td class='src'>    /* 保留原触摸坐标的 X 轴方向，避免更换控制器后触摸左右镜像。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>74</td><td class='src'>    *x = raw_x &gt;= FT6336_LCD_WIDTH ? 0U : FT6336_LCD_WIDTH - 1U - raw_x;</td><td class='exp'>X 轴翻转：屏的实际触摸方向与显示相反，这里做 240−1−x 镜像（保留硬件方向防止换控制器后左右颠倒）。注意 LVGL 层 touchpad_read 还会再做一次 X 翻转（data->point.x = 240−1−last_x），两次翻转叠加是本硬件的实测标定结果。</td></tr>
+<tr class=''><td class='no'>75</td><td class='src'>    *y = raw_y &gt;= FT6336_LCD_HEIGHT ? FT6336_LCD_HEIGHT - 1U : raw_y;</td><td class='exp'>Y 超界钳位，否则原样。</td></tr>
+<tr class='auto'><td class='no'>76</td><td class='src'>    return true;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>true</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>77</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+</table><div class='summary'><b>小总结（触摸数据链路）：</b>触摸发生 → INT 下降沿中断（只记序号，用于唤醒/熄屏计时）→ LVGL 每轮轮询 FT6336_IsTouched（I2C 读 0x02）→ 有触摸则 FT6336_Read（I2C 读 0x03 起 4 字节拼 12 位坐标）→ X 翻转后交给 LVGL。两个独立通道各司其职：中断通道管“系统级事件”（低功耗），轮询通道管“界面交互”。</div><table class='code'><tr><th>行号</th><th>代码（Core/interface/FT6336.c）</th><th>逐行讲解</th></tr>
+<tr class='blank'><td class='no'>78</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>79</td><td class='src'>/**</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>80</td><td class='src'> * @brief HAL 的 GPIO EXTI 回调，运行在 EXTI15_10 中断上下文。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>81</td><td class='src'> * @param GPIO_Pin 本次产生外部中断的 GPIO 引脚号。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>82</td><td class='src'> * @note 仅通知系统任务记录事件；中断内不访问 I2C、FreeRTOS 或 LVGL。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>83</td><td class='src'> */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>84</td><td class='src'>void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)</td><td class='exp'><b>HAL_GPIO_EXTI_Callback</b>：触摸中断回调（EXTI15_10 上下文）。</td></tr>
+<tr class=''><td class='no'>85</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>86</td><td class='src'>    if (GPIO_Pin == CTP_INT_Pin)</td><td class='exp'>确认是 CTP_INT 引脚。</td></tr>
+<tr class=''><td class='no'>87</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>88</td><td class='src'>        /* 真正开背光和重置倒计时由系统任务处理。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>89</td><td class='src'>        App_System_TouchInterrupt();</td><td class='exp'>只调用 App_System_TouchInterrupt()（递增序号）。中断里绝不访问 I2C/FreeRTOS/LVGL——保持中断极短。</td></tr>
+<tr class=''><td class='no'>90</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>91</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+</table>
+<div class='summary'><h4>本文件小总结</h4><b>FT6336.c 总结：</b>复位时序（低 20ms→高 300ms）、寄存器轮询、12 位坐标拼装、事件码过滤、双 X 翻转标定，以及“中断只记序号”的铁律。</div>
+</div>
+<div class='summary'><h4>本章总结</h4><b>本章总结：</b>两个 I2C 器件两种读法：AS5600 是“短超时高频率”（2ms 超时、5ms 一次，闭环依赖），FT6336 是“长超时低频率”（100ms 超时、LVGL 节奏轮询，交互依赖）。触摸的 INT 中断与 I2C 轮询是两条独立链路。</div>
+</div></body></html>

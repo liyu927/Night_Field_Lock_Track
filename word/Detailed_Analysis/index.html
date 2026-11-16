@@ -1,0 +1,88 @@
+<!DOCTYPE html><html lang='zh-CN'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>项目代码逐行详解 · 目录</title><style>
+:root{
+  --bg:#14161a; --panel:#1d2026; --panel2:#22262e; --code:#171a20;
+  --text:#d8dde5; --dim:#8b93a1; --accent:#4da3ff; --accent2:#7ee2b8;
+  --line:#2c313b; --warn:#f0b429;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:"Microsoft YaHei","PingFang SC",Segoe UI,sans-serif;font-size:15px;line-height:1.75}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px 80px}
+nav.topbar{position:sticky;top:0;z-index:9;background:rgba(20,22,26,.96);
+  border-bottom:1px solid var(--line);padding:10px 0;backdrop-filter:blur(6px)}
+nav.topbar .wrap{padding:0 20px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+nav.topbar a{background:var(--panel2);color:var(--text);padding:4px 12px;border-radius:16px;
+  font-size:13px;border:1px solid var(--line);white-space:nowrap}
+nav.topbar a.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+nav.topbar a:hover{text-decoration:none;filter:brightness(1.15)}
+header.chapter{margin:28px 0 8px}
+header.chapter h1{font-size:26px;margin:0 0 6px;color:#fff}
+header.chapter .meta{color:var(--dim);font-size:13px}
+.intro{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);
+  border-radius:8px;padding:14px 18px;margin:18px 0}
+.summary{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent2);
+  border-radius:8px;padding:14px 18px;margin:18px 0}
+.summary h4,.intro h4{margin:0 0 8px;font-size:15px;color:var(--accent2)}
+.intro h4{color:var(--accent)}
+.section{margin:34px 0}
+.section > h2{font-size:20px;color:#fff;border-bottom:1px solid var(--line);padding-bottom:8px}
+.section .filepath{font-family:Consolas,monospace;color:var(--warn);font-size:14px}
+.section .filedesc{color:var(--dim);font-size:14px;margin:6px 0 10px}
+table.code{width:100%;border-collapse:collapse;background:var(--code);
+  border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:13px}
+table.code th{background:var(--panel2);color:var(--dim);font-weight:600;text-align:left;
+  padding:7px 10px;font-size:12px;position:sticky;top:44px}
+table.code td{padding:3px 10px;vertical-align:top;border-top:1px solid #20242c}
+td.no{width:52px;text-align:right;color:#5c6575;font-family:Consolas,monospace;user-select:none}
+td.src{width:46%;font-family:Consolas,"Courier New",monospace;color:#c9d2e0;white-space:pre;
+  overflow-x:auto}
+td.exp{color:var(--text);font-size:13.5px}
+tr.comment td.src{color:#5f7060}
+tr.comment td.exp{color:var(--dim);font-style:normal}
+tr.blank td.src{color:#3a4150}
+.pill{display:inline-block;background:var(--panel2);border:1px solid var(--line);color:var(--dim);
+  border-radius:12px;padding:1px 10px;font-size:12px;margin-right:6px}
+.diagram{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;
+  margin:18px 0;font-family:Consolas,monospace;white-space:pre;overflow-x:auto;color:#bcd3f5;font-size:13px;line-height:1.55}
+.toc{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 18px;margin:14px 0}
+.toc a{display:block;padding:3px 0;font-size:14px}
+.badge{display:inline-block;background:#2b3a55;color:#9ecbff;border-radius:4px;padding:0 8px;font-size:12px;margin-right:6px}
+tr.auto td.exp{color:#9aa6b8}
+.auto-tag{display:inline-block;background:#2c3140;color:#8fa0b8;border:1px solid #3a4150;
+  border-radius:10px;padding:0 7px;font-size:11px;margin-right:5px;font-style:normal}
+</style></head><body><nav class='topbar'><div class='wrap'><a href='index.html' class='active'>目录</a><a href='ch01_startup.html'>01 启动流程</a><a href='ch02_interrupt.html'>02 中断与时基</a><a href='ch03_gpio_dma.html'>03 GPIO/DMA</a><a href='ch04_adc.html'>04 ADC 采样</a><a href='ch05_i2c.html'>05 I2C 底层</a><a href='ch06_spi.html'>06 SPI 底层</a><a href='ch07_tim.html'>07 定时器PWM</a><a href='ch08_usart_rtc.html'>08 串口/RTC</a><a href='ch09_rtos.html'>09 RTOS骨架</a><a href='ch10_appframe.html'>10 应用框架</a><a href='ch11_systemtask.html'>11 SystemTask</a><a href='ch12_algorithm.html'>12 PID/滤波</a><a href='ch13_foc.html'>13 FOC/SVPWM</a><a href='ch14_w25q64.html'>14 W25Q64存储</a><a href='ch15_parameters.html'>15 参数管理</a><a href='ch16_sensors.html'>16 传感器驱动</a><a href='ch17_lvgl_port.html'>17 LVGL移植</a><a href='ch18_ui.html'>18 UI界面</a><a href='ch19.html'>19 调试与VOFA</a></div></nav>
+<div class='wrap'>
+<header class='chapter'><h1>太阳能光场夜间锁定跟踪平台 · 项目代码逐行详解</h1><div class='meta'>目标硬件：STM32F407 + FreeRTOS(CMSIS-RTOS2) + LVGL 9 + ST7789 触摸屏 + 双轴 FOC 云台 + W25Q64</div></header>
+<div class='intro'><h4>这份文档怎么读</h4><p>本系列每一页讲解一个主题，页内表格按<b>文件 → 行号 → 代码 → 逐行讲解</b>排列：每行代码都标注它来自哪个文件的第几行，并在右侧给出解析；纯注释行不重复解析。每讲完一个函数或一个逻辑块，会插入一段<b>绿色小总结</b>，用通俗中文说明这段代码完成了什么任务、原理是什么。页面顶部的导航条可以跳转到任意章节。</p><p>讲解范围：项目自研代码（应用层、接口层、LVGL 移植层、外设初始化、中断）。按要求不展开 RTOS 内核调度细节与 ST 库函数内部实现，但会讲清 HAL 调用在硬件层面产生了什么效果。</p></div>
+<div class='diagram'>整机数据流（应用层视角）
+ 光敏电阻x4 ──ADC1+DMA循环──> 中值+低通滤波 ──队列──> SystemTask(状态机/低功耗/光照分析) ──角度命令队列──> MotorTask
+                                                                    │                            │
+ 触摸FT6336 ──I2C2轮询──> LVGL 输入设备        RTC 周期唤醒(自动模式)                  ├──SimpleFOC: 位置环/速度环
+ LVGL UI ──SPI1+DMA──> ST7789 液晶 (TIM3_CH4 背光PWM)                                 └──SVPWM──> 三相PWM(TIM1/TIM8)
+                                                                                          │
+ AS5600 磁编码器 ──I2C1/I2C3──> 机械角反馈                    W25Q64(SPI2) <── 电机电角零位 / 用户参数双槽存储</div>
+<div class='toc'><h4 style='margin:6px 0'>章节目录</h4>
+<a href='ch01_startup.html'><span class='badge'>01</span>第 1 章 · 程序启动流程与系统时钟（main.c）</a>
+<a href='ch02_interrupt.html'><span class='badge'>02</span>第 2 章 · 中断服务与时基体系（stm32f4xx_it.c / timebase / msp）</a>
+<a href='ch03_gpio_dma.html'><span class='badge'>03</span>第 3 章 · GPIO 引脚配置与 DMA 控制器（gpio.c / dma.c / main.h）</a>
+<a href='ch04_adc.html'><span class='badge'>04</span>第 4 章 · ADC 光照采样底层（adc.c）</a>
+<a href='ch05_i2c.html'><span class='badge'>05</span>第 5 章 · I2C 总线底层（i2c.c）——触摸屏与两个编码器的传输基础</a>
+<a href='ch06_spi.html'><span class='badge'>06</span>第 6 章 · SPI 总线底层（spi.c）——液晶刷屏与 Flash 存储的传输基础</a>
+<a href='ch07_tim.html'><span class='badge'>07</span>第 7 章 · 定时器 PWM 硬件基础（tim.c）——电机三相 PWM 与背光 PWM 的来源</a>
+<a href='ch08_usart_rtc.html'><span class='badge'>08</span>第 8 章 · 调试串口与 RTC 实时时钟（usart.c / rtc.c）</a>
+<a href='ch09_rtos.html'><span class='badge'>09</span>第 9 章 · FreeRTOS 任务与消息队列骨架（freertos.c 与四个任务入口）</a>
+<a href='ch10_appframe.html'><span class='badge'>10</span>第 10 章 · 应用层框架与任务间接口（app_system.h / app_system.c / Types）</a>
+<a href='ch11_systemtask.html'><span class='badge'>11</span>第 11 章 · 系统状态机与低功耗（app_system.c 中的 SystemTask 部分）</a>
+<a href='ch12_algorithm.html'><span class='badge'>12</span>第 12 章 · 控制算法：PID 与三重滤波（pid.c/h、filter.c/h）</a>
+<a href='ch13_foc.html'><span class='badge'>13</span>第 13 章 · FOC 磁场定向控制与 SVPWM（SimpleFOC_Motor.h/c）</a>
+<a href='ch14_w25q64.html'><span class='badge'>14</span>第 14 章 · W25Q64 外部 Flash 存储底层（W25Q64.h/c）</a>
+<a href='ch15_parameters.html'><span class='badge'>15</span>第 15 章 · 用户参数管理（app_parameters.h/c）</a>
+<a href='ch16_sensors.html'><span class='badge'>16</span>第 16 章 · 传感器驱动：AS5600 磁编码器与 FT6336 触摸芯片（AS5600.c/h、FT6336.c/h）</a>
+<a href='ch17_lvgl_port.html'><span class='badge'>17</span>第 17 章 · LVGL 移植层（lv_port_lcd_stm32.c / lv_port_indev.c）</a>
+<a href='ch18_ui.html'><span class='badge'>18</span>第 18 章 · 界面实现（user_home.c/h、ui.c/h、mylist.c/h）</a>
+<a href='ch19.html'><span class='badge'>19</span>第 19 章 · 调试与 VOFA 上位机接口</a>
+</div>
+<div class='summary'><h4>未逐行展开的文件（原因说明）</h4><p>以下文件属于纯数据、库内部或标准启动代码，不逐行讲解，只说明用途：<br>· <b>Core/ui/noto_sans_sc_16.c</b>——LVGL 中文字库的位图数据（1252 行全为字体点阵常量）；<br>· <b>Core/Src/syscalls.c / sysmem.c</b>——GCC/newlib 底层桩（printf 的 retarget），按讲解要求略过；<br>· <b>Core/Src/system_stm32f4xx.c</b>——SystemInit 标准 ST 模板；<br>· <b>Core/Inc/FreeRTOSConfig.h、stm32f4xx_hal_conf.h</b>——RTOS 与 HAL 的裁剪配置宏；<br>· <b>Drivers/、Middlewares/、lvgl/src</b>——ST HAL 库与 LVGL 库源码本身；<br>· <b>startup_stm32f4xx.s、STM32F407XX_FLASH.ld</b>——启动汇编与链接脚本，工程生成器产物。</p></div>
+</div></body></html>

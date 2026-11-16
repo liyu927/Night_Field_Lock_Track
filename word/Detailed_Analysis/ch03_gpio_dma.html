@@ -1,0 +1,361 @@
+<!DOCTYPE html><html lang='zh-CN'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>第 3 章 · GPIO 引脚配置与 DMA 控制器（gpio.c / dma.c / main.h） - 项目代码逐行详解</title><style>
+:root{
+  --bg:#14161a; --panel:#1d2026; --panel2:#22262e; --code:#171a20;
+  --text:#d8dde5; --dim:#8b93a1; --accent:#4da3ff; --accent2:#7ee2b8;
+  --line:#2c313b; --warn:#f0b429;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:"Microsoft YaHei","PingFang SC",Segoe UI,sans-serif;font-size:15px;line-height:1.75}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px 80px}
+nav.topbar{position:sticky;top:0;z-index:9;background:rgba(20,22,26,.96);
+  border-bottom:1px solid var(--line);padding:10px 0;backdrop-filter:blur(6px)}
+nav.topbar .wrap{padding:0 20px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+nav.topbar a{background:var(--panel2);color:var(--text);padding:4px 12px;border-radius:16px;
+  font-size:13px;border:1px solid var(--line);white-space:nowrap}
+nav.topbar a.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+nav.topbar a:hover{text-decoration:none;filter:brightness(1.15)}
+header.chapter{margin:28px 0 8px}
+header.chapter h1{font-size:26px;margin:0 0 6px;color:#fff}
+header.chapter .meta{color:var(--dim);font-size:13px}
+.intro{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);
+  border-radius:8px;padding:14px 18px;margin:18px 0}
+.summary{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent2);
+  border-radius:8px;padding:14px 18px;margin:18px 0}
+.summary h4,.intro h4{margin:0 0 8px;font-size:15px;color:var(--accent2)}
+.intro h4{color:var(--accent)}
+.section{margin:34px 0}
+.section > h2{font-size:20px;color:#fff;border-bottom:1px solid var(--line);padding-bottom:8px}
+.section .filepath{font-family:Consolas,monospace;color:var(--warn);font-size:14px}
+.section .filedesc{color:var(--dim);font-size:14px;margin:6px 0 10px}
+table.code{width:100%;border-collapse:collapse;background:var(--code);
+  border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:13px}
+table.code th{background:var(--panel2);color:var(--dim);font-weight:600;text-align:left;
+  padding:7px 10px;font-size:12px;position:sticky;top:44px}
+table.code td{padding:3px 10px;vertical-align:top;border-top:1px solid #20242c}
+td.no{width:52px;text-align:right;color:#5c6575;font-family:Consolas,monospace;user-select:none}
+td.src{width:46%;font-family:Consolas,"Courier New",monospace;color:#c9d2e0;white-space:pre;
+  overflow-x:auto}
+td.exp{color:var(--text);font-size:13.5px}
+tr.comment td.src{color:#5f7060}
+tr.comment td.exp{color:var(--dim);font-style:normal}
+tr.blank td.src{color:#3a4150}
+.pill{display:inline-block;background:var(--panel2);border:1px solid var(--line);color:var(--dim);
+  border-radius:12px;padding:1px 10px;font-size:12px;margin-right:6px}
+.diagram{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;
+  margin:18px 0;font-family:Consolas,monospace;white-space:pre;overflow-x:auto;color:#bcd3f5;font-size:13px;line-height:1.55}
+.toc{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 18px;margin:14px 0}
+.toc a{display:block;padding:3px 0;font-size:14px}
+.badge{display:inline-block;background:#2b3a55;color:#9ecbff;border-radius:4px;padding:0 8px;font-size:12px;margin-right:6px}
+tr.auto td.exp{color:#9aa6b8}
+.auto-tag{display:inline-block;background:#2c3140;color:#8fa0b8;border:1px solid #3a4150;
+  border-radius:10px;padding:0 7px;font-size:11px;margin-right:5px;font-style:normal}
+</style></head><body><nav class='topbar'><div class='wrap'><a href='index.html'>目录</a><a href='ch01_startup.html'>01 启动流程</a><a href='ch02_interrupt.html'>02 中断与时基</a><a href='ch03_gpio_dma.html' class='active'>03 GPIO/DMA</a><a href='ch04_adc.html'>04 ADC 采样</a><a href='ch05_i2c.html'>05 I2C 底层</a><a href='ch06_spi.html'>06 SPI 底层</a><a href='ch07_tim.html'>07 定时器PWM</a><a href='ch08_usart_rtc.html'>08 串口/RTC</a><a href='ch09_rtos.html'>09 RTOS骨架</a><a href='ch10_appframe.html'>10 应用框架</a><a href='ch11_systemtask.html'>11 SystemTask</a><a href='ch12_algorithm.html'>12 PID/滤波</a><a href='ch13_foc.html'>13 FOC/SVPWM</a><a href='ch14_w25q64.html'>14 W25Q64存储</a><a href='ch15_parameters.html'>15 参数管理</a><a href='ch16_sensors.html'>16 传感器驱动</a><a href='ch17_lvgl_port.html'>17 LVGL移植</a><a href='ch18_ui.html'>18 UI界面</a><a href='ch19.html'>19 调试与VOFA</a></div></nav>
+<div class='wrap'>
+<header class='chapter'><h1>第 3 章 · GPIO 引脚配置与 DMA 控制器（gpio.c / dma.c / main.h）</h1><div class='meta'>文件：Core/Src/gpio.c（115 行）、Core/Src/dma.c（66 行）、Core/Inc/main.h（96 行）</div></header>
+<div class='intro'><h4>本章导读</h4><p>GPIO 是所有外设的“接线表”：液晶 SPI 片选/复位/DC、Flash 片选、触摸复位/中断、两个电机使能 EN、LED 都在这里配置。DMA 则是“自动搬运工”：让 ADC 与 SPI 的数据收发不经 CPU 之手。本章还给出 main.h 的引脚宏定义，把抽象名字映射到具体引脚号。</p></div>
+<div class='section'>
+<h2><span class='filepath'>Core/Inc/main.h</span> <span class='pill'>0 行</span></h2>
+<div class='filedesc'>CubeMX 生成的引脚宏：一个可读名字对应一个 GPIO 端口+引脚号。</div>
+<table class='code'>
+<tr><th>行号</th><th>代码（Core/Inc/main.h）</th><th>逐行讲解</th></tr>
+<tr class='comment'><td class='no'>1</td><td class='src'>/* USER CODE BEGIN Header */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>2</td><td class='src'>/**</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>3</td><td class='src'>  ******************************************************************************</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>4</td><td class='src'>  * @file           : main.h</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>5</td><td class='src'>  * @brief          : Header for main.c file.</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>6</td><td class='src'>  *                   This file contains the common defines of the application.</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>7</td><td class='src'>  ******************************************************************************</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>8</td><td class='src'>  * @attention</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>9</td><td class='src'>  *</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>10</td><td class='src'>  * Copyright (c) 2026 STMicroelectronics.</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>11</td><td class='src'>  * All rights reserved.</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>12</td><td class='src'>  *</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>13</td><td class='src'>  * This software is licensed under terms that can be found in the LICENSE file</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>14</td><td class='src'>  * in the root directory of this software component.</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>15</td><td class='src'>  * If no LICENSE file comes with this software, it is provided AS-IS.</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>16</td><td class='src'>  *</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>17</td><td class='src'>  ******************************************************************************</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>18</td><td class='src'>  */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>19</td><td class='src'>/* USER CODE END Header */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>20</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>21</td><td class='src'>/* Define to prevent recursive inclusion -------------------------------------*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>22</td><td class='src'>#ifndef __MAIN_H</td><td class='exp'>包含保护宏：防止头文件被重复包含（#ifndef/#define/#endif 三件套）。</td></tr>
+<tr class=''><td class='no'>23</td><td class='src'>#define __MAIN_H</td><td class='exp'>定义保护宏名。</td></tr>
+<tr class='blank'><td class='no'>24</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>25</td><td class='src'>#ifdef __cplusplus</td><td class='exp'><span class='auto-tag'>自动</span>条件编译入口（ifdef）：满足条件才编译下面的内容，不满足则整段跳过。</td></tr>
+<tr class='auto'><td class='no'>26</td><td class='src'>extern "C" {</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>27</td><td class='src'>#endif</td><td class='exp'><span class='auto-tag'>自动</span>结束一个条件编译块。</td></tr>
+<tr class='blank'><td class='no'>28</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>29</td><td class='src'>/* Includes ------------------------------------------------------------------*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>30</td><td class='src'>#include "stm32f4xx_hal.h"</td><td class='exp'>包含 STM32F4 HAL 库总头文件——所有 HAL 函数、句柄类型都来自它。</td></tr>
+<tr class='blank'><td class='no'>31</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>32</td><td class='src'>/* Private includes ----------------------------------------------------------*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>33</td><td class='src'>/* USER CODE BEGIN Includes */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>34</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>35</td><td class='src'>/* USER CODE END Includes */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>36</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>37</td><td class='src'>/* Exported types ------------------------------------------------------------*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>38</td><td class='src'>/* USER CODE BEGIN ET */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>39</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>40</td><td class='src'>/* USER CODE END ET */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>41</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>42</td><td class='src'>/* Exported constants --------------------------------------------------------*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>43</td><td class='src'>/* USER CODE BEGIN EC */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>44</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>45</td><td class='src'>/* USER CODE END EC */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>46</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>47</td><td class='src'>/* Exported macro ------------------------------------------------------------*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>48</td><td class='src'>/* USER CODE BEGIN EM */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>49</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>50</td><td class='src'>/* USER CODE END EM */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>51</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>52</td><td class='src'>/* Exported functions prototypes ---------------------------------------------*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>53</td><td class='src'>void Error_Handler(void);</td><td class='exp'>声明全局错误处理函数 Error_Handler()（实现在 main.c）。</td></tr>
+<tr class='blank'><td class='no'>54</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>55</td><td class='src'>/* USER CODE BEGIN EFP */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>56</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>57</td><td class='src'>/* USER CODE END EFP */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>58</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>59</td><td class='src'>/* Private defines -----------------------------------------------------------*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>60</td><td class='src'>#define LED_Pin GPIO_PIN_0</td><td class='exp'>LED 引脚宏 = PC0。</td></tr>
+<tr class=''><td class='no'>61</td><td class='src'>#define LED_GPIO_Port GPIOC</td><td class='exp'>LED 所在端口 = GPIOC。</td></tr>
+<tr class=''><td class='no'>62</td><td class='src'>#define SPI2_CS_Pin GPIO_PIN_1</td><td class='exp'>SPI2 片选（W25Q64 Flash 的 CS）= PC1。</td></tr>
+<tr class=''><td class='no'>63</td><td class='src'>#define SPI2_CS_GPIO_Port GPIOC</td><td class='exp'>SPI2 片选端口 = GPIOC。</td></tr>
+<tr class=''><td class='no'>64</td><td class='src'>#define ADC1_LEFT_TOP_Pin GPIO_PIN_0</td><td class='exp'>ADC 通道 PA0 = 左上光敏电阻。</td></tr>
+<tr class=''><td class='no'>65</td><td class='src'>#define ADC1_LEFT_TOP_GPIO_Port GPIOA</td><td class='exp'>左上光敏端口 = GPIOA。</td></tr>
+<tr class=''><td class='no'>66</td><td class='src'>#define ADC1_LEFT_BOTTOM_Pin GPIO_PIN_1</td><td class='exp'>PA1 = 左下光敏电阻。</td></tr>
+<tr class=''><td class='no'>67</td><td class='src'>#define ADC1_LEFT_BOTTOM_GPIO_Port GPIOA</td><td class='exp'>左下端口 = GPIOA。</td></tr>
+<tr class=''><td class='no'>68</td><td class='src'>#define ADC1_RIGHT_TOP_Pin GPIO_PIN_2</td><td class='exp'>PA2 = 右上光敏电阻。</td></tr>
+<tr class=''><td class='no'>69</td><td class='src'>#define ADC1_RIGHT_TOP_GPIO_Port GPIOA</td><td class='exp'>右上端口 = GPIOA。</td></tr>
+<tr class=''><td class='no'>70</td><td class='src'>#define ADC1_RIGHT_BOTTOM_Pin GPIO_PIN_3</td><td class='exp'>PA3 = 右下光敏电阻。</td></tr>
+<tr class=''><td class='no'>71</td><td class='src'>#define ADC1_RIGHT_BOTTOM_GPIO_Port GPIOA</td><td class='exp'>右下端口 = GPIOA。</td></tr>
+<tr class=''><td class='no'>72</td><td class='src'>#define SPI1_DC_Pin GPIO_PIN_4</td><td class='exp'>SPI1 DC 引脚（命令/数据切换）= PA4。</td></tr>
+<tr class=''><td class='no'>73</td><td class='src'>#define SPI1_DC_GPIO_Port GPIOA</td><td class='exp'>DC 端口 = GPIOA。</td></tr>
+<tr class=''><td class='no'>74</td><td class='src'>#define SPI1_RST_Pin GPIO_PIN_6</td><td class='exp'>SPI1 液晶复位 = PA6。</td></tr>
+<tr class=''><td class='no'>75</td><td class='src'>#define SPI1_RST_GPIO_Port GPIOA</td><td class='exp'>液晶复位端口 = GPIOA。</td></tr>
+<tr class=''><td class='no'>76</td><td class='src'>#define SPI1_CS_Pin GPIO_PIN_0</td><td class='exp'>SPI1 液晶片选 = PB0。</td></tr>
+<tr class=''><td class='no'>77</td><td class='src'>#define SPI1_CS_GPIO_Port GPIOB</td><td class='exp'>液晶片选端口 = GPIOB。</td></tr>
+<tr class=''><td class='no'>78</td><td class='src'>#define TIM1_EN_Pin GPIO_PIN_7</td><td class='exp'>竖直轴电机使能 TIM1_EN = PE7（高电平使能电调）。</td></tr>
+<tr class=''><td class='no'>79</td><td class='src'>#define TIM1_EN_GPIO_Port GPIOE</td><td class='exp'>TIM1_EN 端口 = GPIOE。</td></tr>
+<tr class=''><td class='no'>80</td><td class='src'>#define TIM8_EN_Pin GPIO_PIN_8</td><td class='exp'>水平轴电机使能 TIM8_EN = PE8。</td></tr>
+<tr class=''><td class='no'>81</td><td class='src'>#define TIM8_EN_GPIO_Port GPIOE</td><td class='exp'>TIM8_EN 端口 = GPIOE。</td></tr>
+<tr class=''><td class='no'>82</td><td class='src'>#define CTP_INT_Pin GPIO_PIN_15</td><td class='exp'>触摸中断输入 CTP_INT = PE15（下降沿触发 EXTI）。</td></tr>
+<tr class=''><td class='no'>83</td><td class='src'>#define CTP_INT_GPIO_Port GPIOE</td><td class='exp'>触摸中断端口 = GPIOE。</td></tr>
+<tr class=''><td class='no'>84</td><td class='src'>#define CTP_INT_EXTI_IRQn EXTI15_10_IRQn</td><td class='exp'>该引脚对应的中断号 = EXTI15_10_IRQn。</td></tr>
+<tr class=''><td class='no'>85</td><td class='src'>#define CTP_RST_Pin GPIO_PIN_12</td><td class='exp'>触摸复位 CTP_RST = PB12。</td></tr>
+<tr class=''><td class='no'>86</td><td class='src'>#define CTP_RST_GPIO_Port GPIOB</td><td class='exp'>触摸复位端口 = GPIOB。</td></tr>
+<tr class='blank'><td class='no'>87</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>88</td><td class='src'>/* USER CODE BEGIN Private defines */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>89</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>90</td><td class='src'>/* USER CODE END Private defines */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>91</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>92</td><td class='src'>#ifdef __cplusplus</td><td class='exp'><span class='auto-tag'>自动</span>条件编译入口（ifdef）：满足条件才编译下面的内容，不满足则整段跳过。</td></tr>
+<tr class=''><td class='no'>93</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='auto'><td class='no'>94</td><td class='src'>#endif</td><td class='exp'><span class='auto-tag'>自动</span>结束一个条件编译块。</td></tr>
+<tr class='blank'><td class='no'>95</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>96</td><td class='src'>#endif /* __MAIN_H */</td><td class='exp'><span class='auto-tag'>自动</span>结束一个条件编译块。</td></tr>
+</table>
+<div class='summary'><h4>本文件小总结</h4><b>main.h 总结：</b>本文件完成“名字→引脚”的映射。阅读后续代码时凡是 LED_Pin、SPI2_CS_Pin、TIM1_EN_Pin 等，都到本表查实际引脚。四路光敏在 PA0~PA3（对应 ADC1_IN0~IN3），两轴电机 EN 在 PE7/PE8，触摸 INT 在 PE15。</div>
+</div>
+<div class='section'>
+<h2><span class='filepath'>Core/Src/gpio.c</span> <span class='pill'>0 行</span></h2>
+<div class='filedesc'>配置全部 GPIO：输出脚初始电平、模式、上下拉，以及触摸中断（EXTI 下降沿）。</div>
+<table class='code'>
+<tr><th>行号</th><th>代码（Core/Src/gpio.c）</th><th>逐行讲解</th></tr>
+<tr class='comment'><td class='no'>1</td><td class='src'>/* USER CODE BEGIN Header */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>2</td><td class='src'>/**</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>3</td><td class='src'>  ******************************************************************************</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>4</td><td class='src'>  * @file    gpio.c</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>5</td><td class='src'>  * @brief   This file provides code for the configuration</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>6</td><td class='src'>  *          of all used GPIO pins.</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>7</td><td class='src'>  ******************************************************************************</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>8</td><td class='src'>  * @attention</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>9</td><td class='src'>  *</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>10</td><td class='src'>  * Copyright (c) 2026 STMicroelectronics.</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>11</td><td class='src'>  * All rights reserved.</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>12</td><td class='src'>  *</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>13</td><td class='src'>  * This software is licensed under terms that can be found in the LICENSE file</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>14</td><td class='src'>  * in the root directory of this software component.</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>15</td><td class='src'>  * If no LICENSE file comes with this software, it is provided AS-IS.</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>16</td><td class='src'>  *</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>17</td><td class='src'>  ******************************************************************************</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>18</td><td class='src'>  */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>19</td><td class='src'>/* USER CODE END Header */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>20</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>21</td><td class='src'>/* Includes ------------------------------------------------------------------*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>22</td><td class='src'>#include "gpio.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "gpio.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='blank'><td class='no'>23</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>24</td><td class='src'>/* USER CODE BEGIN 0 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>25</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>26</td><td class='src'>/* USER CODE END 0 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>27</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>28</td><td class='src'>/*----------------------------------------------------------------------------*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>29</td><td class='src'>/* Configure GPIO                                                             */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>30</td><td class='src'>/*----------------------------------------------------------------------------*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>31</td><td class='src'>/* USER CODE BEGIN 1 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>32</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>33</td><td class='src'>/* USER CODE END 1 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>34</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>35</td><td class='src'>/** Configure pins as</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>36</td><td class='src'>        * Analog</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>37</td><td class='src'>        * Input</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>38</td><td class='src'>        * Output</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>39</td><td class='src'>        * EVENT_OUT</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>40</td><td class='src'>        * EXTI</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>41</td><td class='src'>*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>42</td><td class='src'>void MX_GPIO_Init(void)</td><td class='exp'><b>MX_GPIO_Init()</b>：所有普通 GPIO 的一次性配置入口，main() 第一个调用的外设初始化。</td></tr>
+<tr class=''><td class='no'>43</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='blank'><td class='no'>44</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>45</td><td class='src'>  GPIO_InitTypeDef GPIO_InitStruct = {0};</td><td class='exp'>定义 GPIO 配置结构体 {0} 清零，后面逐个字段填写。</td></tr>
+<tr class='blank'><td class='no'>46</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>47</td><td class='src'>  /* GPIO Ports Clock Enable */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>48</td><td class='src'>  __HAL_RCC_GPIOH_CLK_ENABLE();</td><td class='exp'>使能 GPIOH 时钟（HSE 晶振引脚在 PH 口，虽未直接使用也一并使能）。</td></tr>
+<tr class=''><td class='no'>49</td><td class='src'>  __HAL_RCC_GPIOC_CLK_ENABLE();</td><td class='exp'>使能 GPIOC 时钟（LED、SPI2_CS 在 C 口）。</td></tr>
+<tr class=''><td class='no'>50</td><td class='src'>  __HAL_RCC_GPIOA_CLK_ENABLE();</td><td class='exp'>使能 GPIOA 时钟（四路光敏、液晶 DC/RST、USART1、I2C3_SCL）。</td></tr>
+<tr class=''><td class='no'>51</td><td class='src'>  __HAL_RCC_GPIOB_CLK_ENABLE();</td><td class='exp'>使能 GPIOB 时钟（液晶 CS、触摸复位/中断相关、I2C1/2）。</td></tr>
+<tr class=''><td class='no'>52</td><td class='src'>  __HAL_RCC_GPIOE_CLK_ENABLE();</td><td class='exp'>使能 GPIOE 时钟（两个电机 EN、触摸 INT、TIM1 PWM）。</td></tr>
+<tr class='blank'><td class='no'>53</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>54</td><td class='src'>  /*Configure GPIO pin Output Level */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>55</td><td class='src'>  HAL_GPIO_WritePin(GPIOC, LED_Pin|SPI2_CS_Pin, GPIO_PIN_SET);</td><td class='exp'>给 PC0(LED) 和 PC1(SPI2_CS) 写初始高电平：LED 熄灭（高电平灭）、Flash 片选默认不选中（CS 高=未选中）。</td></tr>
+<tr class='blank'><td class='no'>56</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>57</td><td class='src'>  /*Configure GPIO pin Output Level */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>58</td><td class='src'>  HAL_GPIO_WritePin(GPIOA, SPI1_DC_Pin|SPI1_RST_Pin, GPIO_PIN_RESET);</td><td class='exp'>给 PA4(DC)、PA6(液晶复位) 写低电平：DC 低=命令模式（复位流程稍后由 LCD 驱动拉高）。</td></tr>
+<tr class='blank'><td class='no'>59</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>60</td><td class='src'>  /*Configure GPIO pin Output Level */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>61</td><td class='src'>  HAL_GPIO_WritePin(GPIOB, SPI1_CS_Pin|CTP_RST_Pin, GPIO_PIN_SET);</td><td class='exp'>给 PB0(SPI1_CS)、PB12(触摸复位) 写高电平：液晶默认未选中；触摸默认非复位状态。</td></tr>
+<tr class='blank'><td class='no'>62</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>63</td><td class='src'>  /*Configure GPIO pin Output Level */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>64</td><td class='src'>  HAL_GPIO_WritePin(GPIOE, TIM1_EN_Pin|TIM8_EN_Pin, GPIO_PIN_RESET);</td><td class='exp'>给 PE7/PE8（两个电机 EN）写低电平：上电即断开电机驱动，保证初始化过程电机不会突然转动。</td></tr>
+<tr class='blank'><td class='no'>65</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>66</td><td class='src'>  /*Configure GPIO pin : LED_Pin */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>67</td><td class='src'>  GPIO_InitStruct.Pin = LED_Pin;</td><td class='exp'>开始配置 LED 引脚：选择 PC0。</td></tr>
+<tr class=''><td class='no'>68</td><td class='src'>  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;</td><td class='exp'>模式 = 推挽输出（既能输出高低电平，有一定驱动能力）。</td></tr>
+<tr class=''><td class='no'>69</td><td class='src'>  GPIO_InitStruct.Pull = GPIO_NOPULL;</td><td class='exp'>无内部上下拉（输出脚不需要）。</td></tr>
+<tr class=''><td class='no'>70</td><td class='src'>  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;</td><td class='exp'>低速档：LED 翻转频率极低，低速足够且更省功耗/EMI。</td></tr>
+<tr class=''><td class='no'>71</td><td class='src'>  HAL_GPIO_Init(LED_GPIO_Port, &amp;GPIO_InitStruct);</td><td class='exp'>把以上配置写入 GPIOC 寄存器（MODER/OTYPER/OSPEEDR/PUPDR）。</td></tr>
+<tr class='blank'><td class='no'>72</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>73</td><td class='src'>  /*Configure GPIO pin : SPI2_CS_Pin */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>74</td><td class='src'>  GPIO_InitStruct.Pin = SPI2_CS_Pin;</td><td class='exp'>配置 SPI2 片选：选择 PC1。</td></tr>
+<tr class=''><td class='no'>75</td><td class='src'>  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;</td><td class='exp'>推挽输出。</td></tr>
+<tr class=''><td class='no'>76</td><td class='src'>  GPIO_InitStruct.Pull = GPIO_NOPULL;</td><td class='exp'>无上下拉。</td></tr>
+<tr class=''><td class='no'>77</td><td class='src'>  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;</td><td class='exp'>中速档：Flash SPI 最高 21MHz，中速引脚翻转（约 25~50MHz 等级）足够。</td></tr>
+<tr class=''><td class='no'>78</td><td class='src'>  HAL_GPIO_Init(SPI2_CS_GPIO_Port, &amp;GPIO_InitStruct);</td><td class='exp'>写入 GPIOC。</td></tr>
+<tr class='blank'><td class='no'>79</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>80</td><td class='src'>  /*Configure GPIO pins : SPI1_DC_Pin SPI1_RST_Pin */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>81</td><td class='src'>  GPIO_InitStruct.Pin = SPI1_DC_Pin|SPI1_RST_Pin;</td><td class='exp'>配置液晶 DC 与复位：选择 PA4|PA6 两个引脚。</td></tr>
+<tr class=''><td class='no'>82</td><td class='src'>  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;</td><td class='exp'>推挽输出。</td></tr>
+<tr class=''><td class='no'>83</td><td class='src'>  GPIO_InitStruct.Pull = GPIO_NOPULL;</td><td class='exp'>无上下拉。</td></tr>
+<tr class=''><td class='no'>84</td><td class='src'>  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;</td><td class='exp'>中速档。</td></tr>
+<tr class=''><td class='no'>85</td><td class='src'>  HAL_GPIO_Init(GPIOA, &amp;GPIO_InitStruct);</td><td class='exp'>写入 GPIOA。</td></tr>
+<tr class='blank'><td class='no'>86</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>87</td><td class='src'>  /*Configure GPIO pins : SPI1_CS_Pin CTP_RST_Pin */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>88</td><td class='src'>  GPIO_InitStruct.Pin = SPI1_CS_Pin|CTP_RST_Pin;</td><td class='exp'>配置液晶 CS 与触摸复位：选择 PB0|PB12。</td></tr>
+<tr class=''><td class='no'>89</td><td class='src'>  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;</td><td class='exp'>推挽输出。</td></tr>
+<tr class=''><td class='no'>90</td><td class='src'>  GPIO_InitStruct.Pull = GPIO_NOPULL;</td><td class='exp'>无上下拉。</td></tr>
+<tr class=''><td class='no'>91</td><td class='src'>  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;</td><td class='exp'>中速档。</td></tr>
+<tr class=''><td class='no'>92</td><td class='src'>  HAL_GPIO_Init(GPIOB, &amp;GPIO_InitStruct);</td><td class='exp'>写入 GPIOB。</td></tr>
+<tr class='blank'><td class='no'>93</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>94</td><td class='src'>  /*Configure GPIO pins : TIM1_EN_Pin TIM8_EN_Pin */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>95</td><td class='src'>  GPIO_InitStruct.Pin = TIM1_EN_Pin|TIM8_EN_Pin;</td><td class='exp'>配置两个电机使能脚：选择 PE7|PE8。</td></tr>
+<tr class=''><td class='no'>96</td><td class='src'>  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;</td><td class='exp'>推挽输出。</td></tr>
+<tr class=''><td class='no'>97</td><td class='src'>  GPIO_InitStruct.Pull = GPIO_NOPULL;</td><td class='exp'>无上下拉。</td></tr>
+<tr class=''><td class='no'>98</td><td class='src'>  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;</td><td class='exp'>低速档：EN 只是开关电平，无需高速。</td></tr>
+<tr class=''><td class='no'>99</td><td class='src'>  HAL_GPIO_Init(GPIOE, &amp;GPIO_InitStruct);</td><td class='exp'>写入 GPIOE。</td></tr>
+<tr class='blank'><td class='no'>100</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>101</td><td class='src'>  /*Configure GPIO pin : CTP_INT_Pin */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>102</td><td class='src'>  GPIO_InitStruct.Pin = CTP_INT_Pin;</td><td class='exp'>配置触摸中断输入：选择 PE15。</td></tr>
+<tr class=''><td class='no'>103</td><td class='src'>  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;</td><td class='exp'>模式 = 下降沿触发的外部中断（EXTI）：FT6336 在检测到触摸时把 INT 拉低产生中断。</td></tr>
+<tr class=''><td class='no'>104</td><td class='src'>  GPIO_InitStruct.Pull = GPIO_PULLUP;</td><td class='exp'>内部上拉：INT 平时被拉到高电平，按下瞬间落到低形成下降沿。</td></tr>
+<tr class=''><td class='no'>105</td><td class='src'>  HAL_GPIO_Init(CTP_INT_GPIO_Port, &amp;GPIO_InitStruct);</td><td class='exp'>写入 GPIOE（该引脚进入 EXTI 事件线 15）。</td></tr>
+<tr class='blank'><td class='no'>106</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>107</td><td class='src'>  /* EXTI interrupt init*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>108</td><td class='src'>  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);</td><td class='exp'>设置 EXTI15_10 中断的抢占优先级为 5、子优先级 0（数值越小越优先；5 属于中低优先级，允许被 RTOS 管理的 API 调用级别）。</td></tr>
+<tr class=''><td class='no'>109</td><td class='src'>  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);</td><td class='exp'>在 NVIC 使能该中断线——从现在起触摸引脚的下降沿会触发中断。</td></tr>
+<tr class='blank'><td class='no'>110</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>111</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+</table><div class='summary'><b>小总结（GPIO 初始化）：</b>本段代码完成的工作是“把所有引脚摆到安全初始态”。原理：先写电平再配模式，可以避免引脚在配置瞬间输出错误电平——例如先把电机 EN 拉低再设为输出，保证不存在“配置中途 EN 被浮空误读”的窗口；Flash/液晶片选默认高电平（未选中），触摸 INT 配成上拉+下降沿中断，FT6336 一有触摸 CPU 立刻被唤醒。</div><table class='code'><tr><th>行号</th><th>代码（Core/Src/gpio.c）</th><th>逐行讲解</th></tr>
+<tr class='blank'><td class='no'>112</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>113</td><td class='src'>/* USER CODE BEGIN 2 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>114</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>115</td><td class='src'>/* USER CODE END 2 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+</table>
+<div class='summary'><h4>本文件小总结</h4><b>gpio.c 全文总结：</b>初始化 10 个输出脚（LED、SPI2_CS、SPI1 DC/RST/CS、CTP_RST、TIM1/8_EN）与 1 个中断输入脚（CTP_INT），关键安全动作是：电机 EN 上电即为低、两个 SPI 片选默认不选中、触摸中断使能后可随时唤醒系统。</div>
+</div>
+<div class='section'>
+<h2><span class='filepath'>Core/Src/dma.c</span> <span class='pill'>0 行</span></h2>
+<div class='filedesc'>使能 DMA 控制器时钟并配置 4 个 DMA 流的中断。</div>
+<table class='code'>
+<tr><th>行号</th><th>代码（Core/Src/dma.c）</th><th>逐行讲解</th></tr>
+<tr class='comment'><td class='no'>1</td><td class='src'>/* USER CODE BEGIN Header */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>2</td><td class='src'>/**</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>3</td><td class='src'>  ******************************************************************************</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>4</td><td class='src'>  * @file    dma.c</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>5</td><td class='src'>  * @brief   This file provides code for the configuration</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>6</td><td class='src'>  *          of all the requested memory to memory DMA transfers.</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>7</td><td class='src'>  ******************************************************************************</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>8</td><td class='src'>  * @attention</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>9</td><td class='src'>  *</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>10</td><td class='src'>  * Copyright (c) 2026 STMicroelectronics.</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>11</td><td class='src'>  * All rights reserved.</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>12</td><td class='src'>  *</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>13</td><td class='src'>  * This software is licensed under terms that can be found in the LICENSE file</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>14</td><td class='src'>  * in the root directory of this software component.</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>15</td><td class='src'>  * If no LICENSE file comes with this software, it is provided AS-IS.</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>16</td><td class='src'>  *</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>17</td><td class='src'>  ******************************************************************************</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>18</td><td class='src'>  */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>19</td><td class='src'>/* USER CODE END Header */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>20</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>21</td><td class='src'>/* Includes ------------------------------------------------------------------*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>22</td><td class='src'>#include "dma.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "dma.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='blank'><td class='no'>23</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>24</td><td class='src'>/* USER CODE BEGIN 0 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>25</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>26</td><td class='src'>/* USER CODE END 0 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>27</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>28</td><td class='src'>/*----------------------------------------------------------------------------*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>29</td><td class='src'>/* Configure DMA                                                              */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>30</td><td class='src'>/*----------------------------------------------------------------------------*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>31</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>32</td><td class='src'>/* USER CODE BEGIN 1 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>33</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>34</td><td class='src'>/* USER CODE END 1 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>35</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>36</td><td class='src'>/**</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>37</td><td class='src'>  * Enable DMA controller clock</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>38</td><td class='src'>  */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>39</td><td class='src'>void MX_DMA_Init(void)</td><td class='exp'><b>MX_DMA_Init()</b>：DMA 系统级初始化。DMA 是独立于 CPU 的数据搬运硬件，需要先开总线时钟。</td></tr>
+<tr class=''><td class='no'>40</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='blank'><td class='no'>41</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>42</td><td class='src'>  /* DMA controller clock enable */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>43</td><td class='src'>  __HAL_RCC_DMA2_CLK_ENABLE();</td><td class='exp'>使能 DMA2 时钟：DMA2 挂 AHB，服务于 ADC1（Stream0）和 SPI1_TX（Stream5）。</td></tr>
+<tr class=''><td class='no'>44</td><td class='src'>  __HAL_RCC_DMA1_CLK_ENABLE();</td><td class='exp'>使能 DMA1 时钟：服务于 SPI2_TX（Stream4）和 SPI2_RX（Stream3）。</td></tr>
+<tr class='blank'><td class='no'>45</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>46</td><td class='src'>  /* DMA interrupt init */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>47</td><td class='src'>  /* DMA1_Stream3_IRQn interrupt configuration */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>48</td><td class='src'>  HAL_NVIC_SetPriority(DMA1_Stream3_IRQn, 5, 0);</td><td class='exp'>设置 DMA1_Stream3（SPI2 RX，接 Flash 收数据）抢占优先级 5。</td></tr>
+<tr class=''><td class='no'>49</td><td class='src'>  HAL_NVIC_EnableIRQ(DMA1_Stream3_IRQn);</td><td class='exp'>在 NVIC 使能该流的中断。</td></tr>
+<tr class='comment'><td class='no'>50</td><td class='src'>  /* DMA1_Stream4_IRQn interrupt configuration */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>51</td><td class='src'>  HAL_NVIC_SetPriority(DMA1_Stream4_IRQn, 5, 0);</td><td class='exp'>设置 DMA1_Stream4（SPI2 TX，向 Flash 发数据）优先级 5。</td></tr>
+<tr class=''><td class='no'>52</td><td class='src'>  HAL_NVIC_EnableIRQ(DMA1_Stream4_IRQn);</td><td class='exp'>使能其中断。</td></tr>
+<tr class='comment'><td class='no'>53</td><td class='src'>  /* DMA2_Stream0_IRQn interrupt configuration */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>54</td><td class='src'>  HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 5, 0);</td><td class='exp'>设置 DMA2_Stream0（ADC1 循环采样）优先级 5。</td></tr>
+<tr class=''><td class='no'>55</td><td class='src'>  HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);</td><td class='exp'>使能其中断。</td></tr>
+<tr class='comment'><td class='no'>56</td><td class='src'>  /* DMA2_Stream5_IRQn interrupt configuration */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>57</td><td class='src'>  HAL_NVIC_SetPriority(DMA2_Stream5_IRQn, 5, 0);</td><td class='exp'>设置 DMA2_Stream5（SPI1 TX，液晶刷屏）优先级 5。</td></tr>
+<tr class=''><td class='no'>58</td><td class='src'>  HAL_NVIC_EnableIRQ(DMA2_Stream5_IRQn);</td><td class='exp'>使能其中断。刷屏完成的“下一帧可以发”信号就靠它触发回调。</td></tr>
+<tr class='blank'><td class='no'>59</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>60</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>61</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>62</td><td class='src'>/* USER CODE BEGIN 2 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>63</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>64</td><td class='src'>/* USER CODE END 2 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>65</td><td class='src'> </td><td class='exp'></td></tr>
+</table>
+<div class='summary'><h4>本文件小总结</h4><b>dma.c 总结：</b>本文件只做两件事：打开 DMA1/DMA2 总线时钟，并把四个 DMA 流的中断在 NVIC 里登记（统一优先级 5）。各流的方向/宽度/模式等详细参数在对应外设的 MspInit 里配置（如 adc.c 的 hdma_adc1、spi.c 的 hdma_spi2_tx/rx），因为 DMA 参数必须与使用它的外设绑定。</div>
+</div>
+<div class='summary'><h4>本章总结</h4><b>本章总结：</b>GPIO 层面的三个安全设计值得记住：电机 EN 默认拉低（防上电乱转）、SPI 片选默认拉高（防误操作外设）、触摸 INT 用上拉+下降沿（静止时高电平，一触摸就产生中断）。DMA 层面记住四条流的角色：ADC 循环搬运四路光照、SPI1-TX 刷屏、SPI2-TX/RX 读写 Flash——它们让 CPU 在数据传输期间可以去跑控制环。</div>
+</div></body></html>

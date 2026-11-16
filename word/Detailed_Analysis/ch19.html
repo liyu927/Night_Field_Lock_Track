@@ -1,0 +1,322 @@
+<!DOCTYPE html><html lang='zh-CN'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>第 19 章 · 调试与 VOFA 上位机接口 - 项目代码逐行详解</title><style>
+:root{
+  --bg:#14161a; --panel:#1d2026; --panel2:#22262e; --code:#171a20;
+  --text:#d8dde5; --dim:#8b93a1; --accent:#4da3ff; --accent2:#7ee2b8;
+  --line:#2c313b; --warn:#f0b429;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:"Microsoft YaHei","PingFang SC",Segoe UI,sans-serif;font-size:15px;line-height:1.75}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px 80px}
+nav.topbar{position:sticky;top:0;z-index:9;background:rgba(20,22,26,.96);
+  border-bottom:1px solid var(--line);padding:10px 0;backdrop-filter:blur(6px)}
+nav.topbar .wrap{padding:0 20px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+nav.topbar a{background:var(--panel2);color:var(--text);padding:4px 12px;border-radius:16px;
+  font-size:13px;border:1px solid var(--line);white-space:nowrap}
+nav.topbar a.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+nav.topbar a:hover{text-decoration:none;filter:brightness(1.15)}
+header.chapter{margin:28px 0 8px}
+header.chapter h1{font-size:26px;margin:0 0 6px;color:#fff}
+header.chapter .meta{color:var(--dim);font-size:13px}
+.intro{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);
+  border-radius:8px;padding:14px 18px;margin:18px 0}
+.summary{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent2);
+  border-radius:8px;padding:14px 18px;margin:18px 0}
+.summary h4,.intro h4{margin:0 0 8px;font-size:15px;color:var(--accent2)}
+.intro h4{color:var(--accent)}
+.section{margin:34px 0}
+.section > h2{font-size:20px;color:#fff;border-bottom:1px solid var(--line);padding-bottom:8px}
+.section .filepath{font-family:Consolas,monospace;color:var(--warn);font-size:14px}
+.section .filedesc{color:var(--dim);font-size:14px;margin:6px 0 10px}
+table.code{width:100%;border-collapse:collapse;background:var(--code);
+  border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:13px}
+table.code th{background:var(--panel2);color:var(--dim);font-weight:600;text-align:left;
+  padding:7px 10px;font-size:12px;position:sticky;top:44px}
+table.code td{padding:3px 10px;vertical-align:top;border-top:1px solid #20242c}
+td.no{width:52px;text-align:right;color:#5c6575;font-family:Consolas,monospace;user-select:none}
+td.src{width:46%;font-family:Consolas,"Courier New",monospace;color:#c9d2e0;white-space:pre;
+  overflow-x:auto}
+td.exp{color:var(--text);font-size:13.5px}
+tr.comment td.src{color:#5f7060}
+tr.comment td.exp{color:var(--dim);font-style:normal}
+tr.blank td.src{color:#3a4150}
+.pill{display:inline-block;background:var(--panel2);border:1px solid var(--line);color:var(--dim);
+  border-radius:12px;padding:1px 10px;font-size:12px;margin-right:6px}
+.diagram{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;
+  margin:18px 0;font-family:Consolas,monospace;white-space:pre;overflow-x:auto;color:#bcd3f5;font-size:13px;line-height:1.55}
+.toc{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 18px;margin:14px 0}
+.toc a{display:block;padding:3px 0;font-size:14px}
+.badge{display:inline-block;background:#2b3a55;color:#9ecbff;border-radius:4px;padding:0 8px;font-size:12px;margin-right:6px}
+tr.auto td.exp{color:#9aa6b8}
+.auto-tag{display:inline-block;background:#2c3140;color:#8fa0b8;border:1px solid #3a4150;
+  border-radius:10px;padding:0 7px;font-size:11px;margin-right:5px;font-style:normal}
+</style></head><body><nav class='topbar'><div class='wrap'><a href='index.html'>目录</a><a href='ch01_startup.html'>01 启动流程</a><a href='ch02_interrupt.html'>02 中断与时基</a><a href='ch03_gpio_dma.html'>03 GPIO/DMA</a><a href='ch04_adc.html'>04 ADC 采样</a><a href='ch05_i2c.html'>05 I2C 底层</a><a href='ch06_spi.html'>06 SPI 底层</a><a href='ch07_tim.html'>07 定时器PWM</a><a href='ch08_usart_rtc.html'>08 串口/RTC</a><a href='ch09_rtos.html'>09 RTOS骨架</a><a href='ch10_appframe.html'>10 应用框架</a><a href='ch11_systemtask.html'>11 SystemTask</a><a href='ch12_algorithm.html'>12 PID/滤波</a><a href='ch13_foc.html'>13 FOC/SVPWM</a><a href='ch14_w25q64.html'>14 W25Q64存储</a><a href='ch15_parameters.html'>15 参数管理</a><a href='ch16_sensors.html'>16 传感器驱动</a><a href='ch17_lvgl_port.html'>17 LVGL移植</a><a href='ch18_ui.html'>18 UI界面</a><a href='ch19.html' class='active'>19 调试与VOFA</a></div></nav>
+<div class='wrap'>
+<header class='chapter'><h1>第 19 章 · 调试与 VOFA 上位机接口</h1><div class='meta'>文件：Core/common/com_Debug.h（57 行）+ Core/common/com_Debug.c（147 行）｜主题：日志开关、printf 重定向、VOFA+ FireWater 波形协议、环形命令队列</div></header>
+<div class='intro'><h4>本章导读</h4>
+<p>调试代码是每个嵌入式项目都离不开的部分。本章讲解 <code>com_Debug.h / com_Debug.c</code>——它承担三个职责：</p>
+<ol>
+<li><b>日志开关与增强打印</b>：用宏控制 <code>debug_printf</code>，自动在日志前面加上"文件名:行号"，并且可以在发布版一键关闭全部日志（串口打印很慢，实时控制程序里打印 10 个字节约耗 1ms）。</li>
+<li><b>printf 重定向</b>：让标准库的 <code>printf</code> 从 USART1 输出。C 语言标准本身并不知道"串口"是什么，必须由我们提供底层输出函数。</li>
+<li><b>VOFA+ 上位机接口</b>：把电机控制的关键浮点量（目标速度、实际速度、PID 输出……）按 FireWater 格式发到 PC，VOFA+ 软件会自动把它们画成实时曲线；同时接收 PC 下发的文本命令（如改参数），用"中断逐字节组装 + 环形队列"安全地交给任务处理。</li>
+</ol>
+<p>新手只需要记住一条主线：<b>发送方向</b>是"任务调用 VOFA_SendValues → 格式化成文本 → 阻塞式串口发送"；<b>接收方向</b>是"串口中断每收到 1 字节进入回调 → 拼成一行 → 存入环形队列 → 任务用 VOFA_GetCommand 取走"。中断里绝不睡眠、绝不调用复杂函数，只操作静态内存，这是全章最重要的设计原则。</p>
+</div>
+<div class='section'>
+<h2><span class='filepath'>Core/common/com_Debug.h</span> <span class='pill'>0 行</span></h2>
+<div class='filedesc'>调试模块对外接口：日志开关宏、VOFA 配置宏与函数声明。</div>
+<table class='code'>
+<tr><th>行号</th><th>代码（Core/common/com_Debug.h）</th><th>逐行讲解</th></tr>
+<tr class=''><td class='no'>1</td><td class='src'>#ifndef COM_DEBUG_H</td><td class='exp'>头文件保护开关（ifndef）：如果 COM_DEBUG_H 这个宏还没被定义过，就继续往下编译；防止同一个 .c 文件间接把这个头文件包含两次导致重复定义报错。</td></tr>
+<tr class=''><td class='no'>2</td><td class='src'>#define COM_DEBUG_H</td><td class='exp'>紧接着把 COM_DEBUG_H 定义为 1，下次再包含本文件时第 1 行条件不成立，整个内容被跳过。与文件末尾第 57 行的 #endif 配对。</td></tr>
+<tr class='blank'><td class='no'>3</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>4</td><td class='src'>#include &lt;stdio.h&gt;</td><td class='exp'>包含标准输入输出头，为了使用 printf 的声明以及后面 snprintf 的格式化能力。</td></tr>
+<tr class=''><td class='no'>5</td><td class='src'>#include &lt;string.h&gt;</td><td class='exp'>包含标准字符串头，为了使用 strrchr（从后往前找字符）和 memcpy。</td></tr>
+<tr class=''><td class='no'>6</td><td class='src'>#include "main.h"</td><td class='exp'>包含 main.h，间接拿到 HAL 类型定义（HAL_StatusTypeDef、uint8_t 等），本头文件中 VOFA 函数声明的返回值/参数类型都依赖它。</td></tr>
+<tr class='blank'><td class='no'>7</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>8</td><td class='src'>// 日志输出打印在CPU运行上非常占用资源 =&gt; 通过比特率可以计算  打印10字节左右大概需要1ms</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>9</td><td class='src'>// 所以在后续飞机需要正常飞行的时候  需要关闭打印功能</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>10</td><td class='src'>// 设计一个日志输出打印开关</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>11</td><td class='src'>#ifndef DEBUG_LOG_ENABLE</td><td class='exp'>条件编译：如果外部（比如编译命令的 -D 参数）没有定义过 DEBUG_LOG_ENABLE，才进入下面两行——允许用户从外部强制关闭日志。</td></tr>
+<tr class=''><td class='no'>12</td><td class='src'>#define DEBUG_LOG_ENABLE 1</td><td class='exp'>默认把日志开关定义为 1（开启）。想关闭时可在工程选项里加 -DDEBUG_LOG_ENABLE=0，一行都不用改代码。</td></tr>
+<tr class=''><td class='no'>13</td><td class='src'>#endif</td><td class='exp'>与第 11 行 #ifndef 配对结束。</td></tr>
+<tr class='blank'><td class='no'>14</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>15</td><td class='src'>#ifndef DEBUG_UART_TIMEOUT</td><td class='exp'>同理：如果没有外部定义过 DEBUG_UART_TIMEOUT，</td></tr>
+<tr class=''><td class='no'>16</td><td class='src'>#define DEBUG_UART_TIMEOUT 1000U</td><td class='exp'>默认给 printf 重定向的串口发送设置 1000ms 超时。打印是阻塞式的，超时太短会截断日志，太长会卡住任务，1 秒是保守值。</td></tr>
+<tr class=''><td class='no'>17</td><td class='src'>#endif</td><td class='exp'>与第 15 行配对结束。</td></tr>
+<tr class='blank'><td class='no'>18</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>19</td><td class='src'>/* VOFA+ 接口总开关；需要调试时改为 1。 */</td><td class='exp'>注释行说明了意图：VOFA+ 接口总开关，需要波形调试时改为 1。</td></tr>
+<tr class=''><td class='no'>20</td><td class='src'>#ifndef VOFA_DEBUG</td><td class='exp'>条件编译：VOFA 功能默认开启（=1）。把它改成 0 后，第 24~40 行的宏和函数声明、以及 .c 文件里对应的实现都会被编译器剔除，不占任何 Flash 和 RAM。</td></tr>
+<tr class=''><td class='no'>21</td><td class='src'>#define VOFA_DEBUG 1</td><td class='exp'>与第 20 行配对的 #endif 之前，把 VOFA_DEBUG 默认定义为 1。</td></tr>
+<tr class=''><td class='no'>22</td><td class='src'>#endif</td><td class='exp'>结束 VOFA_DEBUG 的 ifndef 块。</td></tr>
+<tr class='blank'><td class='no'>23</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>24</td><td class='src'>#if VOFA_DEBUG</td><td class='exp'>只有 VOFA_DEBUG 为真才编译以下内容——这是'调试代码零成本移除'的典型写法。</td></tr>
+</table><div class='summary'>
+<div class="summary"><b>📝 小总结（头文件整体设计）</b><br>
+本段头文件完成的工作是<b>用条件编译宏实现"调试功能可整体开关"</b>，原理是：<code>#if VOFA_DEBUG</code> / <code>#if DEBUG_LOG_ENABLE</code> 让编译器在预处理阶段就决定哪些代码参与编译。关闭开关时，VOFA 的函数声明、debug_printf 的定义统统消失，调用处被替换成 <code>((void)0)</code> 空语句，最终固件里不存在任何调试代码——既不占 Flash 也不拖慢实时控制。头文件还用 <code>__FILE__</code> / <code>__LINE__</code> 内置宏配合 strrchr，让每条日志自动带上"来自哪个文件第几行"，排错时不用再猜。所有对外函数（VOFA_SendValues / VOFA_StartReceive / VOFA_GetCommand）只在这里声明一次，实现在 .c 文件中，符合 C 语言"头文件管接口、源文件管实现"的分工。</div>
+</div><table class='code'><tr><th>行号</th><th>代码（Core/common/com_Debug.h）</th><th>逐行讲解</th></tr>
+<tr class='comment'><td class='no'>25</td><td class='src'>/* FireWater 数据格式配置。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>26</td><td class='src'>#define VOFA_FIREWATER_DECIMAL_PLACES    4</td><td class='exp'>FireWater 数据格式的小数位数：每个浮点数保留 4 位小数（例如 "1234.5678"）。位数越多文本越长、发送越慢。</td></tr>
+<tr class=''><td class='no'>27</td><td class='src'>#define VOFA_MAX_CHANNEL_COUNT           8U</td><td class='exp'>最多支持同时发送 8 个通道（8 个浮点量），VOFA+ 会画 8 条曲线。</td></tr>
+<tr class=''><td class='no'>28</td><td class='src'>#define VOFA_VALUE_TEXT_SIZE             48U</td><td class='exp'>每个通道数值文本预留的最大字符数 48："-1234.5678," 这样一段远用不了 48 字节，留足余量防止 snprintf 截断。</td></tr>
+<tr class=''><td class='no'>29</td><td class='src'>#define VOFA_TX_BUFFER_SIZE              ((VOFA_MAX_CHANNEL_COUNT * VOFA_VALUE_TEXT_SIZE) + 1U)</td><td class='exp'>发送缓冲区总大小 = 8 通道 × 48 字节 + 1 字节余量 = 385 字节。这是栈上一个临时 char 数组的大小。</td></tr>
+<tr class=''><td class='no'>30</td><td class='src'>#define VOFA_UART_TIMEOUT_MS             100U</td><td class='exp'>阻塞发送的超时时间 100ms：波特率 115200 下发 385 字节约需 33ms，100ms 足够且不至于卡死任务。</td></tr>
+<tr class=''><td class='no'>31</td><td class='src'>#define VOFA_COMMAND_LENGTH               48U</td><td class='exp'>单条接收命令的最大长度 48 字符（含结尾 '\0'），对应后面 vofa_rx_line 数组的大小。</td></tr>
+<tr class='blank'><td class='no'>32</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>33</td><td class='src'>/* 将同一采样时刻的多通道数据按 FireWater 格式发送到 VOFA+。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>34</td><td class='src'>HAL_StatusTypeDef VOFA_SendValues(const float *values, uint16_t count);</td><td class='exp'>对外声明 VOFA_SendValues：把同一采样时刻的一组浮点值按 FireWater 格式发出去。values 是浮点数组首地址，count 是通道数。其他文件（例如调试任务）包含本头文件后即可调用。</td></tr>
+<tr class='blank'><td class='no'>35</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>36</td><td class='src'>/* 启动 USART1 单字节中断接收；完整文本命令以换行结束。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>37</td><td class='src'>HAL_StatusTypeDef VOFA_StartReceive(void);</td><td class='exp'>对外声明 VOFA_StartReceive：启动 USART1 的单字节中断接收，让 PC → 单片机方向的命令接收跑起来。</td></tr>
+<tr class=''><td class='no'>38</td><td class='src'>/* 从接收队列取出一条命令；返回 1 表示取到，0 表示暂时没有。 */</td><td class='exp'>对外声明 VOFA_GetCommand：任务从环形队列里取一条完整命令；返回 1 表示取到了，0 表示队列暂时为空。</td></tr>
+<tr class='auto'><td class='no'>39</td><td class='src'>uint8_t VOFA_GetCommand(char *command, uint16_t size);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>VOFA_GetCommand()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>40</td><td class='src'>#endif</td><td class='exp'>结束第 24 行 #if VOFA_DEBUG 的条件编译块。</td></tr>
+<tr class='blank'><td class='no'>41</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>42</td><td class='src'>#if DEBUG_LOG_ENABLE</td><td class='exp'>只有日志开关打开时才编译 debug_printf 宏的定义。</td></tr>
+<tr class='blank'><td class='no'>43</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>44</td><td class='src'>// 使用宏定义的方式 只打印文件名称 不打印路径名称</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>45</td><td class='src'>// strrchr()从后向前查找字符串中的字符</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>46</td><td class='src'>#define COM_DEBUG_FILE_NAME_BACKSLASH (strrchr(__FILE__, '\\') ? strrchr(__FILE__, '\\') + 1 : __FILE__)</td><td class='exp'>定义宏 COM_DEBUG_FILE_NAME_BACKSLASH：__FILE__ 是编译器内置宏，展开后是源文件完整路径。strrchr(路径,'\\') 从后往前找最后一个反斜杠，返回指向它的指针，+1 就跳过反斜杠指向文件名；如果找不到（返回 NULL）就直接用整个路径。这样日志里只显示"SystemTask.c"而不是冗长的目录。</td></tr>
+<tr class=''><td class='no'>47</td><td class='src'>#define COM_DEBUG_FILE_NAME (strrchr(COM_DEBUG_FILE_NAME_BACKSLASH, '/') ? strrchr(COM_DEBUG_FILE_NAME_BACKSLASH, '/') + 1 : COM_DEBUG_FILE_NAME_BACKSLASH)</td><td class='exp'>同理处理正斜杠 '/'：Linux/GCC 环境路径用正斜杠分隔，这里再剥一层，保证两种平台都只留文件名。</td></tr>
+<tr class='blank'><td class='no'>48</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>49</td><td class='src'>// 使用宏定义的方式能实现打印日志之前 先添加文件名和行号</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>50</td><td class='src'>#define debug_printf(format, ...) printf("[%s:%d]  " format, COM_DEBUG_FILE_NAME, __LINE__, ##__VA_ARGS__)</td><td class='exp'>定义 debug_printf 宏：它先打印 "[文件名:行号]  "（__LINE__ 是编译器内置的当前行号），再拼接用户格式串。##__VA_ARGS__ 是 GNU 扩展：当没有可变参数时自动吞掉前面多余的逗号，使 debug_printf("ok") 这种不带参数的调用也能编译。用宏而不是函数的好处是 __FILE__/__LINE__ 在宏展开处求值，行号才是调用处的行号。</td></tr>
+<tr class='blank'><td class='no'>51</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>52</td><td class='src'>#else</td><td class='exp'>else 分支：日志开关关闭时。</td></tr>
+<tr class='comment'><td class='no'>53</td><td class='src'>// 如果没有开启日志输出打印</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>54</td><td class='src'>#define debug_printf(...) ((void)0)</td><td class='exp'>把 debug_printf 定义为空操作 ((void)0)：代码里所有 debug_printf 调用原样保留，编译后不产生任何指令，也不需要到处删 printf——这就是'开关式日志'的价值。</td></tr>
+<tr class=''><td class='no'>55</td><td class='src'>#endif</td><td class='exp'>结束第 42 行 #if DEBUG_LOG_ENABLE 块。</td></tr>
+<tr class='blank'><td class='no'>56</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>57</td><td class='src'>#endif /* COM_DEBUG_H */</td><td class='exp'>结束第 1 行的 #ifndef 头文件保护。</td></tr>
+</table>
+<div class='summary'><h4>本文件小总结</h4>头文件部分到此结束：定义了日志开关、VOFA 协议参数和三个对外函数的签名。</div>
+</div>
+<div class='section'>
+<h2><span class='filepath'>Core/common/com_Debug.c</span> <span class='pill'>0 行</span></h2>
+<div class='filedesc'>调试模块实现：VOFA 接收环形队列、中断逐字节组装、FireWater 发送、printf 重定向。</div>
+<table class='code'>
+<tr><th>行号</th><th>代码（Core/common/com_Debug.c）</th><th>逐行讲解</th></tr>
+<tr class=''><td class='no'>1</td><td class='src'>#include "com_Debug.h"</td><td class='exp'>包含本模块自己的头文件，拿到 VOFA 宏配置与函数声明的类型。</td></tr>
+<tr class=''><td class='no'>2</td><td class='src'>#include "usart.h"</td><td class='exp'>包含 usart.h，为了使用 USART1 的句柄 huart1（CubeMX 在 usart.c 中定义的全局变量，代表已初始化好的 USART1 外设）。</td></tr>
+<tr class='blank'><td class='no'>3</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>4</td><td class='src'>#if VOFA_DEBUG</td><td class='exp'>同样用 #if VOFA_DEBUG 把整段接收/发送实现条件编译：开关关闭时这 120 多行代码完全不参与编译。</td></tr>
+<tr class=''><td class='no'>5</td><td class='src'>#include "FreeRTOS.h"</td><td class='exp'>包含 FreeRTOS 内核头。因为第 30 行的 taskENTER_CRITICAL() 是 FreeRTOS 提供的临界区宏。</td></tr>
+<tr class=''><td class='no'>6</td><td class='src'>#include "task.h"</td><td class='exp'>包含 task.h 是 FreeRTOS 任务 API 的具体声明文件（临界区宏实际定义在这里）。</td></tr>
+<tr class=''><td class='no'>7</td><td class='src'>#define VOFA_COMMAND_SLOTS  16U</td><td class='exp'>环形队列槽位数 16：队列最多缓存 16 条未处理的命令。PC 发太快、任务来不及取时，新命令会被丢弃（见第 53 行的满队判断），但绝不阻塞中断。</td></tr>
+<tr class='blank'><td class='no'>8</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>9</td><td class='src'>static uint8_t vofa_rx_byte;</td><td class='exp'>静态单字节接收缓冲 vofa_rx_byte：HAL_UART_Receive_IT 每次收 1 字节，收满后硬件把字节放到这里并触发回调。必须是 static 全局变量——回调函数和中断都直接访问它，局部变量随栈帧消失不能用于中断。</td></tr>
+<tr class=''><td class='no'>10</td><td class='src'>static char vofa_rx_line[VOFA_COMMAND_LENGTH];</td><td class='exp'>正在组装中的半条命令 vofa_rx_line：中断每收到一个普通字符就追加到这里，收到换行符时整行才算完成。</td></tr>
+<tr class=''><td class='no'>11</td><td class='src'>static char vofa_commands[VOFA_COMMAND_SLOTS][VOFA_COMMAND_LENGTH];</td><td class='exp'>二维数组 vofa_commands[16][48] 是环形队列的存储本体：16 个槽位，每槽存一条最长 48 字节的命令字符串。</td></tr>
+<tr class=''><td class='no'>12</td><td class='src'>static volatile uint8_t vofa_write_index;</td><td class='exp'>写指针 vofa_write_index：指示下一个新命令要放进哪个槽位。volatile 告诉编译器'这个变量会被中断修改'，禁止把读取优化进寄存器缓存——否则任务侧的死循环读取可能永远看到旧值。</td></tr>
+<tr class=''><td class='no'>13</td><td class='src'>static volatile uint8_t vofa_read_index;</td><td class='exp'>读指针 vofa_read_index：指示任务下一个要取的槽位。volatile 的原因同上。</td></tr>
+<tr class=''><td class='no'>14</td><td class='src'>static uint8_t vofa_rx_length;</td><td class='exp'>当前行已累计的字符数 vofa_rx_length：从 0 开始，每收一个有效字符加一，到换行时归零。</td></tr>
+<tr class=''><td class='no'>15</td><td class='src'>static uint8_t vofa_rx_discard;</td><td class='exp'>丢弃标志 vofa_rx_discard：一条命令超过 47 字符时置 1，后续字符全部扔掉直到换行，防止被截断的半条命令被误当成有效参数执行。</td></tr>
+</table><div class='summary'>
+<div class="summary"><b>📝 小总结（模块状态与环形队列）</b><br>
+本段代码完成的工作是<b>为"串口命令接收"搭建一套不依赖任务调度的纯静态存储结构</b>，原理是：单字节缓冲 vofa_rx_byte 是硬件与软件的交接点；vofa_rx_line 是正在拼装的半成品；vofa_commands[16][48] 加上一对 volatile 读写指针构成<b>环形队列</b>——写入端（中断）只推写指针，读取端（任务）只推读指针，指针绕到末尾就 %16 回绕，内存循环复用。volatile 修饰两个指针是关键：它们被中断和任务两个执行流共享，volatile 禁止编译器把跨函数的读取优化掉。而"空 = 读指针==写指针、满 = 写指针+1==读指针"的约定牺牲了 1 个槽位，换来不需要额外布尔变量的简洁判断。</div>
+</div><table class='code'><tr><th>行号</th><th>代码（Core/common/com_Debug.c）</th><th>逐行讲解</th></tr>
+<tr class='blank'><td class='no'>16</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>17</td><td class='src'>HAL_StatusTypeDef VOFA_StartReceive(void)</td><td class='exp'>VOFA_StartReceive 函数定义：启动整个接收链路，上电初始化时被调用一次。</td></tr>
+<tr class=''><td class='no'>18</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>19</td><td class='src'>    /* 中断优先级允许以后在回调中使用 FreeRTOS API；当前回调只操作静态内存。 */</td><td class='exp'>注释解释了优先级取值：中断优先级 5 恰好不高于 configMAX_SYSCALL_INTERRUPT_PRIORITY，理论上允许在回调里用 FreeRTOS API；但当前实现为了简单安全，回调里只碰静态内存。</td></tr>
+<tr class=''><td class='no'>20</td><td class='src'>    HAL_NVIC_SetPriority(USART1_IRQn, 5U, 0U);</td><td class='exp'>设置 USART1 中断的抢占优先级为 5、子优先级 0。数值越小优先级越高；FreeRTOS 要求会调用内核 API 的中断优先级数值 ≥ configMAX_SYSCALL_INTERRUPT_PRIORITY（本工程为 5），所以 5 是'可用临界区'的最高优先级档位。</td></tr>
+<tr class=''><td class='no'>21</td><td class='src'>    HAL_NVIC_EnableIRQ(USART1_IRQn);</td><td class='exp'>在 NVIC（嵌套向量中断控制器）里使能 USART1 中断线，此后串口每收满一次数据都会触发中断。</td></tr>
+<tr class=''><td class='no'>22</td><td class='src'>    return HAL_UART_Receive_IT(&amp;huart1, &amp;vofa_rx_byte, 1U);</td><td class='exp'>调用 HAL 的中断方式接收：注册'从 huart1 收 1 字节存入 vofa_rx_byte'的请求。这是链路的第一个多米诺骨牌——收到后 HAL 在中断里调用第 43 行的回调，回调末尾（第 78 行）再次调用本函数实现'永动'接收。</td></tr>
+<tr class=''><td class='no'>23</td><td class='src'>}</td><td class='exp'>返回启动结果（HAL_OK 或错误码）给调用者。</td></tr>
+<tr class='blank'><td class='no'>24</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>25</td><td class='src'>uint8_t VOFA_GetCommand(char *command, uint16_t size)</td><td class='exp'>VOFA_GetCommand 函数定义：任务侧从环形队列取命令的唯一入口。</td></tr>
+<tr class=''><td class='no'>26</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>27</td><td class='src'>    uint8_t index;</td><td class='exp'>局部变量 index：暂存本次要读的槽位号。</td></tr>
+<tr class='blank'><td class='no'>28</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>29</td><td class='src'>    if (command == NULL || size &lt; VOFA_COMMAND_LENGTH) return 0U;</td><td class='exp'>参数防御：输出指针为空、或调用者给的缓冲区小于一条完整命令所需（48 字节），直接返回 0 表示没取到——避免 memcpy 越界写坏调用者的内存。</td></tr>
+<tr class=''><td class='no'>30</td><td class='src'>    taskENTER_CRITICAL();</td><td class='exp'>进入 FreeRTOS 临界区（关中断到最高屏蔽级）：队列的读写指针会被本函数（任务上下文）和第 57 行（中断上下文）同时修改，属于典型的共享资源竞态。临界区保证'读指针判断+拷贝+指针前移'这三步是原子的，中断进来也得先等着。</td></tr>
+<tr class=''><td class='no'>31</td><td class='src'>    if (vofa_read_index == vofa_write_index)</td><td class='exp'>判断队列是否为空：读指针 == 写指针是环形队列'空'的约定。空则退出临界区并返回 0，调用者（通常是轮询的任务）下次再来问。</td></tr>
+<tr class=''><td class='no'>32</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>33</td><td class='src'>        taskEXIT_CRITICAL();</td><td class='exp'>退出临界区——空队列这条路径不需要拷贝任何数据，尽快放行中断。</td></tr>
+<tr class=''><td class='no'>34</td><td class='src'>        return 0U;</td><td class='exp'>返回 0：没取到命令。</td></tr>
+<tr class=''><td class='no'>35</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>36</td><td class='src'>    index = vofa_read_index;</td><td class='exp'>队列非空：记下当前要读的槽位号。</td></tr>
+<tr class=''><td class='no'>37</td><td class='src'>    memcpy(command, vofa_commands[index], VOFA_COMMAND_LENGTH);</td><td class='exp'>memcpy 把该槽位整条 48 字节命令拷到调用者的缓冲区。固定拷 48 字节（而不是 strlen+1）是因为写入端总是整槽对齐写入，长度一致最简单也最安全。</td></tr>
+<tr class=''><td class='no'>38</td><td class='src'>    vofa_read_index = (uint8_t)((index + 1U) % VOFA_COMMAND_SLOTS);</td><td class='exp'>读指针前移一格并对 16 取模——这就是'环形'的含义：走到 15 之后绕回 0，复用同一块静态内存，永不溢出、永不 malloc。</td></tr>
+<tr class=''><td class='no'>39</td><td class='src'>    taskEXIT_CRITICAL();</td><td class='exp'>退出临界区。此刻中断若带着新命令进来，会写'写指针'指向的槽，与刚读过的槽互不干扰。</td></tr>
+<tr class=''><td class='no'>40</td><td class='src'>    return 1U;</td><td class='exp'>返回 1：成功取到一条命令，调用者可以解析执行。</td></tr>
+<tr class=''><td class='no'>41</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+</table><div class='summary'>
+<div class="summary"><b>📝 小总结（任务的取命令流程）</b><br>
+VOFA_GetCommand 完成的工作是<b>让任务安全地从环形队列取走一条完整命令</b>，原理是"临界区 + 快照读取"：先做参数防御防止越界，然后 taskENTER_CRITICAL() 短暂关中断，把"判断队列非空 → 拷贝 48 字节 → 读指针前移"三步变成原子操作——如果没有临界区，可能出现任务刚判断完非空、正要拷贝时中断插入并改写同一槽位的竞态。临界区内的操作极短（一次 memcpy），对实时性几乎无影响；队列空时快速退出返回 0，调用方任务下一轮循环再来问即可，全程没有任何阻塞等待。</div>
+</div><table class='code'><tr><th>行号</th><th>代码（Core/common/com_Debug.c）</th><th>逐行讲解</th></tr>
+<tr class='blank'><td class='no'>42</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>43</td><td class='src'>void HAL_UART_RxCpltCallback(UART_HandleTypeDef *uart)</td><td class='exp'>HAL_UART_RxCpltCallback：HAL 库约定的接收完成回调。每收满 1 字节（第 22/78 行的请求规格），HAL 中断服务程序调用到这里，参数 uart 告诉我们是哪个串口收的。</td></tr>
+<tr class=''><td class='no'>44</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>45</td><td class='src'>    uint8_t next;</td><td class='exp'>局部变量 next：暂存环形队列写入位置的下一个槽号。</td></tr>
+<tr class='blank'><td class='no'>46</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>47</td><td class='src'>    if (uart != &amp;huart1) return;</td><td class='exp'>过滤：如果完成接收的不是 USART1（理论上只有 huart1 被注册过，这是双保险），直接返回，不处理。</td></tr>
+<tr class=''><td class='no'>48</td><td class='src'>    if (vofa_rx_byte == '\n' || vofa_rx_byte == '\r')</td><td class='exp'>判断刚收到的字节是不是行结束符：'\n'（换行）或 '\r'（回车）都算一条命令的终点——兼容不同上位机的换行习惯。</td></tr>
+<tr class=''><td class='no'>49</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>50</td><td class='src'>        if (vofa_rx_length != 0U &amp;&amp; vofa_rx_discard == 0U)</td><td class='exp'>行结束时：如果这一行确实积累过字符（长度≠0）且没有被判死刑（discard==0），</td></tr>
+<tr class=''><td class='no'>51</td><td class='src'>        {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>52</td><td class='src'>            next = (uint8_t)((vofa_write_index + 1U) % VOFA_COMMAND_SLOTS);</td><td class='exp'>计算写指针的下一个槽位 next（写指针+1 对 16 取模）。</td></tr>
+<tr class=''><td class='no'>53</td><td class='src'>            if (next != vofa_read_index)</td><td class='exp'>满队判断：如果 next 恰好等于读指针，说明 16 个槽全被未处理命令占满（留了 1 格做'满/空'区分），新命令放不进去——直接丢弃，绝不等待。中断里等待是灾难。</td></tr>
+<tr class=''><td class='no'>54</td><td class='src'>            {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>55</td><td class='src'>                vofa_rx_line[vofa_rx_length] = '\0';</td><td class='exp'>队列有空间：在半成品行尾补 '\0' 终止符，把它变成合法 C 字符串。</td></tr>
+<tr class=''><td class='no'>56</td><td class='src'>                memcpy(vofa_commands[vofa_write_index], vofa_rx_line, vofa_rx_length + 1U);</td><td class='exp'>整条 memcpy 到写指针指向的槽位（含 '\0'，所以长度是 rx_length+1）。</td></tr>
+<tr class=''><td class='no'>57</td><td class='src'>                vofa_write_index = next;</td><td class='exp'>写指针前移一格：新命令对任务'可见'了。注意这行在中断里改共享变量——任务侧读它时用第 30 行的临界区保护，形成完整的竞态防护。</td></tr>
+<tr class=''><td class='no'>58</td><td class='src'>            }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>59</td><td class='src'>            vofa_rx_length = 0U;</td><td class='exp'>无论是否成功入队，把行长度清零，准备接收下一行。</td></tr>
+<tr class=''><td class='no'>60</td><td class='src'>        }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>61</td><td class='src'>        vofa_rx_length = 0U;</td><td class='exp'>这行处理'
+'连发的情况：第一个 '\r' 进来时行已入队、长度清零；紧接着的 '\n' 又触发回调，长度已是 0、第 50 行条件不成立，落到这里再清一次零——保证空行不会产生空命令。</td></tr>
+<tr class=''><td class='no'>62</td><td class='src'>        vofa_rx_discard = 0U;</td><td class='exp'>丢弃标志复位：新的一行重新拥有完整资格。</td></tr>
+<tr class=''><td class='no'>63</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+</table><div class='summary'>
+<div class="summary"><b>📝 小总结（中断逐字节组装与丢弃策略）</b><br>
+HAL_UART_RxCpltCallback 完成的工作是<b>在中断里把一个个零散字节组装成完整命令行并存入环形队列</b>，原理是"状态机拼行"：普通字符追加进 vofa_rx_line 并累加长度；遇到 '\r'/'\n' 时，若行内容合法且队列未满，补 '\0' 后 memcpy 入队、写指针前移，行长度清零（第 61 行兜底处理 "\r\n" 连发导致的空行）；若单行超过 47 字符则置 discard 标志，本行剩余字节全部静默丢弃——<b>宁可整条不执行，也不让被截断的半条命令带着错误参数运行</b>。最后第 78 行重新挂 HAL_UART_Receive_IT 让接收链路永续运转；配套的 ErrorCallback 则处理溢出故障，清空状态后同样重启接收，实现"出错也能自愈"。整个中断回调只操作静态内存、绝不调用阻塞函数，符合中断处理的最短路径原则。</div>
+</div><table class='code'><tr><th>行号</th><th>代码（Core/common/com_Debug.c）</th><th>逐行讲解</th></tr>
+<tr class=''><td class='no'>64</td><td class='src'>    else if (vofa_rx_discard != 0U)</td><td class='exp'>else 分支：收到的不是行结束符，且当前处于丢弃状态（超长命令的残留）——</td></tr>
+<tr class=''><td class='no'>65</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>66</td><td class='src'>        /* 等待行尾，整条超长命令都不执行。 */</td><td class='exp'>注释说明策略：保持丢弃直到行尾，超长命令整条不执行。</td></tr>
+<tr class=''><td class='no'>67</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>68</td><td class='src'>    else if (vofa_rx_length &lt; VOFA_COMMAND_LENGTH - 1U)</td><td class='exp'>正常累积分支：如果当前行还没满（长度 < 47，留 1 字节给 '\0'），</td></tr>
+<tr class=''><td class='no'>69</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>70</td><td class='src'>        vofa_rx_line[vofa_rx_length++] = (char)vofa_rx_byte;</td><td class='exp'>把字节追加进半成品缓冲区，长度加一。</td></tr>
+<tr class=''><td class='no'>71</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>72</td><td class='src'>    else</td><td class='exp'>else：行满但行结束符还没来——</td></tr>
+<tr class=''><td class='no'>73</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>74</td><td class='src'>        /* 超长命令丢弃，避免截断内容被误当成有效参数。 */</td><td class='exp'>注释说明：超长命令整条丢弃，避免截断后的内容被误当成有效参数（例如 "setq 1.2345" 被截成 "setq 1.2" 就危险了）。</td></tr>
+<tr class=''><td class='no'>75</td><td class='src'>        vofa_rx_length = 0U;</td><td class='exp'>清零长度，</td></tr>
+<tr class=''><td class='no'>76</td><td class='src'>        vofa_rx_discard = 1U;</td><td class='exp'>置丢弃标志 1，本行后续字节走第 64 行分支全部忽略。</td></tr>
+<tr class=''><td class='no'>77</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>78</td><td class='src'>    (void)HAL_UART_Receive_IT(&amp;huart1, &amp;vofa_rx_byte, 1U);</td><td class='exp'>关键续命操作：再次调用 HAL_UART_Receive_IT 请求下一个字节。HAL 的中断接收是'一次性'的，收满即停；不重新挂请求，接收链路就死了——这是初学者最常见的'串口只收到一个字节'事故点。(void) 强转表示有意忽略返回值，不让编译器告警。</td></tr>
+<tr class=''><td class='no'>79</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>80</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>81</td><td class='src'>void HAL_UART_ErrorCallback(UART_HandleTypeDef *uart)</td><td class='exp'>HAL_UART_ErrorCallback：HAL 约定的错误回调（溢出 ORE、帧错误、噪声等都会进来）。</td></tr>
+<tr class=''><td class='no'>82</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>83</td><td class='src'>    if (uart == &amp;huart1)</td><td class='exp'>过滤：只处理 USART1 的错误。</td></tr>
+<tr class=''><td class='no'>84</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>85</td><td class='src'>        /* 串口溢出后重新启动接收，后续完整命令仍可处理。 */</td><td class='exp'>注释说明动机：串口溢出（CPU 没及时取走数据寄存器）后接收流程已被 HAL 停掉，必须重启。</td></tr>
+<tr class=''><td class='no'>86</td><td class='src'>        vofa_rx_length = 0U;</td><td class='exp'>清空半成品行——溢出意味着丢过字节，拼出来的半行不可信。</td></tr>
+<tr class=''><td class='no'>87</td><td class='src'>        vofa_rx_discard = 0U;</td><td class='exp'>丢弃标志也复位，从干净状态重新开始。</td></tr>
+<tr class=''><td class='no'>88</td><td class='src'>        (void)HAL_UART_Receive_IT(&amp;huart1, &amp;vofa_rx_byte, 1U);</td><td class='exp'>重新挂上单字节中断接收，接收链路从故障中自愈。之后 PC 再发的完整命令照常处理。</td></tr>
+<tr class=''><td class='no'>89</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>90</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>91</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>92</td><td class='src'>/* 将浮点数组按照 FireWater 多通道格式通过 USART1 发送。 */</td><td class='exp'>VOFA_SendValues 函数定义前的注释：说明本函数按 FireWater 多通道格式发送。</td></tr>
+<tr class=''><td class='no'>93</td><td class='src'>HAL_StatusTypeDef VOFA_SendValues(const float *values, uint16_t count)</td><td class='exp'>函数定义：values 指向浮点数组，count 是通道数。所谓 FireWater 格式就是纯文本："1.0000,2.0000,3.0000\n"——逗号分隔通道、换行结束一帧，VOFA+ 按行解析并画曲线。</td></tr>
+<tr class=''><td class='no'>94</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>95</td><td class='src'>    char frame[VOFA_TX_BUFFER_SIZE];</td><td class='exp'>栈上临时发送缓冲 frame，大小等于宏算出的 385 字节。用完即释放，不占永久 RAM。</td></tr>
+<tr class=''><td class='no'>96</td><td class='src'>    size_t length = 0U;</td><td class='exp'>length 记录 frame 中已写入的总字节数，初始 0。</td></tr>
+<tr class=''><td class='no'>97</td><td class='src'>    int written;</td><td class='exp'>written 接收 snprintf 的返回值（本次实际写入的字符数）。</td></tr>
+<tr class=''><td class='no'>98</td><td class='src'>    uint16_t index;</td><td class='exp'>循环变量 index：遍历各通道。</td></tr>
+<tr class='blank'><td class='no'>99</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>100</td><td class='src'>    if ((values == NULL) || (count == 0U) || (count &gt; VOFA_MAX_CHANNEL_COUNT))</td><td class='exp'>参数防御：数组指针为空、通道数为 0、或超过上限 8，都视为非法调用，返回 HAL_ERROR。防止后面的循环越界读 values。</td></tr>
+<tr class=''><td class='no'>101</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>102</td><td class='src'>        return HAL_ERROR;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>HAL_ERROR</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>103</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>104</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>105</td><td class='src'>    for (index = 0U; index &lt; count; index++)</td><td class='exp'>逐通道循环开始。</td></tr>
+<tr class=''><td class='no'>106</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>107</td><td class='src'>        written = snprintf(&amp;frame[length],</td><td class='exp'>snprintf 往 frame+length 处格式化写入：格式 "%.*f%c" 中 %.*f 表示'小数位数由参数指定'（第 110 行传入 4），%c 写分隔符——</td></tr>
+<tr class='auto'><td class='no'>108</td><td class='src'>                           sizeof(frame) - length,</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>109</td><td class='src'>                           "%.*f%c",</td><td class='exp'>格式串本体。</td></tr>
+<tr class=''><td class='no'>110</td><td class='src'>                           VOFA_FIREWATER_DECIMAL_PLACES,</td><td class='exp'>传入小数位数 VOFA_FIREWATER_DECIMAL_PLACES（4）。</td></tr>
+<tr class=''><td class='no'>111</td><td class='src'>                           (double)values[index],</td><td class='exp'>把 float 强转为 double：snprintf 是可变参数函数，float 传入时会自动提升为 double，显式写出更明确。</td></tr>
+<tr class=''><td class='no'>112</td><td class='src'>                           ((index + 1U) == count) ? '\n' : ',');</td><td class='exp'>三元表达式选分隔符：最后一个通道（index+1==count）写换行 '\n' 结束一帧，其他通道写逗号 ','。这就是 FireWater 的帧结构。</td></tr>
+<tr class=''><td class='no'>113</td><td class='src'>        if ((written &lt; 0) || ((size_t)written &gt;= (sizeof(frame) - length)))</td><td class='exp'>防御检查：snprintf 返回负数表示编码错误；返回值 ≥ 剩余空间表示被截断。任何一种都说明缓冲区装不下这条数据，返回 HAL_ERROR 而不是发出残缺帧——残缺帧会让上位机曲线错乱。</td></tr>
+<tr class=''><td class='no'>114</td><td class='src'>        {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>115</td><td class='src'>            return HAL_ERROR;</td><td class='exp'>返回错误码。</td></tr>
+<tr class=''><td class='no'>116</td><td class='src'>        }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>117</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>118</td><td class='src'>        length += (size_t)written;</td><td class='exp'>正常情况：把本次写入的字符数累加到 length，下一次 snprintf 从新的尾部接着写。</td></tr>
+<tr class=''><td class='no'>119</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>120</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>121</td><td class='src'>    return HAL_UART_Transmit(&amp;huart1,</td><td class='exp'>格式化完毕，用阻塞方式 HAL_UART_Transmit 从 USART1 把整个 frame 发出去：参数依次是句柄、数据指针、长度、100ms 超时。阻塞期间本任务让出 CPU（HAL 内部逐字节轮询标志位），发完或超时才返回。</td></tr>
+<tr class='auto'><td class='no'>122</td><td class='src'>                             (uint8_t *)frame,</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>123</td><td class='src'>                             (uint16_t)length,</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>124</td><td class='src'>                             VOFA_UART_TIMEOUT_MS);</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>125</td><td class='src'>}</td><td class='exp'>发送结束，返回 HAL_OK 或超时错误。</td></tr>
+</table><div class='summary'>
+<div class="summary"><b>📝 小总结（FireWater 发送协议）</b><br>
+VOFA_SendValues 完成的工作是<b>把一组浮点量变成 VOFA+ 能画曲线的文本帧并发送</b>，原理是：FireWater 协议本质就是纯文本——同一帧内各通道数值用逗号分隔、帧尾用换行 '\n' 结束（第 112 行的三元表达式正好实现这个规则）。函数用 snprintf 逐通道格式化（%.*f 指定 4 位小数），每次都检查返回值防止缓冲区截断，杜绝残缺帧污染上位机数据；最后 HAL_UART_Transmit 阻塞发送整帧。注意发送是阻塞式的：385 字节满帧在 115200 波特率下约需 33ms，所以调用方必须在低实时性要求的任务里使用，绝不能放进电机 5ms 控制环——这正是第 8 章日志开关注释"飞行时需关闭打印"的原因。</div>
+</div><table class='code'><tr><th>行号</th><th>代码（Core/common/com_Debug.c）</th><th>逐行讲解</th></tr>
+<tr class=''><td class='no'>126</td><td class='src'>#endif</td><td class='exp'>结束第 4 行 #if VOFA_DEBUG 块。</td></tr>
+<tr class='blank'><td class='no'>127</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>128</td><td class='src'>// GCC/newlib环境下将printf重定向到USART1</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>129</td><td class='src'>#ifdef __GNUC__</td><td class='exp'>#ifdef __GNUC__：GCC 工具链（本工程用 arm-none-eabi-gcc）走 _write 重定向路线；newlib 标准库的 printf 底层最终调用 _write 系统调用。</td></tr>
+<tr class=''><td class='no'>130</td><td class='src'>int _write(int file, char *ptr, int len)</td><td class='exp'>_write 函数定义：参数 file 是文件描述符（printf 对应 stdout，我们不关心），ptr 是待输出的字符缓冲，len 是长度。</td></tr>
+<tr class=''><td class='no'>131</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>132</td><td class='src'>    (void)file;</td><td class='exp'>(void)file 显式忽略 file 参数，消除未使用参数警告。</td></tr>
+<tr class=''><td class='no'>133</td><td class='src'>    HAL_UART_Transmit(&amp;huart1, (uint8_t *)ptr, (uint16_t)len, DEBUG_UART_TIMEOUT);</td><td class='exp'>核心一行：把缓冲区内容用阻塞方式从 USART1 发出，超时 1000ms（DEBUG_UART_TIMEOUT）。从此 printf("...") 的每一个字符都通过串口出现在 PC 终端上。返回 len 告诉 newlib'全部写完了'。</td></tr>
+<tr class=''><td class='no'>134</td><td class='src'>    return len;</td><td class='exp'>返回写入长度。</td></tr>
+<tr class=''><td class='no'>135</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>136</td><td class='src'>#endif</td><td class='exp'>结束 GNUC 条件块。</td></tr>
+<tr class='blank'><td class='no'>137</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>138</td><td class='src'>// Keil/IAR环境下将printf重定向到USART1</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>139</td><td class='src'>#if defined(__CC_ARM) || defined(__ICCARM__)</td><td class='exp'>#if defined(__CC_ARM)||defined(__ICCARM__)：Keil/IAR 工具链走另一条路——它们的标准库 printf 底层逐字符调用 fputc。</td></tr>
+<tr class=''><td class='no'>140</td><td class='src'>int fputc(int ch, FILE *f)</td><td class='exp'>fputc 函数定义：每次输出一个字符 ch。</td></tr>
+<tr class=''><td class='no'>141</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>142</td><td class='src'>    (void)f;</td><td class='exp'>忽略文件指针参数 f。</td></tr>
+<tr class=''><td class='no'>143</td><td class='src'>    HAL_UART_Transmit(&amp;huart1, (uint8_t *)&amp;ch, 1U, DEBUG_UART_TIMEOUT);</td><td class='exp'>把单字符用阻塞方式从 USART1 发出（取 ch 的地址，发 1 字节）。Keil 下 printf 就此重定向完成。</td></tr>
+<tr class=''><td class='no'>144</td><td class='src'>    return ch;</td><td class='exp'>返回该字符，符合 fputc 的约定。</td></tr>
+<tr class=''><td class='no'>145</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>146</td><td class='src'>#endif</td><td class='exp'>结束 Keil/IAR 条件块。两个重定向用条件编译互斥，同一份代码在 GCC 和 Keil 下都能正确工作。</td></tr>
+</table><div class='summary'>
+<div class="summary"><b>📝 小总结（printf 重定向——从 C 标准到串口字节流）</b><br>
+printf 重定向部分完成的工作是<b>让 printf 的输出走 USART1 硬件</b>，原理要分工具链讲：GCC + newlib 环境中，printf 内部最终调用系统调用 _write(fd, buf, len)，我们提供自己的 _write 把缓冲区交给 HAL_UART_Transmit，整段日志一次发出，效率高；Keil/IAR 环境中标准库改为逐字符调用 fputc(ch, f)，于是重定向函数每次只发 1 字节。条件编译 #ifdef __GNUC__ / __CC_ARM / __ICCARM__ 保证同一份源码在两类工具链下都能链接通过。重定向的本质是：<b>C 标准库把"往哪里写字符"这个设备相关问题留给了开发者，我们填上串口这个答案</b>。结合头文件的 debug_printf 宏，日志就自动带上了文件名与行号，通过 USART1 进入 PC 的串口终端；而 VOFA+ 曲线数据与文本命令则共用同一个 USART1——文本给终端看、逗号换行帧给 VOFA+ 画图、命令行给任务执行，一个串口三种用途。</div>
+</div><table class='code'><tr><th>行号</th><th>代码（Core/common/com_Debug.c）</th><th>逐行讲解</th></tr>
+</table>
+<div class='summary'><h4>本文件小总结</h4>com_Debug.c 全部讲解完毕：接收方向（中断拼行 + 环形队列 + 任务取用）、发送方向（FireWater 文本帧 + 阻塞串口输出）与 printf 重定向三条链路均已覆盖。</div>
+</div>
+<div class='summary'><h4>本章总结</h4>
+<p><b>本章要点回顾：</b></p>
+<ul>
+<li>调试功能全部挂在条件编译宏上，VOFA_DEBUG=0 / DEBUG_LOG_ENABLE=0 即可整体移除，发布固件零调试开销。</li>
+<li>printf 重定向 = 为标准库补一个"输出设备"函数：GCC 走 _write，Keil 走 fputc。</li>
+<li>命令接收采用"中断逐字节组装 → 环形队列 → 任务临界区取用"三段式，中断内无阻塞、共享数据有临界区保护、超长与溢出都有防御。</li>
+<li>FireWater 协议极简：逗号分隔、换行成帧，VOFA+ 据此绘制多通道实时曲线。</li>
+<li>串口打印是阻塞且昂贵的（约 1ms/10 字节），实时控制代码中必须谨慎使用。</li>
+</ul>
+<p>至此，本项目从启动文件、外设初始化、RTOS 骨架、应用状态机、FOC 电机控制、存储、传感、显示到调试接口的<b>全部工程代码</b>已逐行讲解完毕。建议回到<a href="index.html">目录页</a>，按"数据流"把各章串起来复习：光照采集 → 滤波 → 状态机决策 → FOC 执行 → 参数持久化 → UI 呈现 → 调试观测。</p>
+</div>
+</div></body></html>

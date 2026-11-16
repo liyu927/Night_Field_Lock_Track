@@ -1,0 +1,269 @@
+<!DOCTYPE html><html lang='zh-CN'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>第 4 章 · ADC 光照采样底层（adc.c） - 项目代码逐行详解</title><style>
+:root{
+  --bg:#14161a; --panel:#1d2026; --panel2:#22262e; --code:#171a20;
+  --text:#d8dde5; --dim:#8b93a1; --accent:#4da3ff; --accent2:#7ee2b8;
+  --line:#2c313b; --warn:#f0b429;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:"Microsoft YaHei","PingFang SC",Segoe UI,sans-serif;font-size:15px;line-height:1.75}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px 80px}
+nav.topbar{position:sticky;top:0;z-index:9;background:rgba(20,22,26,.96);
+  border-bottom:1px solid var(--line);padding:10px 0;backdrop-filter:blur(6px)}
+nav.topbar .wrap{padding:0 20px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+nav.topbar a{background:var(--panel2);color:var(--text);padding:4px 12px;border-radius:16px;
+  font-size:13px;border:1px solid var(--line);white-space:nowrap}
+nav.topbar a.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+nav.topbar a:hover{text-decoration:none;filter:brightness(1.15)}
+header.chapter{margin:28px 0 8px}
+header.chapter h1{font-size:26px;margin:0 0 6px;color:#fff}
+header.chapter .meta{color:var(--dim);font-size:13px}
+.intro{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);
+  border-radius:8px;padding:14px 18px;margin:18px 0}
+.summary{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent2);
+  border-radius:8px;padding:14px 18px;margin:18px 0}
+.summary h4,.intro h4{margin:0 0 8px;font-size:15px;color:var(--accent2)}
+.intro h4{color:var(--accent)}
+.section{margin:34px 0}
+.section > h2{font-size:20px;color:#fff;border-bottom:1px solid var(--line);padding-bottom:8px}
+.section .filepath{font-family:Consolas,monospace;color:var(--warn);font-size:14px}
+.section .filedesc{color:var(--dim);font-size:14px;margin:6px 0 10px}
+table.code{width:100%;border-collapse:collapse;background:var(--code);
+  border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:13px}
+table.code th{background:var(--panel2);color:var(--dim);font-weight:600;text-align:left;
+  padding:7px 10px;font-size:12px;position:sticky;top:44px}
+table.code td{padding:3px 10px;vertical-align:top;border-top:1px solid #20242c}
+td.no{width:52px;text-align:right;color:#5c6575;font-family:Consolas,monospace;user-select:none}
+td.src{width:46%;font-family:Consolas,"Courier New",monospace;color:#c9d2e0;white-space:pre;
+  overflow-x:auto}
+td.exp{color:var(--text);font-size:13.5px}
+tr.comment td.src{color:#5f7060}
+tr.comment td.exp{color:var(--dim);font-style:normal}
+tr.blank td.src{color:#3a4150}
+.pill{display:inline-block;background:var(--panel2);border:1px solid var(--line);color:var(--dim);
+  border-radius:12px;padding:1px 10px;font-size:12px;margin-right:6px}
+.diagram{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;
+  margin:18px 0;font-family:Consolas,monospace;white-space:pre;overflow-x:auto;color:#bcd3f5;font-size:13px;line-height:1.55}
+.toc{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 18px;margin:14px 0}
+.toc a{display:block;padding:3px 0;font-size:14px}
+.badge{display:inline-block;background:#2b3a55;color:#9ecbff;border-radius:4px;padding:0 8px;font-size:12px;margin-right:6px}
+tr.auto td.exp{color:#9aa6b8}
+.auto-tag{display:inline-block;background:#2c3140;color:#8fa0b8;border:1px solid #3a4150;
+  border-radius:10px;padding:0 7px;font-size:11px;margin-right:5px;font-style:normal}
+</style></head><body><nav class='topbar'><div class='wrap'><a href='index.html'>目录</a><a href='ch01_startup.html'>01 启动流程</a><a href='ch02_interrupt.html'>02 中断与时基</a><a href='ch03_gpio_dma.html'>03 GPIO/DMA</a><a href='ch04_adc.html' class='active'>04 ADC 采样</a><a href='ch05_i2c.html'>05 I2C 底层</a><a href='ch06_spi.html'>06 SPI 底层</a><a href='ch07_tim.html'>07 定时器PWM</a><a href='ch08_usart_rtc.html'>08 串口/RTC</a><a href='ch09_rtos.html'>09 RTOS骨架</a><a href='ch10_appframe.html'>10 应用框架</a><a href='ch11_systemtask.html'>11 SystemTask</a><a href='ch12_algorithm.html'>12 PID/滤波</a><a href='ch13_foc.html'>13 FOC/SVPWM</a><a href='ch14_w25q64.html'>14 W25Q64存储</a><a href='ch15_parameters.html'>15 参数管理</a><a href='ch16_sensors.html'>16 传感器驱动</a><a href='ch17_lvgl_port.html'>17 LVGL移植</a><a href='ch18_ui.html'>18 UI界面</a><a href='ch19.html'>19 调试与VOFA</a></div></nav>
+<div class='wrap'>
+<header class='chapter'><h1>第 4 章 · ADC 光照采样底层（adc.c）</h1><div class='meta'>文件：Core/Src/adc.c（198 行）</div></header>
+<div class='intro'><h4>本章导读</h4><p>四路光敏电阻（左上/左下/右上/右下）接在 PA0~PA3，也就是 ADC1 的 IN0~IN3。本章逐行讲解 ADC1 的“扫描+连续+DMA 循环”工作方式：ADC 按通道 1→2→3→4 不停转换，每完成一个值 DMA 就自动把它写进 adc1_dma_buf[]，CPU 完全不用管。应用层每 20ms 来读一次这四个数组元素即可。</p></div>
+<div class='section'>
+<h2><span class='filepath'>Core/Src/adc.c</span> <span class='pill'>0 行</span></h2>
+<div class='filedesc'>ADC1 四通道配置、DMA 循环通道绑定，以及 ADC1_DMA_Start() 启动函数。</div>
+<table class='code'>
+<tr><th>行号</th><th>代码（Core/Src/adc.c）</th><th>逐行讲解</th></tr>
+<tr class='comment'><td class='no'>1</td><td class='src'>/* USER CODE BEGIN Header */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>2</td><td class='src'>/**</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>3</td><td class='src'>  ******************************************************************************</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>4</td><td class='src'>  * @file    adc.c</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>5</td><td class='src'>  * @brief   This file provides code for the configuration</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>6</td><td class='src'>  *          of the ADC instances.</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>7</td><td class='src'>  ******************************************************************************</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>8</td><td class='src'>  * @attention</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>9</td><td class='src'>  *</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>10</td><td class='src'>  * Copyright (c) 2026 STMicroelectronics.</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>11</td><td class='src'>  * All rights reserved.</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>12</td><td class='src'>  *</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>13</td><td class='src'>  * This software is licensed under terms that can be found in the LICENSE file</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>14</td><td class='src'>  * in the root directory of this software component.</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>15</td><td class='src'>  * If no LICENSE file comes with this software, it is provided AS-IS.</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>16</td><td class='src'>  *</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>17</td><td class='src'>  ******************************************************************************</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>18</td><td class='src'>  */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>19</td><td class='src'>/* USER CODE END Header */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>20</td><td class='src'>/* Includes ------------------------------------------------------------------*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>21</td><td class='src'>#include "adc.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "adc.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='blank'><td class='no'>22</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>23</td><td class='src'>/* USER CODE BEGIN 0 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>24</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>25</td><td class='src'>/* USER CODE END 0 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>26</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>27</td><td class='src'>ADC_HandleTypeDef hadc1;</td><td class='exp'>ADC1 的 HAL 句柄：全局变量，应用层用 &hadc1 启停采样。</td></tr>
+<tr class=''><td class='no'>28</td><td class='src'>DMA_HandleTypeDef hdma_adc1;</td><td class='exp'>ADC 专用 DMA 句柄：描述 DMA2_Stream0 的配置。</td></tr>
+<tr class='blank'><td class='no'>29</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>30</td><td class='src'>/* ADC1 init function */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>31</td><td class='src'>void MX_ADC1_Init(void)</td><td class='exp'><b>MX_ADC1_Init()</b>：ADC1 全局功能配置入口。</td></tr>
+<tr class=''><td class='no'>32</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='blank'><td class='no'>33</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>34</td><td class='src'>  /* USER CODE BEGIN ADC1_Init 0 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>35</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>36</td><td class='src'>  /* USER CODE END ADC1_Init 0 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>37</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>38</td><td class='src'>  ADC_ChannelConfTypeDef sConfig = {0};</td><td class='exp'>通道配置结构体：后面四次复用它配置四个通道。</td></tr>
+<tr class='blank'><td class='no'>39</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>40</td><td class='src'>  /* USER CODE BEGIN ADC1_Init 1 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>41</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>42</td><td class='src'>  /* USER CODE END ADC1_Init 1 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>43</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>44</td><td class='src'>  /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>45</td><td class='src'>  */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>46</td><td class='src'>  hadc1.Instance = ADC1;</td><td class='exp'>指定 ADC 实例为 ADC1（F407 有 ADC1/2/3）。</td></tr>
+<tr class=''><td class='no'>47</td><td class='src'>  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;</td><td class='exp'>ADC 时钟 = PCLK2(84MHz) 的 4 分频 = 21MHz（ADC 时钟上限 36MHz，这里留了余量）。</td></tr>
+<tr class=''><td class='no'>48</td><td class='src'>  hadc1.Init.Resolution = ADC_RESOLUTION_12B;</td><td class='exp'>12 位分辨率：转换结果 0~4095。</td></tr>
+<tr class=''><td class='no'>49</td><td class='src'>  hadc1.Init.ScanConvMode = ENABLE;</td><td class='exp'>扫描模式开启：一次触发会按规则组顺序转换多个通道（本项目 4 个）。</td></tr>
+<tr class=''><td class='no'>50</td><td class='src'>  hadc1.Init.ContinuousConvMode = ENABLE;</td><td class='exp'>连续转换开启：一组转换结束后立刻自动开始下一组，不需要每次软件触发。</td></tr>
+<tr class=''><td class='no'>51</td><td class='src'>  hadc1.Init.DiscontinuousConvMode = DISABLE;</td><td class='exp'>不使用间断模式（间断模式是把一组转换拆成几次触发，这里不需要）。</td></tr>
+<tr class=''><td class='no'>52</td><td class='src'>  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;</td><td class='exp'>不用外部触发边沿——采样由软件启动（配合连续模式自己转下去）。</td></tr>
+<tr class=''><td class='no'>53</td><td class='src'>  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;</td><td class='exp'>触发源 = 软件启动。</td></tr>
+<tr class=''><td class='no'>54</td><td class='src'>  hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;</td><td class='exp'>数据右对齐：12 位结果放在 16 位字的低 12 位，读出来就是 0~4095。</td></tr>
+<tr class=''><td class='no'>55</td><td class='src'>  hadc1.Init.NbrOfConversion = 4;</td><td class='exp'>规则组共 4 个转换（对应四个光敏通道）。</td></tr>
+<tr class=''><td class='no'>56</td><td class='src'>  hadc1.Init.DMAContinuousRequests = ENABLE;</td><td class='exp'>DMA 连续请求开启：每转换完一个值就向 DMA 发一次搬运请求，实现无缝循环采样。</td></tr>
+<tr class=''><td class='no'>57</td><td class='src'>  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;</td><td class='exp'>EOC 事件按“单次转换”产生（本项目靠 DMA 不靠 EOC 中断处理数据）。</td></tr>
+<tr class=''><td class='no'>58</td><td class='src'>  if (HAL_ADC_Init(&amp;hadc1) != HAL_OK)</td><td class='exp'>HAL_ADC_Init 把以上参数写入 ADC1 的 CR1/CR2/SQR1 等寄存器；期间会回调 HAL_ADC_MspInit 做底层初始化（见 105 行）。</td></tr>
+<tr class=''><td class='no'>59</td><td class='src'>  {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>60</td><td class='src'>    Error_Handler();</td><td class='exp'>ADC 初始化失败则死循环停机。</td></tr>
+<tr class=''><td class='no'>61</td><td class='src'>  }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>62</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>63</td><td class='src'>  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>64</td><td class='src'>  */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>65</td><td class='src'>  sConfig.Channel = ADC_CHANNEL_0;</td><td class='exp'>第一个通道：ADC_CHANNEL_0（PA0，左上光敏）。</td></tr>
+<tr class=''><td class='no'>66</td><td class='src'>  sConfig.Rank = 1;</td><td class='exp'>排在规则组的第 1 位。</td></tr>
+<tr class=''><td class='no'>67</td><td class='src'>  sConfig.SamplingTime = ADC_SAMPLETIME_144CYCLES;</td><td class='exp'>采样时间 144 个 ADC 时钟周期 ≈ 6.86µs：光敏电阻内阻较高，采样时间长一些才能让内部采样电容充到稳定电压。</td></tr>
+<tr class=''><td class='no'>68</td><td class='src'>  if (HAL_ADC_ConfigChannel(&amp;hadc1, &amp;sConfig) != HAL_OK)</td><td class='exp'>HAL_ADC_ConfigChannel 把该通道写进规则组序位 1。</td></tr>
+<tr class=''><td class='no'>69</td><td class='src'>  {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>70</td><td class='src'>    Error_Handler();</td><td class='exp'>失败则停机。</td></tr>
+<tr class=''><td class='no'>71</td><td class='src'>  }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>72</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>73</td><td class='src'>  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>74</td><td class='src'>  */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>75</td><td class='src'>  sConfig.Channel = ADC_CHANNEL_1;</td><td class='exp'>第二个通道：ADC_CHANNEL_1（PA1，左下），复用上一轮的采样时间 144 周期。</td></tr>
+<tr class=''><td class='no'>76</td><td class='src'>  sConfig.Rank = 2;</td><td class='exp'>排在第 2 位。</td></tr>
+<tr class=''><td class='no'>77</td><td class='src'>  if (HAL_ADC_ConfigChannel(&amp;hadc1, &amp;sConfig) != HAL_OK)</td><td class='exp'>写入规则组。</td></tr>
+<tr class=''><td class='no'>78</td><td class='src'>  {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>79</td><td class='src'>    Error_Handler();</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>Error_Handler()</code>：调用统一错误处理函数（死循环+关中断），调试时把断点设在这里即可定位是哪个初始化失败了。</td></tr>
+<tr class=''><td class='no'>80</td><td class='src'>  }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>81</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>82</td><td class='src'>  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>83</td><td class='src'>  */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>84</td><td class='src'>  sConfig.Channel = ADC_CHANNEL_2;</td><td class='exp'>第三个通道：ADC_CHANNEL_2（PA2，右上）。</td></tr>
+<tr class=''><td class='no'>85</td><td class='src'>  sConfig.Rank = 3;</td><td class='exp'>排在第 3 位。</td></tr>
+<tr class=''><td class='no'>86</td><td class='src'>  if (HAL_ADC_ConfigChannel(&amp;hadc1, &amp;sConfig) != HAL_OK)</td><td class='exp'>写入规则组。</td></tr>
+<tr class=''><td class='no'>87</td><td class='src'>  {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>88</td><td class='src'>    Error_Handler();</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>Error_Handler()</code>：调用统一错误处理函数（死循环+关中断），调试时把断点设在这里即可定位是哪个初始化失败了。</td></tr>
+<tr class=''><td class='no'>89</td><td class='src'>  }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>90</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>91</td><td class='src'>  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>92</td><td class='src'>  */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>93</td><td class='src'>  sConfig.Channel = ADC_CHANNEL_3;</td><td class='exp'>第四个通道：ADC_CHANNEL_3（PA3，右下）。</td></tr>
+<tr class=''><td class='no'>94</td><td class='src'>  sConfig.Rank = 4;</td><td class='exp'>排在第 4 位。</td></tr>
+<tr class=''><td class='no'>95</td><td class='src'>  if (HAL_ADC_ConfigChannel(&amp;hadc1, &amp;sConfig) != HAL_OK)</td><td class='exp'>写入规则组。至此规则组=通道0→1→2→3，连续模式下硬件按此顺序无限循环。</td></tr>
+<tr class=''><td class='no'>96</td><td class='src'>  {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>97</td><td class='src'>    Error_Handler();</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>Error_Handler()</code>：调用统一错误处理函数（死循环+关中断），调试时把断点设在这里即可定位是哪个初始化失败了。</td></tr>
+<tr class=''><td class='no'>98</td><td class='src'>  }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='comment'><td class='no'>99</td><td class='src'>  /* USER CODE BEGIN ADC1_Init 2 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>100</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>101</td><td class='src'>  /* USER CODE END ADC1_Init 2 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>102</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>103</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+</table><div class='summary'><b>小总结（ADC 全局与通道配置）：</b>本段代码完成的工作是把 ADC1 配成“4 通道自动扫描的循环采样机”。原理：扫描模式+连续模式让 ADC 硬件自动按 PA0→PA1→PA2→PA3 顺序反复转换，无需 CPU 触发；每个通道采样 144 个周期是为了适应光敏电阻较大的源阻抗。2~98 行都是“填表”，真正的寄存器写入在 HAL_ADC_Init/ConfigChannel 里完成。</div><table class='code'><tr><th>行号</th><th>代码（Core/Src/adc.c）</th><th>逐行讲解</th></tr>
+<tr class='blank'><td class='no'>104</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>105</td><td class='src'>void HAL_ADC_MspInit(ADC_HandleTypeDef* adcHandle)</td><td class='exp'><b>HAL_ADC_MspInit</b>：HAL_ADC_Init 内部回调的底层初始化（时钟、引脚、DMA 绑定）。</td></tr>
+<tr class=''><td class='no'>106</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='blank'><td class='no'>107</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>108</td><td class='src'>  GPIO_InitTypeDef GPIO_InitStruct = {0};</td><td class='exp'>GPIO 配置结构体。</td></tr>
+<tr class=''><td class='no'>109</td><td class='src'>  if(adcHandle-&gt;Instance==ADC1)</td><td class='exp'>只处理 ADC1 的初始化。</td></tr>
+<tr class=''><td class='no'>110</td><td class='src'>  {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>111</td><td class='src'>  /* USER CODE BEGIN ADC1_MspInit 0 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>112</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>113</td><td class='src'>  /* USER CODE END ADC1_MspInit 0 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>114</td><td class='src'>    /* ADC1 clock enable */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>115</td><td class='src'>    __HAL_RCC_ADC1_CLK_ENABLE();</td><td class='exp'>使能 ADC1 外设时钟。</td></tr>
+<tr class='blank'><td class='no'>116</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>117</td><td class='src'>    __HAL_RCC_GPIOA_CLK_ENABLE();</td><td class='exp'>使能 GPIOA 时钟（四个模拟输入引脚在 A 口）。</td></tr>
+<tr class='comment'><td class='no'>118</td><td class='src'>    /**ADC1 GPIO Configuration</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>119</td><td class='src'>    PA0-WKUP     ------&gt; ADC1_IN0</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>120</td><td class='src'>    PA1     ------&gt; ADC1_IN1</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>121</td><td class='src'>    PA2     ------&gt; ADC1_IN2</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>122</td><td class='src'>    PA3     ------&gt; ADC1_IN3</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>123</td><td class='src'>    */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>124</td><td class='src'>    GPIO_InitStruct.Pin = ADC1_LEFT_TOP_Pin|ADC1_LEFT_BOTTOM_Pin|ADC1_RIGHT_TOP_Pin|ADC1_RIGHT_BOTTOM_Pin;</td><td class='exp'>选择四个模拟引脚 PA0~PA3。</td></tr>
+<tr class=''><td class='no'>125</td><td class='src'>    GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;</td><td class='exp'>模式 = 模拟输入：断开数字输入缓冲和上下拉，引脚直接连 ADC 采样电路。</td></tr>
+<tr class=''><td class='no'>126</td><td class='src'>    GPIO_InitStruct.Pull = GPIO_NOPULL;</td><td class='exp'>无上下拉（模拟脚必须 NOPULL）。</td></tr>
+<tr class=''><td class='no'>127</td><td class='src'>    HAL_GPIO_Init(GPIOA, &amp;GPIO_InitStruct);</td><td class='exp'>写入 GPIOA。</td></tr>
+<tr class='blank'><td class='no'>128</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>129</td><td class='src'>    /* ADC1 DMA Init */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>130</td><td class='src'>    /* ADC1 Init */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>131</td><td class='src'>    hdma_adc1.Instance = DMA2_Stream0;</td><td class='exp'>该 DMA 用 DMA2 的 Stream0。</td></tr>
+<tr class=''><td class='no'>132</td><td class='src'>    hdma_adc1.Init.Channel = DMA_CHANNEL_0;</td><td class='exp'>选择 DMA2 的通道 0（F4 中 Stream×Channel 决定它服务哪个外设的请求线，Stream0-Ch0 是 ADC1）。</td></tr>
+<tr class=''><td class='no'>133</td><td class='src'>    hdma_adc1.Init.Direction = DMA_PERIPH_TO_MEMORY;</td><td class='exp'>方向 = 外设到内存：把 ADC 数据寄存器的值搬进 RAM。</td></tr>
+<tr class=''><td class='no'>134</td><td class='src'>    hdma_adc1.Init.PeriphInc = DMA_PINC_DISABLE;</td><td class='exp'>外设地址不递增：始终从同一个 ADC 数据寄存器（ADC1->DR）读。</td></tr>
+<tr class=''><td class='no'>135</td><td class='src'>    hdma_adc1.Init.MemInc = DMA_MINC_ENABLE;</td><td class='exp'>内存地址递增：四个值依次写进 adc1_dma_buf[0]~[3]。</td></tr>
+<tr class=''><td class='no'>136</td><td class='src'>    hdma_adc1.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;</td><td class='exp'>外设数据宽度 = 半字（16 位，ADC 结果寄存器）。</td></tr>
+<tr class=''><td class='no'>137</td><td class='src'>    hdma_adc1.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;</td><td class='exp'>内存数据宽度 = 半字（数组元素 uint16_t）。</td></tr>
+<tr class=''><td class='no'>138</td><td class='src'>    hdma_adc1.Init.Mode = DMA_CIRCULAR;</td><td class='exp'>循环模式：缓冲区写满后自动回到开头继续覆盖——采样永不停止。</td></tr>
+<tr class=''><td class='no'>139</td><td class='src'>    hdma_adc1.Init.Priority = DMA_PRIORITY_MEDIUM;</td><td class='exp'>DMA 流优先级中等（F407 同一时刻多个流竞争总线时的仲裁级别）。</td></tr>
+<tr class=''><td class='no'>140</td><td class='src'>    hdma_adc1.Init.FIFOMode = DMA_FIFOMODE_DISABLE;</td><td class='exp'>关闭 FIFO（直接模式）：每个半字直接搬，不需要缓冲打包。</td></tr>
+<tr class=''><td class='no'>141</td><td class='src'>    if (HAL_DMA_Init(&amp;hdma_adc1) != HAL_OK)</td><td class='exp'>HAL_DMA_Init 写入 DMA2_Stream0 配置寄存器。</td></tr>
+<tr class=''><td class='no'>142</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>143</td><td class='src'>      Error_Handler();</td><td class='exp'>DMA 配置失败则停机。</td></tr>
+<tr class=''><td class='no'>144</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>145</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>146</td><td class='src'>    __HAL_LINKDMA(adcHandle,DMA_Handle,hdma_adc1);</td><td class='exp'>__HAL_LINKDMA：把 hdma_adc1 挂到 hadc1.DMA_Handle 上——之后 HAL_ADC_Start_DMA 就知道用这条流搬运。</td></tr>
+<tr class='blank'><td class='no'>147</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>148</td><td class='src'>  /* USER CODE BEGIN ADC1_MspInit 1 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>149</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>150</td><td class='src'>  /* USER CODE END ADC1_MspInit 1 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>151</td><td class='src'>  }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>152</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>153</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>154</td><td class='src'>void HAL_ADC_MspDeInit(ADC_HandleTypeDef* adcHandle)</td><td class='exp'><b>HAL_ADC_MspDeInit</b>：反初始化（本项目运行中不调用，保留为模板）。</td></tr>
+<tr class=''><td class='no'>155</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='blank'><td class='no'>156</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>157</td><td class='src'>  if(adcHandle-&gt;Instance==ADC1)</td><td class='exp'>只处理 ADC1。</td></tr>
+<tr class=''><td class='no'>158</td><td class='src'>  {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>159</td><td class='src'>  /* USER CODE BEGIN ADC1_MspDeInit 0 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>160</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>161</td><td class='src'>  /* USER CODE END ADC1_MspDeInit 0 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>162</td><td class='src'>    /* Peripheral clock disable */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>163</td><td class='src'>    __HAL_RCC_ADC1_CLK_DISABLE();</td><td class='exp'>关闭 ADC1 时钟。</td></tr>
+<tr class='blank'><td class='no'>164</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>165</td><td class='src'>    /**ADC1 GPIO Configuration</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>166</td><td class='src'>    PA0-WKUP     ------&gt; ADC1_IN0</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>167</td><td class='src'>    PA1     ------&gt; ADC1_IN1</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>168</td><td class='src'>    PA2     ------&gt; ADC1_IN2</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>169</td><td class='src'>    PA3     ------&gt; ADC1_IN3</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>170</td><td class='src'>    */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>171</td><td class='src'>    HAL_GPIO_DeInit(GPIOA, ADC1_LEFT_TOP_Pin|ADC1_LEFT_BOTTOM_Pin|ADC1_RIGHT_TOP_Pin|ADC1_RIGHT_BOTTOM_Pin);</td><td class='exp'>把四个引脚恢复为默认（非模拟）状态。</td></tr>
+<tr class='blank'><td class='no'>172</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>173</td><td class='src'>    /* ADC1 DMA DeInit */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>174</td><td class='src'>    HAL_DMA_DeInit(adcHandle-&gt;DMA_Handle);</td><td class='exp'>解除 DMA 绑定。</td></tr>
+<tr class='comment'><td class='no'>175</td><td class='src'>  /* USER CODE BEGIN ADC1_MspDeInit 1 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>176</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>177</td><td class='src'>  /* USER CODE END ADC1_MspDeInit 1 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>178</td><td class='src'>  }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>179</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+</table><div class='summary'><b>小总结（MSP 底层绑定）：</b>本段完成“外设-引脚-DMA 三方绑定”：PA0~PA3 设为模拟输入，DMA2_Stream0 配成“外设→内存、内存递增、16 位、循环模式”，最后 LINKDMA 挂到 ADC1 句柄上。原理上 DMA 每次从 ADC1->DR 取一个半字，按内存指针依次写 buf[0..3]，写满后地址自动回卷——这就是“循环采样缓存”的实现。</div><table class='code'><tr><th>行号</th><th>代码（Core/Src/adc.c）</th><th>逐行讲解</th></tr>
+<tr class='blank'><td class='no'>180</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>181</td><td class='src'>/* USER CODE BEGIN 1 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>182</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>183</td><td class='src'>/* ADC1 DMA 循环采样缓存，顺序对应 PA0~PA3 (ADC1_IN0~IN3)，12bit 原始值 0~4095 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>184</td><td class='src'>uint16_t adc1_dma_buf[4];</td><td class='exp'><b>adc1_dma_buf[4]</b>：DMA 循环缓冲，下标 0~3 依次对应 PA0~PA3 的最新 12 位原始值（0~4095）。必须是静态全局内存——DMA 直接按物理地址写入，不能用栈数组。</td></tr>
+<tr class='blank'><td class='no'>185</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>186</td><td class='src'>/**</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>187</td><td class='src'> * @brief  启动 ADC1 多通道 DMA 循环采样（PA0~PA3）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>188</td><td class='src'> * @note   调用一次即可，DMA 循环模式下 adc1_dma_buf 会被硬件持续刷新</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>189</td><td class='src'> */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>190</td><td class='src'>void ADC1_DMA_Start(void)</td><td class='exp'><b>ADC1_DMA_Start()</b>：应用层启动采样的入口，SystemTask 的 App_Smapling_Init() 调用。</td></tr>
+<tr class=''><td class='no'>191</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>192</td><td class='src'>  if (HAL_ADC_Start_DMA(&amp;hadc1, (uint32_t *)adc1_dma_buf, 4) != HAL_OK)</td><td class='exp'>HAL_ADC_Start_DMA：软件触发第一次转换并启动 DMA 循环搬运。返回非 HAL_OK（ADC 已在运行或配置错误）时进入错误处理。启动后硬件全自动：通道0→1→2→3 转换 → DMA 写 buf[0..3] → 循环往复，buf 中永远是最新四路值。</td></tr>
+<tr class=''><td class='no'>193</td><td class='src'>  {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>194</td><td class='src'>    Error_Handler();</td><td class='exp'>启动失败停机。</td></tr>
+<tr class=''><td class='no'>195</td><td class='src'>  }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>196</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>197</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>198</td><td class='src'>/* USER CODE END 1 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+</table><div class='summary'><b>小总结（采样启动）：</b>ADC1_DMA_Start 只有一行核心：HAL_ADC_Start_DMA(&hadc1, buf, 4)。它做了三件事：①软件触发 ADC 开始第一次转换；②配置并启动 DMA2_Stream0；③把数据寄存器到 buf 的循环搬运打通。从此 adc1_dma_buf[0..3] 硬件自动刷新，应用层 App_Smapling_Run() 每 20ms 直接读它做滤波即可。注意启动失败会 Error_Handler——因为整个光照跟踪功能都依赖这块缓冲。</div><table class='code'><tr><th>行号</th><th>代码（Core/Src/adc.c）</th><th>逐行讲解</th></tr>
+</table>
+<div class='summary'><h4>本文件小总结</h4><b>adc.c 全文总结：</b>ADC1 = 12 位、21MHz 时钟、4 通道规则组、扫描+连续转换；DMA2_Stream0 循环模式把结果自动写进全局缓冲 adc1_dma_buf[4]。底层链路是：光敏分压电压 → PA0~PA3 模拟脚 → ADC 采样电容(144 周期) → 12 位转换 → DR 寄存器 → DMA → buf。SystemTask 唤醒/复位时通过 ADC1_DMA_Start 重启这条自动流水线，进 STOP 前由 App_Smapling_Stop 停掉它省电。</div>
+</div>
+<div class='summary'><h4>本章总结</h4><b>本章总结：</b>记住三个关键参数的来历：采样时间 144 周期（≈6.9µs，适配光敏高内阻）、DMA 循环模式（永远自动刷新）、缓冲必须静态（DMA 按物理地址写）。至于“为什么读 buf 不用加锁也不会撕裂”：单个 uint16_t 在 ARM 上是原子读，且滤波算法对瞬时毛刺不敏感，因此采样任务直接读即可。</div>
+</div></body></html>

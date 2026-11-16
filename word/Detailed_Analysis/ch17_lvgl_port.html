@@ -1,0 +1,709 @@
+<!DOCTYPE html><html lang='zh-CN'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>第 17 章 · LVGL 移植层（lv_port_lcd_stm32.c / lv_port_indev.c） - 项目代码逐行详解</title><style>
+:root{
+  --bg:#14161a; --panel:#1d2026; --panel2:#22262e; --code:#171a20;
+  --text:#d8dde5; --dim:#8b93a1; --accent:#4da3ff; --accent2:#7ee2b8;
+  --line:#2c313b; --warn:#f0b429;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:"Microsoft YaHei","PingFang SC",Segoe UI,sans-serif;font-size:15px;line-height:1.75}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px 80px}
+nav.topbar{position:sticky;top:0;z-index:9;background:rgba(20,22,26,.96);
+  border-bottom:1px solid var(--line);padding:10px 0;backdrop-filter:blur(6px)}
+nav.topbar .wrap{padding:0 20px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+nav.topbar a{background:var(--panel2);color:var(--text);padding:4px 12px;border-radius:16px;
+  font-size:13px;border:1px solid var(--line);white-space:nowrap}
+nav.topbar a.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+nav.topbar a:hover{text-decoration:none;filter:brightness(1.15)}
+header.chapter{margin:28px 0 8px}
+header.chapter h1{font-size:26px;margin:0 0 6px;color:#fff}
+header.chapter .meta{color:var(--dim);font-size:13px}
+.intro{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);
+  border-radius:8px;padding:14px 18px;margin:18px 0}
+.summary{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent2);
+  border-radius:8px;padding:14px 18px;margin:18px 0}
+.summary h4,.intro h4{margin:0 0 8px;font-size:15px;color:var(--accent2)}
+.intro h4{color:var(--accent)}
+.section{margin:34px 0}
+.section > h2{font-size:20px;color:#fff;border-bottom:1px solid var(--line);padding-bottom:8px}
+.section .filepath{font-family:Consolas,monospace;color:var(--warn);font-size:14px}
+.section .filedesc{color:var(--dim);font-size:14px;margin:6px 0 10px}
+table.code{width:100%;border-collapse:collapse;background:var(--code);
+  border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:13px}
+table.code th{background:var(--panel2);color:var(--dim);font-weight:600;text-align:left;
+  padding:7px 10px;font-size:12px;position:sticky;top:44px}
+table.code td{padding:3px 10px;vertical-align:top;border-top:1px solid #20242c}
+td.no{width:52px;text-align:right;color:#5c6575;font-family:Consolas,monospace;user-select:none}
+td.src{width:46%;font-family:Consolas,"Courier New",monospace;color:#c9d2e0;white-space:pre;
+  overflow-x:auto}
+td.exp{color:var(--text);font-size:13.5px}
+tr.comment td.src{color:#5f7060}
+tr.comment td.exp{color:var(--dim);font-style:normal}
+tr.blank td.src{color:#3a4150}
+.pill{display:inline-block;background:var(--panel2);border:1px solid var(--line);color:var(--dim);
+  border-radius:12px;padding:1px 10px;font-size:12px;margin-right:6px}
+.diagram{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;
+  margin:18px 0;font-family:Consolas,monospace;white-space:pre;overflow-x:auto;color:#bcd3f5;font-size:13px;line-height:1.55}
+.toc{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 18px;margin:14px 0}
+.toc a{display:block;padding:3px 0;font-size:14px}
+.badge{display:inline-block;background:#2b3a55;color:#9ecbff;border-radius:4px;padding:0 8px;font-size:12px;margin-right:6px}
+tr.auto td.exp{color:#9aa6b8}
+.auto-tag{display:inline-block;background:#2c3140;color:#8fa0b8;border:1px solid #3a4150;
+  border-radius:10px;padding:0 7px;font-size:11px;margin-right:5px;font-style:normal}
+</style></head><body><nav class='topbar'><div class='wrap'><a href='index.html'>目录</a><a href='ch01_startup.html'>01 启动流程</a><a href='ch02_interrupt.html'>02 中断与时基</a><a href='ch03_gpio_dma.html'>03 GPIO/DMA</a><a href='ch04_adc.html'>04 ADC 采样</a><a href='ch05_i2c.html'>05 I2C 底层</a><a href='ch06_spi.html'>06 SPI 底层</a><a href='ch07_tim.html'>07 定时器PWM</a><a href='ch08_usart_rtc.html'>08 串口/RTC</a><a href='ch09_rtos.html'>09 RTOS骨架</a><a href='ch10_appframe.html'>10 应用框架</a><a href='ch11_systemtask.html'>11 SystemTask</a><a href='ch12_algorithm.html'>12 PID/滤波</a><a href='ch13_foc.html'>13 FOC/SVPWM</a><a href='ch14_w25q64.html'>14 W25Q64存储</a><a href='ch15_parameters.html'>15 参数管理</a><a href='ch16_sensors.html'>16 传感器驱动</a><a href='ch17_lvgl_port.html' class='active'>17 LVGL移植</a><a href='ch18_ui.html'>18 UI界面</a><a href='ch19.html'>19 调试与VOFA</a></div></nav>
+<div class='wrap'>
+<header class='chapter'><h1>第 17 章 · LVGL 移植层（lv_port_lcd_stm32.c / lv_port_indev.c）</h1><div class='meta'>文件：lvgl/porting/lv_port_lcd_stm32.c（204 行）、lvgl/porting/lv_port_indev.c（427 行）</div></header>
+<div class='intro'><h4>本章导读</h4><p>LVGL 如何适配到 STM32？答案是两个移植文件：<b>显示</b>——LVGL 把渲染好的像素块交给 lcd_send_color()，后者经 SPI1+DMA 异步发送，完成后回调通知 LVGL“这一块可以复用缓冲了”；<b>输入</b>——LVGL 周期调用 touchpad_read()，把 FT6336 的触摸状态翻译成 LVGL 的按下/松开事件。本章逐行讲解，并穿插说明 LVGL 渲染流程与触摸唤醒屏蔽机制。</p></div>
+<div class='section'>
+<h2><span class='filepath'>lvgl/porting/lv_port_lcd_stm32.c</span> <span class='pill'>0 行</span></h2>
+<div class='filedesc'>ST7789 显示驱动适配：SPI 初始化、命令/数据发送、DMA 刷屏回调、双缓冲。</div>
+<table class='code'>
+<tr><th>行号</th><th>代码（lvgl/porting/lv_port_lcd_stm32.c）</th><th>逐行讲解</th></tr>
+<tr class='comment'><td class='no'>1</td><td class='src'>/**</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>2</td><td class='src'> * @file lv_port_lcd_stm32_template.c</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>3</td><td class='src'> *</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>4</td><td class='src'> * Example implementation of the LVGL LCD display drivers on the STM32 platform</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>5</td><td class='src'> */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>6</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>7</td><td class='src'>/*Copy this file as "lv_port_disp.c" and set this value to "1" to enable content*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>8</td><td class='src'>#if 1</td><td class='exp'>#if 1：启用本移植文件（模板拷贝后把 0 改 1）。</td></tr>
+<tr class='blank'><td class='no'>9</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>10</td><td class='src'>/*********************</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>11</td><td class='src'> *      INCLUDES</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>12</td><td class='src'> *********************/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>13</td><td class='src'>/* Include STM32Cube files here, e.g.:</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>14</td><td class='src'>#include "stm32f7xx_hal.h"</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>15</td><td class='src'>*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>16</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>17</td><td class='src'>//#include "lv_port_disp.h"</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>18</td><td class='src'>#include "lv_port_lcd_stm32.h"</td><td class='exp'>包含本移植层头文件。</td></tr>
+<tr class=''><td class='no'>19</td><td class='src'>#include "spi.h"</td><td class='exp'>包含 spi.h——要操作 hspi1。</td></tr>
+<tr class='blank'><td class='no'>20</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>21</td><td class='src'>/*********************</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>22</td><td class='src'> *      DEFINES</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>23</td><td class='src'> *********************/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>24</td><td class='src'>#define MY_DISP_HOR_RES 240</td><td class='exp'>屏宽 240 像素。</td></tr>
+<tr class=''><td class='no'>25</td><td class='src'>#define MY_DISP_VER_RES 320</td><td class='exp'>屏高 320 像素。</td></tr>
+<tr class='blank'><td class='no'>26</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>27</td><td class='src'>#ifndef MY_DISP_HOR_RES</td><td class='exp'><span class='auto-tag'>自动</span>条件编译入口（ifndef）：满足条件才编译下面的内容，不满足则整段跳过。</td></tr>
+<tr class='auto'><td class='no'>28</td><td class='src'>    #warning Please define or replace the macro MY_DISP_HOR_RES with the actual screen width, default value 320 is used for now.</td><td class='exp'><span class='auto-tag'>自动</span>编译期警告：提示开发者宏未定义，使用默认值。</td></tr>
+<tr class='auto'><td class='no'>29</td><td class='src'>    #define MY_DISP_HOR_RES    320</td><td class='exp'><span class='auto-tag'>自动</span>定义宏 <code>MY_DISP_HOR_RES</code>：编译前做纯文本替换，详见对应头文件小总结。</td></tr>
+<tr class='auto'><td class='no'>30</td><td class='src'>#endif</td><td class='exp'><span class='auto-tag'>自动</span>结束一个条件编译块。</td></tr>
+<tr class='blank'><td class='no'>31</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>32</td><td class='src'>#ifndef MY_DISP_VER_RES</td><td class='exp'><span class='auto-tag'>自动</span>条件编译入口（ifndef）：满足条件才编译下面的内容，不满足则整段跳过。</td></tr>
+<tr class='auto'><td class='no'>33</td><td class='src'>    #warning Please define or replace the macro MY_DISP_VER_RES with the actual screen height, default value 240 is used for now.</td><td class='exp'><span class='auto-tag'>自动</span>编译期警告：提示开发者宏未定义，使用默认值。</td></tr>
+<tr class='auto'><td class='no'>34</td><td class='src'>    #define MY_DISP_VER_RES    240</td><td class='exp'><span class='auto-tag'>自动</span>定义宏 <code>MY_DISP_VER_RES</code>：编译前做纯文本替换，详见对应头文件小总结。</td></tr>
+<tr class='auto'><td class='no'>35</td><td class='src'>#endif</td><td class='exp'><span class='auto-tag'>自动</span>结束一个条件编译块。</td></tr>
+<tr class='blank'><td class='no'>36</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>37</td><td class='src'>#define LCD_RESET_GPIO_Port SPI1_RST_GPIO_Port</td><td class='exp'>液晶复位脚复用 SPI1_RST 宏。</td></tr>
+<tr class=''><td class='no'>38</td><td class='src'>#define LCD_RESET_Pin SPI1_RST_Pin</td><td class='exp'>液晶片选脚 = SPI1_CS。</td></tr>
+<tr class=''><td class='no'>39</td><td class='src'>#define LCD_CS_GPIO_Port SPI1_CS_GPIO_Port</td><td class='exp'>同上宏。</td></tr>
+<tr class='auto'><td class='no'>40</td><td class='src'>#define LCD_CS_Pin SPI1_CS_Pin</td><td class='exp'><span class='auto-tag'>自动</span>定义宏 <code>LCD_CS_Pin</code>：编译前做纯文本替换，详见对应头文件小总结。</td></tr>
+<tr class=''><td class='no'>41</td><td class='src'>#define LCD_DCX_GPIO_Port SPI1_DC_GPIO_Port</td><td class='exp'>DC 线（命令/数据切换）= SPI1_DC。</td></tr>
+<tr class='auto'><td class='no'>42</td><td class='src'>#define LCD_DCX_Pin SPI1_DC_Pin</td><td class='exp'><span class='auto-tag'>自动</span>定义宏 <code>LCD_DCX_Pin</code>：编译前做纯文本替换，详见对应头文件小总结。</td></tr>
+<tr class='blank'><td class='no'>43</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>44</td><td class='src'>#define BUS_SPI1_POLL_TIMEOUT 0x1000U</td><td class='exp'>SPI 阻塞发送超时 0x1000 tick。</td></tr>
+<tr class='blank'><td class='no'>45</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>46</td><td class='src'>/**********************</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>47</td><td class='src'> *      TYPEDEFS</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>48</td><td class='src'> **********************/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>49</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>50</td><td class='src'>/**********************</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>51</td><td class='src'> *  STATIC PROTOTYPES</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>52</td><td class='src'> **********************/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>53</td><td class='src'>static void lcd_color_transfer_ready_cb(SPI_HandleTypeDef * hspi);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lcd_color_transfer_ready_cb()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>54</td><td class='src'>static int32_t lcd_io_init(void);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lcd_io_init()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>55</td><td class='src'>static void lcd_send_cmd(lv_display_t * disp, const uint8_t * cmd, size_t cmd_size, const uint8_t * param,</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>56</td><td class='src'>                         size_t param_size);</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>57</td><td class='src'>static void lcd_send_color(lv_display_t * disp, const uint8_t * cmd, size_t cmd_size, uint8_t * param,</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>58</td><td class='src'>                           size_t param_size);</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='blank'><td class='no'>59</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>60</td><td class='src'>/**********************</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>61</td><td class='src'> *  STATIC VARIABLES</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>62</td><td class='src'> **********************/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>63</td><td class='src'>static lv_display_t * lcd_disp;</td><td class='exp'>lcd_disp：LVGL 显示设备对象指针。</td></tr>
+<tr class=''><td class='no'>64</td><td class='src'>static volatile int lcd_bus_busy = 0;</td><td class='exp'><b>lcd_bus_busy</b>：volatile 标志——1 表示 DMA 正在往屏上搬像素，缓冲不可复用。</td></tr>
+<tr class='blank'><td class='no'>65</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>66</td><td class='src'>/* 背光关闭或进入 STOP 前，等待异步刷屏完成并让出毫秒节拍。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>67</td><td class='src'>void lv_port_disp_wait_idle(void)</td><td class='exp'><b>lv_port_disp_wait_idle()</b>：等刷屏空闲（SystemTask 关背光/进 STOP 前调用）。</td></tr>
+<tr class=''><td class='no'>68</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>69</td><td class='src'>    /* DMA 完成回调会清除此标志；等待期间保留 HAL 中断处理。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>70</td><td class='src'>    while (lcd_bus_busy != 0) HAL_Delay(1U);</td><td class='exp'>循环 HAL_Delay(1) 直到 DMA 完成回调清掉 busy 标志——等待期间 HAL 中断正常处理，DMA 能跑完。</td></tr>
+<tr class=''><td class='no'>71</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>72</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>73</td><td class='src'>/**********************</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>74</td><td class='src'> *      MACROS</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>75</td><td class='src'> **********************/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>76</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>77</td><td class='src'>/**********************</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>78</td><td class='src'> *   GLOBAL FUNCTIONS</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>79</td><td class='src'> **********************/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>80</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>81</td><td class='src'>void lv_port_disp_init(void)</td><td class='exp'><b>lv_port_disp_init()</b>：LVGL 显示设备创建入口（App_Ui_Init 调用）。</td></tr>
+<tr class=''><td class='no'>82</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>83</td><td class='src'>    /* Initialize LCD I/O */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>84</td><td class='src'>    if(lcd_io_init() != 0)</td><td class='exp'>lcd_io_init：初始化 SPI IO 与复位液晶。</td></tr>
+<tr class='auto'><td class='no'>85</td><td class='src'>        return;</td><td class='exp'><span class='auto-tag'>自动</span>函数到此直接返回（无返回值）。</td></tr>
+<tr class='blank'><td class='no'>86</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>87</td><td class='src'>    /* Create the LVGL display object and the ST7789 LCD display driver */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>88</td><td class='src'>    lcd_disp = lv_st7789_create(MY_DISP_HOR_RES, MY_DISP_VER_RES, LV_LCD_FLAG_NONE, lcd_send_cmd, lcd_send_color);</td><td class='exp'><b>lv_st7789_create</b>：用 LVGL 内置的 ST7789 驱动创建显示设备，注册两个平台回调：lcd_send_cmd（发命令）与 lcd_send_color（发像素）——LVGL 渲染流程通过这两个回调“落地”到 STM32。</td></tr>
+<tr class=''><td class='no'>89</td><td class='src'>    lv_display_set_rotation(lcd_disp, LV_DISPLAY_ROTATION_0);     /* set landscape orientation */</td><td class='exp'>旋转 0 度（竖屏 240×320）。</td></tr>
+<tr class=''><td class='no'>90</td><td class='src'>    lv_lcd_generic_mipi_set_invert(lcd_disp, false);</td><td class='exp'>不反转颜色（该面板不需要）。</td></tr>
+<tr class='comment'><td class='no'>91</td><td class='src'>    /* Example: two dynamically allocated buffers for partial rendering */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>92</td><td class='src'>    // uint8_t * buf1 = NULL;</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>93</td><td class='src'>    // uint8_t * buf2 = NULL;</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>94</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>95</td><td class='src'>    // uint32_t buf_size = MY_DISP_HOR_RES * MY_DISP_VER_RES / 10 * lv_color_format_get_size(lv_display_get_color_format(</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>96</td><td class='src'>    //                                                                                           lcd_disp));</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>97</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>98</td><td class='src'>    // buf1 = lv_malloc(buf_size);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>99</td><td class='src'>    // if(buf1 == NULL) {</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>100</td><td class='src'>    //     LV_LOG_ERROR("display draw buffer malloc failed");</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>101</td><td class='src'>    //     return;</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>102</td><td class='src'>    // }</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>103</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>104</td><td class='src'>    // buf2 = lv_malloc(buf_size);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>105</td><td class='src'>    // if(buf2 == NULL) {</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>106</td><td class='src'>    //     LV_LOG_ERROR("display buffer malloc failed");</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>107</td><td class='src'>    //     lv_free(buf1);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>108</td><td class='src'>    //     return;</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>109</td><td class='src'>    // }</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>110</td><td class='src'>    static uint8_t buf1[MY_DISP_HOR_RES * MY_DISP_VER_RES / 10 * 2];</td><td class='exp'><b>buf1</b>：静态渲染缓冲 = 240×320/10×2 字节（十分之一屏、2 字节/像素 RGB565）——约 15KB。</td></tr>
+<tr class=''><td class='no'>111</td><td class='src'>    static uint8_t buf2[MY_DISP_HOR_RES * MY_DISP_VER_RES / 10 * 2];</td><td class='exp'><b>buf2</b>：第二个缓冲——双缓冲让 LVGL 在 DMA 发送 buf1 时可以渲染 buf2，渲染与传输并行。</td></tr>
+<tr class='blank'><td class='no'>112</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>113</td><td class='src'>    lv_display_set_buffers(lcd_disp, buf1, buf2, sizeof(buf1), LV_DISPLAY_RENDER_MODE_PARTIAL);</td><td class='exp'>lv_display_set_buffers 注册双缓冲 + PARTIAL 模式（只渲染变化的“脏区”，小屏省 RAM 的标准做法）。</td></tr>
+<tr class=''><td class='no'>114</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+</table><div class='summary'><b>小总结（LVGL 显示适配全流程）：</b>LVGL 适配 STM32 的本质是填三个钩子：①lv_st7789_create 注册 send_cmd/send_color；②双缓冲（各 15KB 静态内存）+PARTIAL 渲染——只把“脏区”发给屏；③DMA 异步发送+完成回调 flush_ready。完整链路：UI 任务调 lv_timer_handler → LVGL 渲染脏区到 buf1 → lcd_send_color（发窗口命令后切 16 位启动 DMA）→ 函数立即返回，UI 任务继续渲染 buf2 → DMA 完成 → 中断回调 CS 拉高+flush_ready → LVGL 得知 buf1 可复用。渲染与传输并行正是双缓冲的意义。</div><table class='code'><tr><th>行号</th><th>代码（lvgl/porting/lv_port_lcd_stm32.c）</th><th>逐行讲解</th></tr>
+<tr class='blank'><td class='no'>115</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>116</td><td class='src'>/**********************</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>117</td><td class='src'> *   STATIC FUNCTIONS</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>118</td><td class='src'> **********************/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>119</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>120</td><td class='src'>/* Callback is called when background transfer finished */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>121</td><td class='src'>static void lcd_color_transfer_ready_cb(SPI_HandleTypeDef * hspi)</td><td class='exp'><b>lcd_color_transfer_ready_cb</b>：SPI 发送完成回调（在 DMA 中断上下文执行）。</td></tr>
+<tr class=''><td class='no'>122</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>123</td><td class='src'>    /* CS high */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>124</td><td class='src'>    HAL_GPIO_WritePin(LCD_CS_GPIO_Port, LCD_CS_Pin, GPIO_PIN_SET);</td><td class='exp'>CS 拉高——一次像素传输结束。</td></tr>
+<tr class=''><td class='no'>125</td><td class='src'>    lcd_bus_busy = 0;</td><td class='exp'>清 busy 标志（wait_idle 与下一次刷屏解除阻塞）。</td></tr>
+<tr class=''><td class='no'>126</td><td class='src'>    lv_display_flush_ready(lcd_disp);</td><td class='exp'>lv_display_flush_ready：通知 LVGL“这块已经上屏，缓冲可以复用”——LVGL 渲染循环得以继续。</td></tr>
+<tr class=''><td class='no'>127</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>128</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>129</td><td class='src'>/* Initialize LCD I/O bus, reset LCD */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>130</td><td class='src'>static int32_t lcd_io_init(void)</td><td class='exp'><b>lcd_io_init</b>：总线与复位。</td></tr>
+<tr class=''><td class='no'>131</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>132</td><td class='src'>    /* Register SPI Tx Complete Callback */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>133</td><td class='src'>    HAL_SPI_RegisterCallback(&amp;hspi1, HAL_SPI_TX_COMPLETE_CB_ID, lcd_color_transfer_ready_cb);</td><td class='exp'>HAL_SPI_RegisterCallback 注册 SPI1 发送完成回调——DMA 完成中断最终走到这里。</td></tr>
+<tr class='blank'><td class='no'>134</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>135</td><td class='src'>    /* reset LCD */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>136</td><td class='src'>    HAL_GPIO_WritePin(LCD_RESET_GPIO_Port, LCD_RESET_Pin, GPIO_PIN_RESET);</td><td class='exp'>复位脚拉低 100ms（硬复位液晶）。</td></tr>
+<tr class='auto'><td class='no'>137</td><td class='src'>    HAL_Delay(100);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>HAL_Delay()</code>：阻塞式毫秒延时（基于 HAL 时基节拍），当前执行流原地等待指定毫秒数。</td></tr>
+<tr class=''><td class='no'>138</td><td class='src'>    HAL_GPIO_WritePin(LCD_RESET_GPIO_Port, LCD_RESET_Pin, GPIO_PIN_SET);</td><td class='exp'>复位脚拉高再等 100ms。</td></tr>
+<tr class='auto'><td class='no'>139</td><td class='src'>    HAL_Delay(100);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>HAL_Delay()</code>：阻塞式毫秒延时（基于 HAL 时基节拍），当前执行流原地等待指定毫秒数。</td></tr>
+<tr class='blank'><td class='no'>140</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>141</td><td class='src'>    HAL_GPIO_WritePin(LCD_CS_GPIO_Port, LCD_CS_Pin, GPIO_PIN_SET);</td><td class='exp'>CS 拉高（默认不选中）。</td></tr>
+<tr class=''><td class='no'>142</td><td class='src'>    HAL_GPIO_WritePin(LCD_DCX_GPIO_Port, LCD_DCX_Pin, GPIO_PIN_SET);</td><td class='exp'>DC 拉高（默认数据态）。</td></tr>
+<tr class='blank'><td class='no'>143</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>144</td><td class='src'>    return HAL_OK;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>HAL_OK</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>145</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>146</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>147</td><td class='src'>/* Platform-specific implementation of the LCD send command function. In general this should use polling transfer. */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>148</td><td class='src'>static void lcd_send_cmd(lv_display_t * disp, const uint8_t * cmd, size_t cmd_size, const uint8_t * param,</td><td class='exp'><b>lcd_send_cmd</b>：LVGL 驱动发配置命令（如设置窗口地址）。</td></tr>
+<tr class='auto'><td class='no'>149</td><td class='src'>                         size_t param_size)</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>150</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>151</td><td class='src'>    LV_UNUSED(disp);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>LV_UNUSED()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>152</td><td class='src'>    while(lcd_bus_busy);    /* wait until previous transfer is finished */</td><td class='exp'>等上一次 DMA 刷屏结束（命令必须等总线空闲）。</td></tr>
+<tr class='comment'><td class='no'>153</td><td class='src'>    /* Set the SPI in 8-bit mode */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>154</td><td class='src'>    hspi1.Init.DataSize = SPI_DATASIZE_8BIT;</td><td class='exp'>SPI 切回 8 位模式并重新初始化。</td></tr>
+<tr class='auto'><td class='no'>155</td><td class='src'>    HAL_SPI_Init(&amp;hspi1);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>HAL_SPI_Init()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='comment'><td class='no'>156</td><td class='src'>    /* DCX low (command) */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>157</td><td class='src'>    HAL_GPIO_WritePin(LCD_DCX_GPIO_Port, LCD_DCX_Pin, GPIO_PIN_RESET);</td><td class='exp'>DC 拉低 = 发送的是命令字节。</td></tr>
+<tr class='comment'><td class='no'>158</td><td class='src'>    /* CS low */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>159</td><td class='src'>    HAL_GPIO_WritePin(LCD_CS_GPIO_Port, LCD_CS_Pin, GPIO_PIN_RESET);</td><td class='exp'>CS 拉低选中。</td></tr>
+<tr class='comment'><td class='no'>160</td><td class='src'>    /* send command */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>161</td><td class='src'>    if(HAL_SPI_Transmit(&amp;hspi1, cmd, cmd_size, BUS_SPI1_POLL_TIMEOUT) == HAL_OK) {</td><td class='exp'>阻塞发送命令字节。</td></tr>
+<tr class='comment'><td class='no'>162</td><td class='src'>        /* DCX high (data) */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>163</td><td class='src'>        HAL_GPIO_WritePin(LCD_DCX_GPIO_Port, LCD_DCX_Pin, GPIO_PIN_SET);</td><td class='exp'>DC 拉高 = 后面是参数数据。</td></tr>
+<tr class='comment'><td class='no'>164</td><td class='src'>        /* for short data blocks we use polling transfer */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>165</td><td class='src'>        HAL_SPI_Transmit(&amp;hspi1, (uint8_t *)param, (uint16_t)param_size, BUS_SPI1_POLL_TIMEOUT);</td><td class='exp'>阻塞发送命令参数（数据量小，轮询即可）。</td></tr>
+<tr class='comment'><td class='no'>166</td><td class='src'>        /* CS high */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>167</td><td class='src'>        HAL_GPIO_WritePin(LCD_CS_GPIO_Port, LCD_CS_Pin, GPIO_PIN_SET);</td><td class='exp'>CS 拉高结束。</td></tr>
+<tr class=''><td class='no'>168</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>169</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>170</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>171</td><td class='src'>/* Platform-specific implementation of the LCD send color function. For better performance this should use DMA transfer.</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>172</td><td class='src'> * In case of a DMA transfer a callback must be installed to notify LVGL about the end of the transfer.</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>173</td><td class='src'> */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>174</td><td class='src'>static void lcd_send_color(lv_display_t * disp, const uint8_t * cmd, size_t cmd_size, uint8_t * param,</td><td class='exp'><b>lcd_send_color</b>：LVGL 驱动发像素数据（性能关键路径）。</td></tr>
+<tr class='auto'><td class='no'>175</td><td class='src'>                           size_t param_size)</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>176</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>177</td><td class='src'>    LV_UNUSED(disp);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>LV_UNUSED()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>178</td><td class='src'>    while(lcd_bus_busy);    /* wait until previous transfer is finished */</td><td class='exp'>等上次 DMA 结束。</td></tr>
+<tr class='comment'><td class='no'>179</td><td class='src'>    /* Set the SPI in 8-bit mode */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>180</td><td class='src'>    hspi1.Init.DataSize = SPI_DATASIZE_8BIT;</td><td class='exp'>SPI 8 位模式。</td></tr>
+<tr class='auto'><td class='no'>181</td><td class='src'>    HAL_SPI_Init(&amp;hspi1);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>HAL_SPI_Init()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='comment'><td class='no'>182</td><td class='src'>    /* DCX low (command) */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>183</td><td class='src'>    HAL_GPIO_WritePin(LCD_DCX_GPIO_Port, LCD_DCX_Pin, GPIO_PIN_RESET);</td><td class='exp'>DC 低——先发“写 RAM”命令（0x2C）。</td></tr>
+<tr class='comment'><td class='no'>184</td><td class='src'>    /* CS low */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>185</td><td class='src'>    HAL_GPIO_WritePin(LCD_CS_GPIO_Port, LCD_CS_Pin, GPIO_PIN_RESET);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>HAL_GPIO_WritePin()</code>：向指定 GPIO 引脚写电平（GPIO_PIN_SET 拉高 / GPIO_PIN_RESET 拉低）。</td></tr>
+<tr class='comment'><td class='no'>186</td><td class='src'>    /* send command */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>187</td><td class='src'>    if(HAL_SPI_Transmit(&amp;hspi1, cmd, cmd_size, BUS_SPI1_POLL_TIMEOUT) == HAL_OK) {</td><td class='exp'>阻塞发命令字节。</td></tr>
+<tr class='comment'><td class='no'>188</td><td class='src'>        /* DCX high (data) */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>189</td><td class='src'>        HAL_GPIO_WritePin(LCD_DCX_GPIO_Port, LCD_DCX_Pin, GPIO_PIN_SET);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>HAL_GPIO_WritePin()</code>：向指定 GPIO 引脚写电平（GPIO_PIN_SET 拉高 / GPIO_PIN_RESET 拉低）。</td></tr>
+<tr class=''><td class='no'>190</td><td class='src'>        /* for color data use DMA transfer */</td><td class='exp'><b>切 16 位模式</b>：RGB565 每像素 2 字节；16 位帧让 DMA 以半字搬运且字节序正好匹配（LVGL 缓冲按小端排列）。</td></tr>
+<tr class='comment'><td class='no'>191</td><td class='src'>        /* Set the SPI in 16-bit mode to match endianness */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>192</td><td class='src'>        hspi1.Init.DataSize = SPI_DATASIZE_16BIT;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>SPI_DATASIZE_16BIT</code> 赋给 <code>hspi1.Init.DataSize</code>。</td></tr>
+<tr class='auto'><td class='no'>193</td><td class='src'>        HAL_SPI_Init(&amp;hspi1);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>HAL_SPI_Init()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>194</td><td class='src'>        lcd_bus_busy = 1;</td><td class='exp'>置 busy 标志（缓冲锁定）。</td></tr>
+<tr class=''><td class='no'>195</td><td class='src'>        HAL_SPI_Transmit_DMA(&amp;hspi1, param, (uint16_t)param_size / 2);</td><td class='exp'>HAL_SPI_Transmit_DMA 启动 DMA 刷屏——注意长度/2：16 位模式下按半字计数。</td></tr>
+<tr class=''><td class='no'>196</td><td class='src'>        /* NOTE: CS will be reset in the transfer ready callback */</td><td class='exp'>CS 与 flush_ready 都在完成回调里处理——本函数启动 DMA 后立即返回，不阻塞 UI 任务。</td></tr>
+<tr class=''><td class='no'>197</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>198</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>199</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>200</td><td class='src'>#else /*Enable this file at the top*/</td><td class='exp'><span class='auto-tag'>自动</span>条件编译的反向分支：前面条件不成立时编译本段。</td></tr>
+<tr class='blank'><td class='no'>201</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>202</td><td class='src'>/*This dummy typedef exists purely to silence -Wpedantic.*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>203</td><td class='src'>typedef int keep_pedantic_happy;</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>204</td><td class='src'>#endif</td><td class='exp'><span class='auto-tag'>自动</span>结束一个条件编译块。</td></tr>
+</table>
+<div class='summary'><h4>本文件小总结</h4><b>lv_port_lcd_stm32.c 总结：</b>显示移植 = 复位时序 + 命令通道（8 位阻塞）+ 像素通道（16 位 DMA 异步）+ 完成回调。lv_port_disp_wait_idle 是低功耗的关键配合函数：关背光/进 STOP 前必须等 DMA 停止。</div>
+</div>
+<div class='section'>
+<h2><span class='filepath'>lvgl/porting/lv_port_indev.c</span> <span class='pill'>0 行</span></h2>
+<div class='filedesc'>触摸输入设备适配：FT6336→LVGL 状态翻译、唤醒屏蔽、坐标翻转。</div>
+<table class='code'>
+<tr><th>行号</th><th>代码（lvgl/porting/lv_port_indev.c）</th><th>逐行讲解</th></tr>
+<tr class='comment'><td class='no'>1</td><td class='src'>/**</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>2</td><td class='src'> * @file lv_port_indev_template.c</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>3</td><td class='src'> *</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>4</td><td class='src'> */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>5</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>6</td><td class='src'>/*Copy this file as "lv_port_indev.c" and set this value to "1" to enable content*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>7</td><td class='src'>#if 1</td><td class='exp'><span class='auto-tag'>自动</span>条件编译入口（if）：满足条件才编译下面的内容，不满足则整段跳过。</td></tr>
+<tr class='blank'><td class='no'>8</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>9</td><td class='src'>/*********************</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>10</td><td class='src'> *      INCLUDES</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>11</td><td class='src'> *********************/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>12</td><td class='src'>#include "lv_port_indev.h"</td><td class='exp'>包含输入移植头。</td></tr>
+<tr class=''><td class='no'>13</td><td class='src'>#include "FT6336.h"</td><td class='exp'>包含 FT6336 驱动。</td></tr>
+<tr class=''><td class='no'>14</td><td class='src'>#include "app_system.h"</td><td class='exp'>包含 app_system.h——触摸屏蔽/按住上报接口。</td></tr>
+<tr class=''><td class='no'>15</td><td class='src'>#include "lv_port_lcd_stm32.h"</td><td class='exp'>包含显示移植头（分辨率宏）。</td></tr>
+<tr class='comment'><td class='no'>16</td><td class='src'>/*********************</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>17</td><td class='src'> *      DEFINES</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>18</td><td class='src'> *********************/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>19</td><td class='src'>//congcong</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>20</td><td class='src'>#define MY_DISP_HOR_RES 240</td><td class='exp'>屏宽 240。</td></tr>
+<tr class=''><td class='no'>21</td><td class='src'>#define MY_DISP_VER_RES 320</td><td class='exp'>屏高 320。</td></tr>
+<tr class='blank'><td class='no'>22</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>23</td><td class='src'>/**********************</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>24</td><td class='src'> *      TYPEDEFS</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>25</td><td class='src'> **********************/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>26</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>27</td><td class='src'>/**********************</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>28</td><td class='src'> *  STATIC PROTOTYPES</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>29</td><td class='src'> **********************/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>30</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>31</td><td class='src'>static void touchpad_init(void);</td><td class='exp'>触摸相关函数前向声明。</td></tr>
+<tr class='auto'><td class='no'>32</td><td class='src'>static void touchpad_read(lv_indev_t * indev, lv_indev_data_t * data);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>touchpad_read()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>33</td><td class='src'>static bool touchpad_is_pressed(void);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>touchpad_is_pressed()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>34</td><td class='src'>static void touchpad_get_xy(int32_t * x, int32_t * y);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>touchpad_get_xy()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='blank'><td class='no'>35</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>36</td><td class='src'>static void mouse_init(void);</td><td class='exp'>鼠标/键盘/编码器/按键的模板声明（本项目未用，函数体全为空）。</td></tr>
+<tr class='auto'><td class='no'>37</td><td class='src'>static void mouse_read(lv_indev_t * indev, lv_indev_data_t * data);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>mouse_read()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>38</td><td class='src'>static bool mouse_is_pressed(void);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>mouse_is_pressed()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>39</td><td class='src'>static void mouse_get_xy(int32_t * x, int32_t * y);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>mouse_get_xy()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='blank'><td class='no'>40</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>41</td><td class='src'>static void keypad_init(void);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>keypad_init()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>42</td><td class='src'>static void keypad_read(lv_indev_t * indev, lv_indev_data_t * data);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>keypad_read()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>43</td><td class='src'>static uint32_t keypad_get_key(void);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>keypad_get_key()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='blank'><td class='no'>44</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>45</td><td class='src'>static void encoder_init(void);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>encoder_init()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>46</td><td class='src'>static void encoder_read(lv_indev_t * indev, lv_indev_data_t * data);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>encoder_read()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>47</td><td class='src'>static void encoder_handler(void);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>encoder_handler()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='blank'><td class='no'>48</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>49</td><td class='src'>static void button_init(void);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>button_init()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>50</td><td class='src'>static void button_read(lv_indev_t * indev, lv_indev_data_t * data);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>button_read()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>51</td><td class='src'>static int8_t button_get_pressed_id(void);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>button_get_pressed_id()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>52</td><td class='src'>static bool button_is_pressed(uint8_t id);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>button_is_pressed()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='blank'><td class='no'>53</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>54</td><td class='src'>/**********************</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>55</td><td class='src'> *  STATIC VARIABLES</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>56</td><td class='src'> **********************/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>57</td><td class='src'>lv_indev_t * indev_touchpad;</td><td class='exp'>indev_touchpad：LVGL 输入设备对象。</td></tr>
+<tr class=''><td class='no'>58</td><td class='src'>lv_indev_t * indev_mouse;</td><td class='exp'>其余输入设备指针（未使用，模板保留）。</td></tr>
+<tr class='auto'><td class='no'>59</td><td class='src'>lv_indev_t * indev_keypad;</td><td class='exp'><span class='auto-tag'>自动</span>声明指针变量 <code>indev_keypad</code>（类型 <code>lv_indev_t</code>）。</td></tr>
+<tr class='auto'><td class='no'>60</td><td class='src'>lv_indev_t * indev_encoder;</td><td class='exp'><span class='auto-tag'>自动</span>声明指针变量 <code>indev_encoder</code>（类型 <code>lv_indev_t</code>）。</td></tr>
+<tr class='auto'><td class='no'>61</td><td class='src'>lv_indev_t * indev_button;</td><td class='exp'><span class='auto-tag'>自动</span>声明指针变量 <code>indev_button</code>（类型 <code>lv_indev_t</code>）。</td></tr>
+<tr class='blank'><td class='no'>62</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>63</td><td class='src'>static int32_t encoder_diff;</td><td class='exp'><span class='auto-tag'>自动</span>声明静态变量 <code>encoder_diff</code>（类型 <code>int32_t</code>）。</td></tr>
+<tr class='auto'><td class='no'>64</td><td class='src'>static lv_indev_state_t encoder_state;</td><td class='exp'><span class='auto-tag'>自动</span>声明静态变量 <code>encoder_state</code>（类型 <code>lv_indev_state_t</code>）。</td></tr>
+<tr class='blank'><td class='no'>65</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>66</td><td class='src'>/**********************</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>67</td><td class='src'> *      MACROS</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>68</td><td class='src'> **********************/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>69</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>70</td><td class='src'>/**********************</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>71</td><td class='src'> *   GLOBAL FUNCTIONS</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>72</td><td class='src'> **********************/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>73</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>74</td><td class='src'>void lv_port_indev_init(void)</td><td class='exp'><b>lv_port_indev_init()</b>：输入设备注册入口。</td></tr>
+<tr class=''><td class='no'>75</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>76</td><td class='src'>    /**</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>77</td><td class='src'>     * Here you will find example implementation of input devices supported by LVGL:</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>78</td><td class='src'>     *  - Touchpad</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>79</td><td class='src'>     *  - Mouse (with cursor support)</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>80</td><td class='src'>     *  - Keypad (supports GUI usage only with key)</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>81</td><td class='src'>     *  - Encoder (supports GUI usage only with: left, right, push)</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>82</td><td class='src'>     *  - Button (external buttons to press points on the screen)</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>83</td><td class='src'>     *</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>84</td><td class='src'>     *  The `..._read()` function are only examples.</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>85</td><td class='src'>     *  You should shape them according to your hardware</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>86</td><td class='src'>     */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>87</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>88</td><td class='src'>    /*------------------</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>89</td><td class='src'>     * Touchpad</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>90</td><td class='src'>     * -----------------*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>91</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>92</td><td class='src'>    /*Initialize your touchpad if you have*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>93</td><td class='src'>    touchpad_init();</td><td class='exp'>touchpad_init → FT6336_Init 硬件复位。</td></tr>
+<tr class='blank'><td class='no'>94</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>95</td><td class='src'>    /*Register a touchpad input device*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>96</td><td class='src'>    indev_touchpad = lv_indev_create();</td><td class='exp'>lv_indev_create 创建输入设备。</td></tr>
+<tr class=''><td class='no'>97</td><td class='src'>    lv_indev_set_type(indev_touchpad, LV_INDEV_TYPE_POINTER);</td><td class='exp'>类型 = 指针（触摸屏就是指针设备）。</td></tr>
+<tr class=''><td class='no'>98</td><td class='src'>    lv_indev_set_read_cb(indev_touchpad, touchpad_read);</td><td class='exp'>注册读取回调 touchpad_read——LVGL 定时器会周期性调用它采集输入。</td></tr>
+<tr class='blank'><td class='no'>99</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='blank'><td class='no'>100</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>101</td><td class='src'>    //没有用到键盘鼠标等功能，全部都注释掉</td><td class='exp'>鼠标/键盘等全部注释掉——硬件只有触摸屏。</td></tr>
+<tr class='comment'><td class='no'>102</td><td class='src'>    // /*------------------</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>103</td><td class='src'>    //  * Mouse</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>104</td><td class='src'>    //  * -----------------*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>105</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>106</td><td class='src'>    // /*Initialize your mouse if you have*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>107</td><td class='src'>    // mouse_init();</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>108</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>109</td><td class='src'>    // /*Register a mouse input device*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>110</td><td class='src'>    // indev_mouse = lv_indev_create();</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>111</td><td class='src'>    // lv_indev_set_type(indev_mouse, LV_INDEV_TYPE_POINTER);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>112</td><td class='src'>    // lv_indev_set_read_cb(indev_mouse, mouse_read);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>113</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>114</td><td class='src'>    // /*Set cursor. For simplicity set a HOME symbol now.*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>115</td><td class='src'>    // lv_obj_t * mouse_cursor = lv_image_create(lv_screen_active());</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>116</td><td class='src'>    // lv_image_set_src(mouse_cursor, LV_SYMBOL_HOME);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>117</td><td class='src'>    // lv_indev_set_cursor(indev_mouse, mouse_cursor);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>118</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>119</td><td class='src'>    // /*------------------</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>120</td><td class='src'>    //  * Keypad</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>121</td><td class='src'>    //  * -----------------*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>122</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>123</td><td class='src'>    // /*Initialize your keypad or keyboard if you have*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>124</td><td class='src'>    // keypad_init();</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>125</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>126</td><td class='src'>    // /*Register a keypad input device*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>127</td><td class='src'>    // indev_keypad = lv_indev_create();</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>128</td><td class='src'>    // lv_indev_set_type(indev_keypad, LV_INDEV_TYPE_KEYPAD);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>129</td><td class='src'>    // lv_indev_set_read_cb(indev_keypad, keypad_read);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>130</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>131</td><td class='src'>    // /*Later you should create group(s) with `lv_group_t * group = lv_group_create()`,</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>132</td><td class='src'>    //  *add objects to the group with `lv_group_add_obj(group, obj)`</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>133</td><td class='src'>    //  *and assign this input device to group to navigate in it:</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>134</td><td class='src'>    //  *`lv_indev_set_group(indev_keypad, group);`*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>135</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>136</td><td class='src'>    // /*------------------</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>137</td><td class='src'>    //  * Encoder</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>138</td><td class='src'>    //  * -----------------*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>139</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>140</td><td class='src'>    // /*Initialize your encoder if you have*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>141</td><td class='src'>    // encoder_init();</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>142</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>143</td><td class='src'>    // /*Register a encoder input device*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>144</td><td class='src'>    // indev_encoder = lv_indev_create();</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>145</td><td class='src'>    // lv_indev_set_type(indev_encoder, LV_INDEV_TYPE_ENCODER);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>146</td><td class='src'>    // lv_indev_set_read_cb(indev_encoder, encoder_read);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>147</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>148</td><td class='src'>    // /*Later you should create group(s) with `lv_group_t * group = lv_group_create()`,</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>149</td><td class='src'>    //  *add objects to the group with `lv_group_add_obj(group, obj)`</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>150</td><td class='src'>    //  *and assign this input device to group to navigate in it:</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>151</td><td class='src'>    //  *`lv_indev_set_group(indev_encoder, group);`*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>152</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>153</td><td class='src'>    // /*------------------</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>154</td><td class='src'>    //  * Button</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>155</td><td class='src'>    //  * -----------------*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>156</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>157</td><td class='src'>    // /*Initialize your button if you have*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>158</td><td class='src'>    // button_init();</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>159</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>160</td><td class='src'>    // /*Register a button input device*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>161</td><td class='src'>    // indev_button = lv_indev_create();</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>162</td><td class='src'>    // lv_indev_set_type(indev_button, LV_INDEV_TYPE_BUTTON);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>163</td><td class='src'>    // lv_indev_set_read_cb(indev_button, button_read);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>164</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>165</td><td class='src'>    // /*Assign buttons to points on the screen*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>166</td><td class='src'>    // static const lv_point_t btn_points[2] = {</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>167</td><td class='src'>    //     {10, 10},   /*Button 0 -&gt; x:10; y:10*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>168</td><td class='src'>    //     {40, 100},  /*Button 1 -&gt; x:40; y:100*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>169</td><td class='src'>    // };</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>170</td><td class='src'>    // lv_indev_set_button_points(indev_button, btn_points);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>171</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>172</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>173</td><td class='src'>/**********************</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>174</td><td class='src'> *   STATIC FUNCTIONS</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>175</td><td class='src'> **********************/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>176</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>177</td><td class='src'>/*------------------</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>178</td><td class='src'> * Touchpad</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>179</td><td class='src'> * -----------------*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>180</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>181</td><td class='src'>/*Initialize your touchpad*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>182</td><td class='src'>static void touchpad_init(void)</td><td class='exp'><b>touchpad_init</b>：调用 FT6336_Init。</td></tr>
+<tr class=''><td class='no'>183</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>184</td><td class='src'>    /*Your code comes here*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>185</td><td class='src'>    FT6336_Init();</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>FT6336_Init()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>186</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>187</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>188</td><td class='src'>/*Will be called by the library to read the touchpad*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>189</td><td class='src'>static void touchpad_read(lv_indev_t * indev_drv, lv_indev_data_t * data)</td><td class='exp'><b>touchpad_read(indev, data)</b>：LVGL 每轮输入采集（核心）。</td></tr>
+<tr class=''><td class='no'>190</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>191</td><td class='src'>    static int32_t last_x = 0;</td><td class='exp'>static last_x/last_y：记住上一次坐标——松开时 LVGL 需要最后位置做点击判定。</td></tr>
+<tr class='auto'><td class='no'>192</td><td class='src'>    static int32_t last_y = 0;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>0</code> 赋给 <code>static int32_t last_y</code>。</td></tr>
+<tr class='blank'><td class='no'>193</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>194</td><td class='src'>    /* 先读真实接触状态；长按状态必须上报系统任务，避免按住时入睡。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>195</td><td class='src'>    bool pressed = touchpad_is_pressed();</td><td class='exp'>先读真实接触状态（I2C 轮询 FT6336）。</td></tr>
+<tr class=''><td class='no'>196</td><td class='src'>    App_System_TouchHeld(pressed ? 1U : 0U);</td><td class='exp'><b>上报按住状态</b>给系统任务——按住期间不累计熄屏时间（App_System_TouchHeld）。</td></tr>
+<tr class='comment'><td class='no'>197</td><td class='src'>    /* 唤醒屏幕的整次触摸在松手前不传给页面控件。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>198</td><td class='src'>    if(App_System_SuppressTouch(pressed ? 1U : 0U) != 0U) {</td><td class='exp'><b>唤醒手势屏蔽</b>：App_System_SuppressTouch 返回 1 表示“这次触摸是黑屏唤醒，整次手势无效”→</td></tr>
+<tr class='comment'><td class='no'>199</td><td class='src'>        /* 即使落在保存或跳页按钮上，也只作为一次无效的唤醒触摸。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>200</td><td class='src'>        data-&gt;state = LV_INDEV_STATE_RELEASED;</td><td class='exp'>强制上报 RELEASED：即使手指正按在“保存”按钮上，LVGL 也当作松开，不会触发按钮。</td></tr>
+<tr class=''><td class='no'>201</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>202</td><td class='src'>    else if(pressed) {</td><td class='exp'>正常触摸：读坐标并上报 PRESSED。</td></tr>
+<tr class='comment'><td class='no'>203</td><td class='src'>        /* 后续新的正常触摸才读取坐标并交给 LVGL 处理。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>204</td><td class='src'>        touchpad_get_xy(&amp;last_x, &amp;last_y);</td><td class='exp'>touchpad_get_xy 更新 last_x/last_y。</td></tr>
+<tr class='auto'><td class='no'>205</td><td class='src'>        data-&gt;state = LV_INDEV_STATE_PRESSED;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>LV_INDEV_STATE_PRESSED</code> 赋给 <code>data->state</code>。</td></tr>
+<tr class=''><td class='no'>206</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='auto'><td class='no'>207</td><td class='src'>    else {</td><td class='exp'><span class='auto-tag'>自动</span>否则分支：上面所有条件都不满足时执行这里。</td></tr>
+<tr class=''><td class='no'>208</td><td class='src'>        data-&gt;state = LV_INDEV_STATE_RELEASED;</td><td class='exp'>无触摸：上报 RELEASED。</td></tr>
+<tr class=''><td class='no'>209</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>210</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>211</td><td class='src'>    /*Set the last pressed coordinates*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>212</td><td class='src'>    data-&gt;point.x = MY_DISP_HOR_RES - 1 - last_x;;</td><td class='exp'>坐标写入：X 再做一次 240−1−x 翻转（与 FT6336_Read 内的翻转叠加，标定出的正确方向）。</td></tr>
+<tr class=''><td class='no'>213</td><td class='src'>    data-&gt;point.y = last_y;</td><td class='exp'>Y 原样。</td></tr>
+<tr class=''><td class='no'>214</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>215</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>216</td><td class='src'>/*Return true is the touchpad is pressed*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>217</td><td class='src'>static bool touchpad_is_pressed(void)</td><td class='exp'><b>touchpad_is_pressed</b>：直接转发 FT6336_IsTouched。</td></tr>
+<tr class=''><td class='no'>218</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>219</td><td class='src'>    /*Your code comes here*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>220</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>221</td><td class='src'>    return FT6336_IsTouched();</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>FT6336_IsTouched()</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>222</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>223</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>224</td><td class='src'>/*Get the x and y coordinates if the touchpad is pressed*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>225</td><td class='src'>static void touchpad_get_xy(int32_t * x, int32_t * y)</td><td class='exp'><b>touchpad_get_xy</b>：转发 FT6336_Read。</td></tr>
+<tr class=''><td class='no'>226</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>227</td><td class='src'>    /*Your code comes here*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>228</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>229</td><td class='src'>    uint16_t touch_x;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>touch_x</code>（类型 <code>uint16_t</code>）。</td></tr>
+<tr class='auto'><td class='no'>230</td><td class='src'>    uint16_t touch_y;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>touch_y</code>（类型 <code>uint16_t</code>）。</td></tr>
+<tr class='blank'><td class='no'>231</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>232</td><td class='src'>    if(FT6336_Read(&amp;touch_x, &amp;touch_y)) {</td><td class='exp'>读成功才更新坐标（失败保留上次值）。</td></tr>
+<tr class='auto'><td class='no'>233</td><td class='src'>        *x = touch_x;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>touch_x</code> 赋给 <code>*x</code>。</td></tr>
+<tr class='auto'><td class='no'>234</td><td class='src'>        *y = touch_y;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>touch_y</code> 赋给 <code>*y</code>。</td></tr>
+<tr class=''><td class='no'>235</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>236</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+</table><div class='summary'><b>小总结（LVGL 输入适配与触摸安全）：</b>touchpad_read 是 LVGL 与真实世界的接口：每轮做三件事——①上报“是否按住”给系统任务（防按住时入睡）；②执行唤醒手势屏蔽（黑屏后第一次触摸整次无效，且需连续 2 次松手判定才解除）；③翻译状态与坐标（X 二次翻转）。这套设计把“低功耗交互”与“界面交互”干净地解耦：系统任务只看序号和 held 标志，LVGL 只看 state 和 point。</div><table class='code'><tr><th>行号</th><th>代码（lvgl/porting/lv_port_indev.c）</th><th>逐行讲解</th></tr>
+<tr class='blank'><td class='no'>237</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>238</td><td class='src'>/*------------------</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>239</td><td class='src'> * Mouse</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>240</td><td class='src'> * -----------------*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>241</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>242</td><td class='src'>/*Initialize your mouse*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>243</td><td class='src'>static void mouse_init(void)</td><td class='exp'>mouse_init 等模板函数：全部空实现（项目未使用）。</td></tr>
+<tr class=''><td class='no'>244</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>245</td><td class='src'>    /*Your code comes here*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>246</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>247</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>248</td><td class='src'>/*Will be called by the library to read the mouse*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>249</td><td class='src'>static void mouse_read(lv_indev_t * indev_drv, lv_indev_data_t * data)</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>250</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>251</td><td class='src'>    /*Get the current x and y coordinates*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>252</td><td class='src'>    mouse_get_xy(&amp;data-&gt;point.x, &amp;data-&gt;point.y);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>mouse_get_xy()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='blank'><td class='no'>253</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>254</td><td class='src'>    /*Get whether the mouse button is pressed or released*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>255</td><td class='src'>    if(mouse_is_pressed()) {</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='auto'><td class='no'>256</td><td class='src'>        data-&gt;state = LV_INDEV_STATE_PRESSED;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>LV_INDEV_STATE_PRESSED</code> 赋给 <code>data->state</code>。</td></tr>
+<tr class=''><td class='no'>257</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='auto'><td class='no'>258</td><td class='src'>    else {</td><td class='exp'><span class='auto-tag'>自动</span>否则分支：上面所有条件都不满足时执行这里。</td></tr>
+<tr class='auto'><td class='no'>259</td><td class='src'>        data-&gt;state = LV_INDEV_STATE_RELEASED;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>LV_INDEV_STATE_RELEASED</code> 赋给 <code>data->state</code>。</td></tr>
+<tr class=''><td class='no'>260</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>261</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>262</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>263</td><td class='src'>/*Return true is the mouse button is pressed*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>264</td><td class='src'>static bool mouse_is_pressed(void)</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>265</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>266</td><td class='src'>    /*Your code comes here*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>267</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>268</td><td class='src'>    return false;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>false</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>269</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>270</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>271</td><td class='src'>/*Get the x and y coordinates if the mouse is pressed*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>272</td><td class='src'>static void mouse_get_xy(int32_t * x, int32_t * y)</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>273</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>274</td><td class='src'>    /*Your code comes here*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>275</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>276</td><td class='src'>    (*x) = 0;</td><td class='exp'><span class='auto-tag'>自动</span>执行一条函数调用语句。</td></tr>
+<tr class='auto'><td class='no'>277</td><td class='src'>    (*y) = 0;</td><td class='exp'><span class='auto-tag'>自动</span>执行一条函数调用语句。</td></tr>
+<tr class=''><td class='no'>278</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>279</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>280</td><td class='src'>/*------------------</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>281</td><td class='src'> * Keypad</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>282</td><td class='src'> * -----------------*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>283</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>284</td><td class='src'>/*Initialize your keypad*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>285</td><td class='src'>static void keypad_init(void)</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>286</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>287</td><td class='src'>    /*Your code comes here*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>288</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>289</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>290</td><td class='src'>/*Will be called by the library to read the mouse*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>291</td><td class='src'>static void keypad_read(lv_indev_t * indev_drv, lv_indev_data_t * data)</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>292</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>293</td><td class='src'>    static uint32_t last_key = 0;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>0</code> 赋给 <code>static uint32_t last_key</code>。</td></tr>
+<tr class='blank'><td class='no'>294</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>295</td><td class='src'>    /*Get the current x and y coordinates*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>296</td><td class='src'>    mouse_get_xy(&amp;data-&gt;point.x, &amp;data-&gt;point.y);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>mouse_get_xy()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='blank'><td class='no'>297</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>298</td><td class='src'>    /*Get whether the a key is pressed and save the pressed key*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>299</td><td class='src'>    uint32_t act_key = keypad_get_key();</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>keypad_get_key()</code> 赋给 <code>uint32_t act_key</code>。</td></tr>
+<tr class='auto'><td class='no'>300</td><td class='src'>    if(act_key != 0) {</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='auto'><td class='no'>301</td><td class='src'>        data-&gt;state = LV_INDEV_STATE_PRESSED;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>LV_INDEV_STATE_PRESSED</code> 赋给 <code>data->state</code>。</td></tr>
+<tr class='blank'><td class='no'>302</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>303</td><td class='src'>        /*Translate the keys to LVGL control characters according to your key definitions*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>304</td><td class='src'>        switch(act_key) {</td><td class='exp'><span class='auto-tag'>自动</span>switch 多路分支：按括号内的值跳到匹配的 case。</td></tr>
+<tr class='auto'><td class='no'>305</td><td class='src'>            case 1:</td><td class='exp'><span class='auto-tag'>自动</span>switch 分支标签：值匹配时从这里开始执行。</td></tr>
+<tr class='auto'><td class='no'>306</td><td class='src'>                act_key = LV_KEY_NEXT;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>LV_KEY_NEXT</code> 赋给 <code>act_key</code>。</td></tr>
+<tr class='auto'><td class='no'>307</td><td class='src'>                break;</td><td class='exp'><span class='auto-tag'>自动</span>跳出当前 switch/case 或循环。</td></tr>
+<tr class='auto'><td class='no'>308</td><td class='src'>            case 2:</td><td class='exp'><span class='auto-tag'>自动</span>switch 分支标签：值匹配时从这里开始执行。</td></tr>
+<tr class='auto'><td class='no'>309</td><td class='src'>                act_key = LV_KEY_PREV;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>LV_KEY_PREV</code> 赋给 <code>act_key</code>。</td></tr>
+<tr class='auto'><td class='no'>310</td><td class='src'>                break;</td><td class='exp'><span class='auto-tag'>自动</span>跳出当前 switch/case 或循环。</td></tr>
+<tr class='auto'><td class='no'>311</td><td class='src'>            case 3:</td><td class='exp'><span class='auto-tag'>自动</span>switch 分支标签：值匹配时从这里开始执行。</td></tr>
+<tr class='auto'><td class='no'>312</td><td class='src'>                act_key = LV_KEY_LEFT;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>LV_KEY_LEFT</code> 赋给 <code>act_key</code>。</td></tr>
+<tr class='auto'><td class='no'>313</td><td class='src'>                break;</td><td class='exp'><span class='auto-tag'>自动</span>跳出当前 switch/case 或循环。</td></tr>
+<tr class='auto'><td class='no'>314</td><td class='src'>            case 4:</td><td class='exp'><span class='auto-tag'>自动</span>switch 分支标签：值匹配时从这里开始执行。</td></tr>
+<tr class='auto'><td class='no'>315</td><td class='src'>                act_key = LV_KEY_RIGHT;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>LV_KEY_RIGHT</code> 赋给 <code>act_key</code>。</td></tr>
+<tr class='auto'><td class='no'>316</td><td class='src'>                break;</td><td class='exp'><span class='auto-tag'>自动</span>跳出当前 switch/case 或循环。</td></tr>
+<tr class='auto'><td class='no'>317</td><td class='src'>            case 5:</td><td class='exp'><span class='auto-tag'>自动</span>switch 分支标签：值匹配时从这里开始执行。</td></tr>
+<tr class='auto'><td class='no'>318</td><td class='src'>                act_key = LV_KEY_ENTER;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>LV_KEY_ENTER</code> 赋给 <code>act_key</code>。</td></tr>
+<tr class='auto'><td class='no'>319</td><td class='src'>                break;</td><td class='exp'><span class='auto-tag'>自动</span>跳出当前 switch/case 或循环。</td></tr>
+<tr class=''><td class='no'>320</td><td class='src'>        }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>321</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>322</td><td class='src'>        last_key = act_key;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>act_key</code> 赋给 <code>last_key</code>。</td></tr>
+<tr class=''><td class='no'>323</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='auto'><td class='no'>324</td><td class='src'>    else {</td><td class='exp'><span class='auto-tag'>自动</span>否则分支：上面所有条件都不满足时执行这里。</td></tr>
+<tr class='auto'><td class='no'>325</td><td class='src'>        data-&gt;state = LV_INDEV_STATE_RELEASED;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>LV_INDEV_STATE_RELEASED</code> 赋给 <code>data->state</code>。</td></tr>
+<tr class=''><td class='no'>326</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>327</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>328</td><td class='src'>    data-&gt;key = last_key;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>last_key</code> 赋给 <code>data->key</code>。</td></tr>
+<tr class=''><td class='no'>329</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>330</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>331</td><td class='src'>/*Get the currently being pressed key.  0 if no key is pressed*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>332</td><td class='src'>static uint32_t keypad_get_key(void)</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>333</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>334</td><td class='src'>    /*Your code comes here*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>335</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>336</td><td class='src'>    return 0;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>0</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>337</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>338</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>339</td><td class='src'>/*------------------</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>340</td><td class='src'> * Encoder</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>341</td><td class='src'> * -----------------*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>342</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>343</td><td class='src'>/*Initialize your encoder*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>344</td><td class='src'>static void encoder_init(void)</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>345</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>346</td><td class='src'>    /*Your code comes here*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>347</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>348</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>349</td><td class='src'>/*Will be called by the library to read the encoder*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>350</td><td class='src'>static void encoder_read(lv_indev_t * indev_drv, lv_indev_data_t * data)</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>351</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='blank'><td class='no'>352</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>353</td><td class='src'>    data-&gt;enc_diff = encoder_diff;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>encoder_diff</code> 赋给 <code>data->enc_diff</code>。</td></tr>
+<tr class='auto'><td class='no'>354</td><td class='src'>    data-&gt;state = encoder_state;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>encoder_state</code> 赋给 <code>data->state</code>。</td></tr>
+<tr class=''><td class='no'>355</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>356</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>357</td><td class='src'>/*Call this function in an interrupt to process encoder events (turn, press)*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>358</td><td class='src'>static void encoder_handler(void)</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>359</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>360</td><td class='src'>    /*Your code comes here*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>361</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>362</td><td class='src'>    encoder_diff += 0;</td><td class='exp'><span class='auto-tag'>自动</span>把 <code>encoder_diff</code> 与 <code>0</code> 做相加运算后写回 <code>encoder_diff</code>。</td></tr>
+<tr class='auto'><td class='no'>363</td><td class='src'>    encoder_state = LV_INDEV_STATE_RELEASED;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>LV_INDEV_STATE_RELEASED</code> 赋给 <code>encoder_state</code>。</td></tr>
+<tr class=''><td class='no'>364</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>365</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>366</td><td class='src'>/*------------------</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>367</td><td class='src'> * Button</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>368</td><td class='src'> * -----------------*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>369</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>370</td><td class='src'>/*Initialize your buttons*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>371</td><td class='src'>static void button_init(void)</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>372</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>373</td><td class='src'>    /*Your code comes here*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>374</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>375</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>376</td><td class='src'>/*Will be called by the library to read the button*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>377</td><td class='src'>static void button_read(lv_indev_t * indev_drv, lv_indev_data_t * data)</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>378</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='blank'><td class='no'>379</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>380</td><td class='src'>    static uint8_t last_btn = 0;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>0</code> 赋给 <code>static uint8_t last_btn</code>。</td></tr>
+<tr class='blank'><td class='no'>381</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>382</td><td class='src'>    /*Get the pressed button's ID*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>383</td><td class='src'>    int8_t btn_act = button_get_pressed_id();</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>button_get_pressed_id()</code> 赋给 <code>int8_t btn_act</code>。</td></tr>
+<tr class='blank'><td class='no'>384</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>385</td><td class='src'>    if(btn_act &gt;= 0) {</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='auto'><td class='no'>386</td><td class='src'>        data-&gt;state = LV_INDEV_STATE_PRESSED;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>LV_INDEV_STATE_PRESSED</code> 赋给 <code>data->state</code>。</td></tr>
+<tr class='auto'><td class='no'>387</td><td class='src'>        last_btn = btn_act;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>btn_act</code> 赋给 <code>last_btn</code>。</td></tr>
+<tr class=''><td class='no'>388</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='auto'><td class='no'>389</td><td class='src'>    else {</td><td class='exp'><span class='auto-tag'>自动</span>否则分支：上面所有条件都不满足时执行这里。</td></tr>
+<tr class='auto'><td class='no'>390</td><td class='src'>        data-&gt;state = LV_INDEV_STATE_RELEASED;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>LV_INDEV_STATE_RELEASED</code> 赋给 <code>data->state</code>。</td></tr>
+<tr class=''><td class='no'>391</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>392</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>393</td><td class='src'>    /*Save the last pressed button's ID*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>394</td><td class='src'>    data-&gt;btn_id = last_btn;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>last_btn</code> 赋给 <code>data->btn_id</code>。</td></tr>
+<tr class=''><td class='no'>395</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>396</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>397</td><td class='src'>/*Get ID  (0, 1, 2 ..) of the pressed button*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>398</td><td class='src'>static int8_t button_get_pressed_id(void)</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>399</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>400</td><td class='src'>    uint8_t i;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>i</code>（类型 <code>uint8_t</code>）。</td></tr>
+<tr class='blank'><td class='no'>401</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>402</td><td class='src'>    /*Check to buttons see which is being pressed (assume there are 2 buttons)*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>403</td><td class='src'>    for(i = 0; i &lt; 2; i++) {</td><td class='exp'><span class='auto-tag'>自动</span>for 循环：按 初始化;条件;步进 三段式重复执行循环体。</td></tr>
+<tr class='comment'><td class='no'>404</td><td class='src'>        /*Return the pressed button's ID*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>405</td><td class='src'>        if(button_is_pressed(i)) {</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='auto'><td class='no'>406</td><td class='src'>            return i;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>i</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>407</td><td class='src'>        }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>408</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>409</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>410</td><td class='src'>    /*No button pressed*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>411</td><td class='src'>    return -1;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>-1</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>412</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>413</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>414</td><td class='src'>/*Test if `id` button is pressed or not*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>415</td><td class='src'>static bool button_is_pressed(uint8_t id)</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>416</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='blank'><td class='no'>417</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>418</td><td class='src'>    /*Your code comes here*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>419</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>420</td><td class='src'>    return false;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>false</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>421</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>422</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>423</td><td class='src'>#else /*Enable this file at the top*/</td><td class='exp'>#else 分支：文件未启用时的占位 typedef。</td></tr>
+<tr class='blank'><td class='no'>424</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>425</td><td class='src'>/*This dummy typedef exists purely to silence -Wpedantic.*/</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>426</td><td class='src'>typedef int keep_pedantic_happy;</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>427</td><td class='src'>#endif</td><td class='exp'><span class='auto-tag'>自动</span>结束一个条件编译块。</td></tr>
+</table>
+<div class='summary'><h4>本文件小总结</h4><b>lv_port_indev.c 总结：</b>只注册一个 POINTER 设备；read 回调融合了 FT6336 轮询、系统任务上报、唤醒屏蔽、坐标变换。鼠标/键盘/编码器为模板空实现。</div>
+</div>
+<div class='summary'><h4>本章总结</h4><b>本章总结：</b>LVGL 适配三件套：时基（lv_tick_set_cb(HAL_GetTick)）、显示（SPI DMA+双缓冲+flush_ready）、输入（轮询回调+屏蔽机制）。记住 PARTIAL 渲染模式与“渲染/传输并行”的双缓冲思想，以及“黑屏唤醒触摸必须整次屏蔽”的安全规则。</div>
+</div></body></html>

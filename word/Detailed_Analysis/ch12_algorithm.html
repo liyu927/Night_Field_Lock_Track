@@ -1,0 +1,388 @@
+<!DOCTYPE html><html lang='zh-CN'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>第 12 章 · 控制算法：PID 与三重滤波（pid.c/h、filter.c/h） - 项目代码逐行详解</title><style>
+:root{
+  --bg:#14161a; --panel:#1d2026; --panel2:#22262e; --code:#171a20;
+  --text:#d8dde5; --dim:#8b93a1; --accent:#4da3ff; --accent2:#7ee2b8;
+  --line:#2c313b; --warn:#f0b429;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:"Microsoft YaHei","PingFang SC",Segoe UI,sans-serif;font-size:15px;line-height:1.75}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px 80px}
+nav.topbar{position:sticky;top:0;z-index:9;background:rgba(20,22,26,.96);
+  border-bottom:1px solid var(--line);padding:10px 0;backdrop-filter:blur(6px)}
+nav.topbar .wrap{padding:0 20px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+nav.topbar a{background:var(--panel2);color:var(--text);padding:4px 12px;border-radius:16px;
+  font-size:13px;border:1px solid var(--line);white-space:nowrap}
+nav.topbar a.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+nav.topbar a:hover{text-decoration:none;filter:brightness(1.15)}
+header.chapter{margin:28px 0 8px}
+header.chapter h1{font-size:26px;margin:0 0 6px;color:#fff}
+header.chapter .meta{color:var(--dim);font-size:13px}
+.intro{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);
+  border-radius:8px;padding:14px 18px;margin:18px 0}
+.summary{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent2);
+  border-radius:8px;padding:14px 18px;margin:18px 0}
+.summary h4,.intro h4{margin:0 0 8px;font-size:15px;color:var(--accent2)}
+.intro h4{color:var(--accent)}
+.section{margin:34px 0}
+.section > h2{font-size:20px;color:#fff;border-bottom:1px solid var(--line);padding-bottom:8px}
+.section .filepath{font-family:Consolas,monospace;color:var(--warn);font-size:14px}
+.section .filedesc{color:var(--dim);font-size:14px;margin:6px 0 10px}
+table.code{width:100%;border-collapse:collapse;background:var(--code);
+  border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:13px}
+table.code th{background:var(--panel2);color:var(--dim);font-weight:600;text-align:left;
+  padding:7px 10px;font-size:12px;position:sticky;top:44px}
+table.code td{padding:3px 10px;vertical-align:top;border-top:1px solid #20242c}
+td.no{width:52px;text-align:right;color:#5c6575;font-family:Consolas,monospace;user-select:none}
+td.src{width:46%;font-family:Consolas,"Courier New",monospace;color:#c9d2e0;white-space:pre;
+  overflow-x:auto}
+td.exp{color:var(--text);font-size:13.5px}
+tr.comment td.src{color:#5f7060}
+tr.comment td.exp{color:var(--dim);font-style:normal}
+tr.blank td.src{color:#3a4150}
+.pill{display:inline-block;background:var(--panel2);border:1px solid var(--line);color:var(--dim);
+  border-radius:12px;padding:1px 10px;font-size:12px;margin-right:6px}
+.diagram{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;
+  margin:18px 0;font-family:Consolas,monospace;white-space:pre;overflow-x:auto;color:#bcd3f5;font-size:13px;line-height:1.55}
+.toc{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 18px;margin:14px 0}
+.toc a{display:block;padding:3px 0;font-size:14px}
+.badge{display:inline-block;background:#2b3a55;color:#9ecbff;border-radius:4px;padding:0 8px;font-size:12px;margin-right:6px}
+tr.auto td.exp{color:#9aa6b8}
+.auto-tag{display:inline-block;background:#2c3140;color:#8fa0b8;border:1px solid #3a4150;
+  border-radius:10px;padding:0 7px;font-size:11px;margin-right:5px;font-style:normal}
+</style></head><body><nav class='topbar'><div class='wrap'><a href='index.html'>目录</a><a href='ch01_startup.html'>01 启动流程</a><a href='ch02_interrupt.html'>02 中断与时基</a><a href='ch03_gpio_dma.html'>03 GPIO/DMA</a><a href='ch04_adc.html'>04 ADC 采样</a><a href='ch05_i2c.html'>05 I2C 底层</a><a href='ch06_spi.html'>06 SPI 底层</a><a href='ch07_tim.html'>07 定时器PWM</a><a href='ch08_usart_rtc.html'>08 串口/RTC</a><a href='ch09_rtos.html'>09 RTOS骨架</a><a href='ch10_appframe.html'>10 应用框架</a><a href='ch11_systemtask.html'>11 SystemTask</a><a href='ch12_algorithm.html' class='active'>12 PID/滤波</a><a href='ch13_foc.html'>13 FOC/SVPWM</a><a href='ch14_w25q64.html'>14 W25Q64存储</a><a href='ch15_parameters.html'>15 参数管理</a><a href='ch16_sensors.html'>16 传感器驱动</a><a href='ch17_lvgl_port.html'>17 LVGL移植</a><a href='ch18_ui.html'>18 UI界面</a><a href='ch19.html'>19 调试与VOFA</a></div></nav>
+<div class='wrap'>
+<header class='chapter'><h1>第 12 章 · 控制算法：PID 与三重滤波（pid.c/h、filter.c/h）</h1><div class='meta'>文件：Core/common/pid.c（95 行）、pid.h（38 行）、filter.c（97 行）、filter.h（64 行）</div></header>
+<div class='intro'><h4>本章导读</h4><p>PID 是电机的“方向盘”：位置环把角度误差变成目标速度，速度环把速度误差变成 q 轴电压。滤波链则是光敏数据的“降噪器”：三点中值去尖峰 → 1/8 一阶低通平滑。本章逐行讲解这两组算法，重点讲抗积分饱和的“试算-回退”写法与滤波器的初始化技巧。</p></div>
+<div class='section'>
+<h2><span class='filepath'>Core/common/pid.h</span> <span class='pill'>0 行</span></h2>
+<div class='filedesc'>PID 控制器结构与接口。</div>
+<table class='code'>
+<tr><th>行号</th><th>代码（Core/common/pid.h）</th><th>逐行讲解</th></tr>
+<tr class='auto'><td class='no'>1</td><td class='src'>#ifndef PID_H</td><td class='exp'><span class='auto-tag'>自动</span>条件编译入口（ifndef）：满足条件才编译下面的内容，不满足则整段跳过。</td></tr>
+<tr class='auto'><td class='no'>2</td><td class='src'>#define PID_H</td><td class='exp'><span class='auto-tag'>自动</span>定义宏 <code>PID_H</code>：编译前做纯文本替换，详见对应头文件小总结。</td></tr>
+<tr class='blank'><td class='no'>3</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>4</td><td class='src'>#include &lt;stdint.h&gt;</td><td class='exp'><span class='auto-tag'>自动</span>包含系统头文件 &lt;stdint.h&gt;：引入标准库/库的声明。</td></tr>
+<tr class='blank'><td class='no'>5</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>6</td><td class='src'>/* 离散 PID 参数与历史状态；同一实例只能由其所属控制环按周期更新。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>7</td><td class='src'>typedef struct</td><td class='exp'>定义 PID_Controller_t：一个可复用的离散 PID 实例。</td></tr>
+<tr class=''><td class='no'>8</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>9</td><td class='src'>    float kp;                /* 比例增益：直接作用于当前误差。 */</td><td class='exp'>kp：比例增益，直接作用于当前误差。</td></tr>
+<tr class=''><td class='no'>10</td><td class='src'>    float ki;                /* 积分增益：作用于按秒累计的误差。 */</td><td class='exp'>ki：积分增益，作用于按秒累计的误差（消除稳态误差）。</td></tr>
+<tr class=''><td class='no'>11</td><td class='src'>    float kd;                /* 微分增益：作用于误差变化率。 */</td><td class='exp'>kd：微分增益，作用于误差变化率（抑制超调，本项目为 0 未用）。</td></tr>
+<tr class=''><td class='no'>12</td><td class='src'>    float integral;          /* 已累计的误差积分，尚未乘 ki。 */</td><td class='exp'>integral：累计的误差积分（尚未乘 ki）。</td></tr>
+<tr class=''><td class='no'>13</td><td class='src'>    float previous_error;    /* 上一周期误差，用于差分求微分项。 */</td><td class='exp'>previous_error：上一周期误差，用于差分算微分项。</td></tr>
+<tr class=''><td class='no'>14</td><td class='src'>    float output_min;        /* 输出下限；位置环为 rad/s，速度环为 V。 */</td><td class='exp'>output_min：输出下限（位置环=rad/s 限速；速度环=负 q 电压上限）。</td></tr>
+<tr class=''><td class='no'>15</td><td class='src'>    float output_max;        /* 输出上限；必须大于 output_min。 */</td><td class='exp'>output_max：输出上限，必须大于 min。</td></tr>
+<tr class=''><td class='no'>16</td><td class='src'>    uint8_t initialized;     /* 首次更新不计算微分，避免初值造成尖峰。 */</td><td class='exp'>initialized：首次更新不算微分，避免从 0 突跳。</td></tr>
+<tr class='auto'><td class='no'>17</td><td class='src'>} PID_Controller_t;</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='blank'><td class='no'>18</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>19</td><td class='src'>/* 设置三项增益和输出范围，再清空积分与历史误差；参数不合法时直接返回。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>20</td><td class='src'>void PID_Init(PID_Controller_t *pid,</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>21</td><td class='src'>              float kp,</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>22</td><td class='src'>              float ki,</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>23</td><td class='src'>              float kd,</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>24</td><td class='src'>              float output_min,</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>25</td><td class='src'>              float output_max);</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='blank'><td class='no'>26</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>27</td><td class='src'>/* 清空积分、上一误差与首次更新标记，保留增益和输出限幅。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>28</td><td class='src'>void PID_Reset(PID_Controller_t *pid);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>PID_Reset()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='blank'><td class='no'>29</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>30</td><td class='src'>/* error=target-measurement；interval_s 为本次实际控制周期，单位秒。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>31</td><td class='src'>/* 先试算积分，若输出已饱和且误差继续推向饱和，则冻结积分；最后限制输出。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>32</td><td class='src'>/* 返回值的单位由所属控制环决定；空指针或非正周期返回 0。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>33</td><td class='src'>float PID_Update(PID_Controller_t *pid,</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>34</td><td class='src'>                 float target,</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>35</td><td class='src'>                 float measurement,</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>36</td><td class='src'>                 float interval_s);</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='blank'><td class='no'>37</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>38</td><td class='src'>#endif /* PID_H */</td><td class='exp'><span class='auto-tag'>自动</span>结束一个条件编译块。</td></tr>
+</table>
+<div class='summary'><h4>本文件小总结</h4><b>pid.h 总结：</b>一个纯算法容器：三个增益、两个历史量、一对输出限幅、一个首次标记。同一结构既当位置环（输出=速度）也当速度环（输出=电压），单位由使用者定义。</div>
+</div>
+<div class='section'>
+<h2><span class='filepath'>Core/common/pid.c</span> <span class='pill'>0 行</span></h2>
+<div class='filedesc'>PID 初始化、复位与带抗积分饱和的一次更新。</div>
+<table class='code'>
+<tr><th>行号</th><th>代码（Core/common/pid.c）</th><th>逐行讲解</th></tr>
+<tr class='auto'><td class='no'>1</td><td class='src'>#include "pid.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "pid.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='blank'><td class='no'>2</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>3</td><td class='src'>/* 把控制输出限制在配置区间，防止目标速度或 q 轴电压越界。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>4</td><td class='src'>static float pid_limit(float value, float minimum, float maximum)</td><td class='exp'><b>pid_limit</b>：闭区间裁剪工具函数。</td></tr>
+<tr class=''><td class='no'>5</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>6</td><td class='src'>    if (value &lt; minimum)</td><td class='exp'>小于下限返回下限。</td></tr>
+<tr class=''><td class='no'>7</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>8</td><td class='src'>        return minimum;</td><td class='exp'>大于上限返回上限。</td></tr>
+<tr class=''><td class='no'>9</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='auto'><td class='no'>10</td><td class='src'>    if (value &gt; maximum)</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class=''><td class='no'>11</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>12</td><td class='src'>        return maximum;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>maximum</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>13</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='auto'><td class='no'>14</td><td class='src'>    return value;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>value</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>15</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>16</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>17</td><td class='src'>/* 初始化增益和限幅，并让首次 PID_Update 从无历史状态开始。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>18</td><td class='src'>void PID_Init(PID_Controller_t *pid,</td><td class='exp'><b>PID_Init</b>：配置增益与限幅。</td></tr>
+<tr class='auto'><td class='no'>19</td><td class='src'>              float kp,</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>20</td><td class='src'>              float ki,</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>21</td><td class='src'>              float kd,</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>22</td><td class='src'>              float output_min,</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>23</td><td class='src'>              float output_max)</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>24</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>25</td><td class='src'>    /* 上下限非法时不修改原控制器，避免后续裁剪方向颠倒。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>26</td><td class='src'>    if ((pid == 0) || (output_min &gt;= output_max))</td><td class='exp'>参数防御：空指针或 min≥max（裁剪方向颠倒）时直接返回，不修改原控制器。</td></tr>
+<tr class=''><td class='no'>27</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>28</td><td class='src'>        return;</td><td class='exp'><span class='auto-tag'>自动</span>函数到此直接返回（无返回值）。</td></tr>
+<tr class=''><td class='no'>29</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>30</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>31</td><td class='src'>    pid-&gt;kp = kp;</td><td class='exp'>写入三个增益。</td></tr>
+<tr class='auto'><td class='no'>32</td><td class='src'>    pid-&gt;ki = ki;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>ki</code> 赋给 <code>pid->ki</code>。</td></tr>
+<tr class='auto'><td class='no'>33</td><td class='src'>    pid-&gt;kd = kd;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>kd</code> 赋给 <code>pid->kd</code>。</td></tr>
+<tr class=''><td class='no'>34</td><td class='src'>    pid-&gt;output_min = output_min;</td><td class='exp'>写入输出上下限。</td></tr>
+<tr class='auto'><td class='no'>35</td><td class='src'>    pid-&gt;output_max = output_max;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>output_max</code> 赋给 <code>pid->output_max</code>。</td></tr>
+<tr class='comment'><td class='no'>36</td><td class='src'>    /* 新参数启用前清除旧积分和微分历史。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>37</td><td class='src'>    PID_Reset(pid);</td><td class='exp'>PID_Reset 清空积分和历史误差——新参数从干净状态开始。</td></tr>
+<tr class=''><td class='no'>38</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>39</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>40</td><td class='src'>/* 只清运行历史，增益和输出范围保持不变。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>41</td><td class='src'>void PID_Reset(PID_Controller_t *pid)</td><td class='exp'><b>PID_Reset</b>：只清运行历史。</td></tr>
+<tr class=''><td class='no'>42</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>43</td><td class='src'>    if (pid == 0)</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class=''><td class='no'>44</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>45</td><td class='src'>        return;</td><td class='exp'><span class='auto-tag'>自动</span>函数到此直接返回（无返回值）。</td></tr>
+<tr class=''><td class='no'>46</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>47</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>48</td><td class='src'>    pid-&gt;integral = 0.0f;</td><td class='exp'>积分清零。</td></tr>
+<tr class=''><td class='no'>49</td><td class='src'>    pid-&gt;previous_error = 0.0f;</td><td class='exp'>上一误差清零。</td></tr>
+<tr class=''><td class='no'>50</td><td class='src'>    pid-&gt;initialized = 0U;</td><td class='exp'>initialized=0：下次 Update 不计算微分。</td></tr>
+<tr class=''><td class='no'>51</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>52</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>53</td><td class='src'>/* 一次离散 PID 更新：试算积分、判断积分饱和、重算并裁剪输出。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>54</td><td class='src'>float PID_Update(PID_Controller_t *pid,//PID控制器</td><td class='exp'><b>PID_Update(pid, target, measurement, interval_s)</b>：一次离散 PID 计算。</td></tr>
+<tr class='auto'><td class='no'>55</td><td class='src'>                 float target,//目标值</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>56</td><td class='src'>                 float measurement,//测量值</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>57</td><td class='src'>                 float interval_s)//经过的时间</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>58</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>59</td><td class='src'>    float error;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>error</code>（类型 <code>float</code>）。</td></tr>
+<tr class='auto'><td class='no'>60</td><td class='src'>    float derivative = 0.0f;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>0.0f</code> 赋给 <code>float derivative</code>。</td></tr>
+<tr class='auto'><td class='no'>61</td><td class='src'>    float integral_candidate;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>integral_candidate</code>（类型 <code>float</code>）。</td></tr>
+<tr class='auto'><td class='no'>62</td><td class='src'>    float output;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>output</code>（类型 <code>float</code>）。</td></tr>
+<tr class='blank'><td class='no'>63</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>64</td><td class='src'>    if ((pid == 0) || (interval_s &lt;= 0.0f))</td><td class='exp'>防御：空指针或周期≤0 返回 0（防止除零）。</td></tr>
+<tr class=''><td class='no'>65</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>66</td><td class='src'>        return 0.0f;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>0.0f</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>67</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>68</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>69</td><td class='src'>    /* 正误差表示测量值低于目标；输入单位由位置环或速度环决定。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>70</td><td class='src'>    error = target - measurement;</td><td class='exp'>误差 = 目标 − 测量。正误差表示测量落后于目标，需要正向输出追赶。</td></tr>
+<tr class='comment'><td class='no'>71</td><td class='src'>    /* 首次更新没有上一误差，故不计算微分，避免启动瞬间突变。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>72</td><td class='src'>    if (pid-&gt;initialized != 0U)</td><td class='exp'>首次更新（initialized=0）不算微分：上一误差无意义，硬算会产生巨大尖峰。</td></tr>
+<tr class=''><td class='no'>73</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>74</td><td class='src'>        derivative = (error - pid-&gt;previous_error) / interval_s;</td><td class='exp'>微分项 = (本误差−上误差)/周期，即误差变化率。</td></tr>
+<tr class=''><td class='no'>75</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>76</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>77</td><td class='src'>    /* 先试算本次积分和输出，再决定是否接受积分，避免越限时持续累积。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>78</td><td class='src'>    integral_candidate = pid-&gt;integral + error * interval_s;</td><td class='exp'><b>抗积分饱和第一步</b>：先用“试算积分”算一版输出——先看加了积分会不会越限。</td></tr>
+<tr class=''><td class='no'>79</td><td class='src'>    output = pid-&gt;kp * error + pid-&gt;ki * integral_candidate + pid-&gt;kd * derivative;</td><td class='exp'>试算输出 = kp×误差 + ki×试算积分 + kd×微分。</td></tr>
+<tr class='blank'><td class='no'>80</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>81</td><td class='src'>    /* 输出饱和且误差仍朝饱和方向增加时，不更新积分项，防止积分饱和。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>82</td><td class='src'>    /* 高限且正误差、或低限且负误差时，本次误差只会让输出进一步饱和。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>83</td><td class='src'>    if (!((output &gt; pid-&gt;output_max &amp;&amp; error &gt; 0.0f)</td><td class='exp'>饱和判断：输出超上限且误差仍为正（或低于下限且误差仍为负）——说明本次积分只会让输出更饱和。</td></tr>
+<tr class='auto'><td class='no'>84</td><td class='src'>          || (output &lt; pid-&gt;output_min &amp;&amp; error &lt; 0.0f)))</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>85</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>86</td><td class='src'>        pid-&gt;integral = integral_candidate;</td><td class='exp'>不饱和时才把试算积分正式接受，否则冻结积分（这就是抗积分饱和/anti-windup）。</td></tr>
+<tr class=''><td class='no'>87</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>88</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>89</td><td class='src'>    /* 无论积分是否冻结，都保存当前误差供下一周期计算误差变化率。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>90</td><td class='src'>    pid-&gt;previous_error = error;</td><td class='exp'>无论积分是否冻结，都保存当前误差供下周期差分。</td></tr>
+<tr class=''><td class='no'>91</td><td class='src'>    pid-&gt;initialized = 1U;</td><td class='exp'>标记已完成首次更新。</td></tr>
+<tr class='comment'><td class='no'>92</td><td class='src'>    /* 用最终接受的积分重算输出，最后再按配置范围裁剪。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>93</td><td class='src'>    output = pid-&gt;kp * error + pid-&gt;ki * pid-&gt;integral + pid-&gt;kd * derivative;</td><td class='exp'>用最终接受的积分重算输出，再按配置范围裁剪。</td></tr>
+<tr class='auto'><td class='no'>94</td><td class='src'>    return pid_limit(output, pid-&gt;output_min, pid-&gt;output_max);</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>pid_limit(output, pid->output_min, pid->output_max)</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>95</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+</table><div class='summary'><b>小总结（PID_Update 的抗饱和设计）：</b>本段代码完成的工作是“一次带防积分饱和的 PID 计算”。原理：普通 PID 若输出已到上限，积分还在偷偷累加，等误差反向时要先“消化”一大段多余积分，造成严重超调。本实现的办法是：先用试算积分算输出，发现“输出饱和且误差还在往饱和方向推”就冻结积分；最终输出用正式积分重算再限幅。速度环(输出=q 电压,限±5.5V)与位置环(输出=速度,限±180°/s)共用这套逻辑。</div><table class='code'><tr><th>行号</th><th>代码（Core/common/pid.c）</th><th>逐行讲解</th></tr>
+</table>
+<div class='summary'><h4>本文件小总结</h4><b>pid.c 总结：</b>PID_Init 校验+配置+复位；PID_Reset 清历史；PID_Update 完成误差计算、试算-回退式抗积分饱和、首周期不微分、输出限幅四件事。代码里的输出限幅与 SimpleFOC_Motor.c 的斜率限制、超量程故障检测配合工作。</div>
+</div>
+<div class='section'>
+<h2><span class='filepath'>Core/common/filter.h</span> <span class='pill'>0 行</span></h2>
+<div class='filedesc'>三种滤波器的状态结构。</div>
+<table class='code'>
+<tr><th>行号</th><th>代码（Core/common/filter.h）</th><th>逐行讲解</th></tr>
+<tr class='auto'><td class='no'>1</td><td class='src'>#ifndef FILTER_H</td><td class='exp'><span class='auto-tag'>自动</span>条件编译入口（ifndef）：满足条件才编译下面的内容，不满足则整段跳过。</td></tr>
+<tr class='auto'><td class='no'>2</td><td class='src'>#define FILTER_H</td><td class='exp'><span class='auto-tag'>自动</span>定义宏 <code>FILTER_H</code>：编译前做纯文本替换，详见对应头文件小总结。</td></tr>
+<tr class='blank'><td class='no'>3</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>4</td><td class='src'>#include &lt;stdint.h&gt;</td><td class='exp'><span class='auto-tag'>自动</span>包含系统头文件 &lt;stdint.h&gt;：引入标准库/库的声明。</td></tr>
+<tr class='blank'><td class='no'>5</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>6</td><td class='src'>/* 一阶低通滤波器的运行状态，每一路 ADC 数据各使用一个实例。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>7</td><td class='src'>typedef struct</td><td class='exp'>LowPassFilter_t：一阶低通状态。</td></tr>
+<tr class=''><td class='no'>8</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>9</td><td class='src'>    uint16_t value;          /* 上一次滤波输出，同时作为本次计算的历史值。 */</td><td class='exp'>value：上一次滤波输出。</td></tr>
+<tr class=''><td class='no'>10</td><td class='src'>    uint8_t initialized;     /* 0 表示尚未接收首个样本，非 0 表示已完成初始化。 */</td><td class='exp'>initialized：首样本标记。</td></tr>
+<tr class='auto'><td class='no'>11</td><td class='src'>} LowPassFilter_t;</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='blank'><td class='no'>12</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>13</td><td class='src'>/* 三点中值滤波器的运行状态，每一路 ADC 数据各使用一个实例。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>14</td><td class='src'>typedef struct</td><td class='exp'>Median3Filter_t：三点中值状态。</td></tr>
+<tr class=''><td class='no'>15</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>16</td><td class='src'>    uint16_t samples[3];     /* 连续保存的三个 ADC 样本，数组下标 0 为最早、2 为最新。 */</td><td class='exp'>samples[3]：滚动保存最近三个样本（0 最早、2 最新）。</td></tr>
+<tr class=''><td class='no'>17</td><td class='src'>    uint8_t initialized;     /* 0 表示尚未接收首个样本，非 0 表示已完成初始化。 */</td><td class='exp'>initialized 标记。</td></tr>
+<tr class='auto'><td class='no'>18</td><td class='src'>} Median3Filter_t;</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='blank'><td class='no'>19</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>20</td><td class='src'>/* 标量卡尔曼滤波器的运行状态，适用于单个 ADC 通道。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>21</td><td class='src'>typedef struct</td><td class='exp'>KalmanFilter_t：标量卡尔曼状态（本项目采样链未用，但模块提供）。</td></tr>
+<tr class=''><td class='no'>22</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>23</td><td class='src'>    float estimate;          /* 当前时刻的最优估计值。 */</td><td class='exp'>estimate：当前最优估计。</td></tr>
+<tr class=''><td class='no'>24</td><td class='src'>    float covariance;        /* 当前估计误差协方差，数值越大代表估计越不确定。 */</td><td class='exp'>covariance：估计误差协方差。</td></tr>
+<tr class=''><td class='no'>25</td><td class='src'>    float process_noise;     /* 过程噪声 Q，描述真实光照在相邻采样间的变化程度。 */</td><td class='exp'>process_noise：过程噪声 Q。</td></tr>
+<tr class=''><td class='no'>26</td><td class='src'>    float measurement_noise; /* 测量噪声 R，描述 ADC 采样抖动程度。 */</td><td class='exp'>measurement_noise：测量噪声 R。</td></tr>
+<tr class=''><td class='no'>27</td><td class='src'>    uint8_t initialized;     /* 0 表示首个测量值尚未写入估计值。 */</td><td class='exp'>initialized 标记。</td></tr>
+<tr class='auto'><td class='no'>28</td><td class='src'>} KalmanFilter_t;</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='blank'><td class='no'>29</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>30</td><td class='src'>/**</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>31</td><td class='src'> * @brief 对单个 ADC 样本执行一阶低通滤波。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>32</td><td class='src'> * @param filter 滤波器状态，首次调用时会自动以输入值初始化。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>33</td><td class='src'> * @param input 本次 ADC 原始输入值。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>34</td><td class='src'> * @param shift 低通系数的右移位数，3 表示系数为 1/8。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>35</td><td class='src'> * @return 本次滤波后的 ADC 值。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>36</td><td class='src'> */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>37</td><td class='src'>uint16_t Filter_LowPass(LowPassFilter_t *filter, uint16_t input, uint8_t shift);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>Filter_LowPass()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='blank'><td class='no'>38</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>39</td><td class='src'>/**</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>40</td><td class='src'> * @brief 对单个测量值执行标量卡尔曼滤波。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>41</td><td class='src'> * @param filter 包含 Q、R 和内部估计状态的滤波器。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>42</td><td class='src'> * @param measurement 本次测量值。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>43</td><td class='src'> * @return 本次更新后的最优估计值。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>44</td><td class='src'> */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>45</td><td class='src'>float Filter_Kalman(KalmanFilter_t *filter, float measurement);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>Filter_Kalman()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='blank'><td class='no'>46</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>47</td><td class='src'>/**</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>48</td><td class='src'> * @brief 返回三个样本中的中位数，用于消除偶发的 ADC 尖峰。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>49</td><td class='src'> * @param sample1 第一个 ADC 样本。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>50</td><td class='src'> * @param sample2 第二个 ADC 样本。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>51</td><td class='src'> * @param sample3 第三个 ADC 样本。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>52</td><td class='src'> * @return 三个样本按数值排序后的中间值。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>53</td><td class='src'> */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>54</td><td class='src'>uint16_t Filter_Median3(uint16_t sample1, uint16_t sample2, uint16_t sample3);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>Filter_Median3()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='blank'><td class='no'>55</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>56</td><td class='src'>/**</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>57</td><td class='src'> * @brief 将最新 ADC 样本写入三点历史记录并返回中值滤波结果。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>58</td><td class='src'> * @param filter 三点中值滤波器状态，首次调用时会用输入值填满三个历史样本。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>59</td><td class='src'> * @param input 本次 ADC 原始输入值。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>60</td><td class='src'> * @return 最近三个 ADC 样本的中位数。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>61</td><td class='src'> */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>62</td><td class='src'>uint16_t Filter_Median3Update(Median3Filter_t *filter, uint16_t input);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>Filter_Median3Update()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='blank'><td class='no'>63</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>64</td><td class='src'>#endif</td><td class='exp'><span class='auto-tag'>自动</span>结束一个条件编译块。</td></tr>
+</table>
+<div class='summary'><h4>本文件小总结</h4><b>filter.h 总结：</b>每个滤波器一个实例、自带 initialized 标记，首次调用自动以输入值初始化——这避免了“滤波器从 0 慢慢爬升”的经典错误。四路光敏各配一组中值+低通实例。</div>
+</div>
+<div class='section'>
+<h2><span class='filepath'>Core/common/filter.c</span> <span class='pill'>0 行</span></h2>
+<div class='filedesc'>低通、卡尔曼、三点中值滤波的实现。</div>
+<table class='code'>
+<tr><th>行号</th><th>代码（Core/common/filter.c）</th><th>逐行讲解</th></tr>
+<tr class='auto'><td class='no'>1</td><td class='src'>#include "filter.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "filter.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='blank'><td class='no'>2</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>3</td><td class='src'>/**</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>4</td><td class='src'> * @brief 使用 y(k)=y(k-1)+(x(k)-y(k-1))/2^shift 计算一阶低通滤波。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>5</td><td class='src'> * @note 使用移位代替浮点除法，适合 STM32 上的高频 ADC 数据处理。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>6</td><td class='src'> */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>7</td><td class='src'>uint16_t Filter_LowPass(LowPassFilter_t *filter, uint16_t input, uint8_t shift)</td><td class='exp'><b>Filter_LowPass(filter, input, shift)</b>：一阶低通，系数 1/2^shift（shift=3 即 1/8）。</td></tr>
+<tr class=''><td class='no'>8</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>9</td><td class='src'>    int32_t difference; /* 输入值与上次滤波输出的有符号差值，避免相减时无符号下溢。 */</td><td class='exp'>difference 用 int32_t：两 uint16 相减可能为负，必须用有符号数。</td></tr>
+<tr class='blank'><td class='no'>10</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>11</td><td class='src'>    /* 第一个样本直接作为初始输出，防止滤波器从零值缓慢爬升。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>12</td><td class='src'>    if (filter-&gt;initialized == 0U)</td><td class='exp'>首个样本直接作为输出——不从 0 爬升。</td></tr>
+<tr class=''><td class='no'>13</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>14</td><td class='src'>        filter-&gt;value = input;       /* 保存首个真实采样值。 */</td><td class='exp'>保存首个采样值。</td></tr>
+<tr class=''><td class='no'>15</td><td class='src'>        filter-&gt;initialized = 1U;    /* 标记后续调用可以进入正常滤波流程。 */</td><td class='exp'>标记已初始化。</td></tr>
+<tr class=''><td class='no'>16</td><td class='src'>        return input;                /* 首次调用不引入额外误差。 */</td><td class='exp'>直接返回输入（首次不引入误差）。</td></tr>
+<tr class=''><td class='no'>17</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>18</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>19</td><td class='src'>    difference = (int32_t)input - (int32_t)filter-&gt;value; /* 计算当前输入相对历史输出的偏差。 */</td><td class='exp'>偏差 = 输入 − 上次输出（有符号）。</td></tr>
+<tr class=''><td class='no'>20</td><td class='src'>    filter-&gt;value = (uint16_t)((int32_t)filter-&gt;value + (difference &gt;&gt; shift)); /* 仅向输入值靠近 1/2^shift。 */</td><td class='exp'>新输出 = 上次输出 + (偏差 >> shift)：每次只向输入靠近 1/2^shift。用移位代替除法/浮点——STM32F4 虽有 FPU，但整数移位更快且结果可复现。</td></tr>
+<tr class=''><td class='no'>21</td><td class='src'>    return filter-&gt;value; /* 返回并保留本次结果，供下一次迭代使用。 */</td><td class='exp'>返回并保留结果供下次迭代。</td></tr>
+<tr class=''><td class='no'>22</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>23</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>24</td><td class='src'>/**</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>25</td><td class='src'> * @brief 使用预测和测量更新步骤计算标量卡尔曼滤波结果。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>26</td><td class='src'> * @note 调用前需要由使用者设置 process_noise 和 measurement_noise。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>27</td><td class='src'> */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>28</td><td class='src'>float Filter_Kalman(KalmanFilter_t *filter, float measurement)</td><td class='exp'><b>Filter_Kalman</b>：标量卡尔曼滤波（一维）。</td></tr>
+<tr class=''><td class='no'>29</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>30</td><td class='src'>    float gain; /* 卡尔曼增益，决定本次测量值对估计结果的修正比例。 */</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='blank'><td class='no'>31</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>32</td><td class='src'>    /* 首个测量值用于建立初始估计，避免估计值未定义。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>33</td><td class='src'>    if (filter-&gt;initialized == 0U)</td><td class='exp'>首样本直接作为初始估计。</td></tr>
+<tr class=''><td class='no'>34</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>35</td><td class='src'>        filter-&gt;estimate = measurement;  /* 以首个测量值作为初始真实值估计。 */</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>36</td><td class='src'>        filter-&gt;initialized = 1U;        /* 标记卡尔曼滤波器已经完成初始化。 */</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>37</td><td class='src'>        return measurement;              /* 首次调用直接返回测量值。 */</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>38</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>39</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>40</td><td class='src'>    filter-&gt;covariance += filter-&gt;process_noise; /* 预测阶段：真实光照可能变化，因此增加不确定度。 */</td><td class='exp'>预测阶段：不确定度累加过程噪声（真实光照可能变化）。</td></tr>
+<tr class=''><td class='no'>41</td><td class='src'>    gain = filter-&gt;covariance / (filter-&gt;covariance + filter-&gt;measurement_noise); /* 根据 Q、R 计算本次测量的可信度。 */</td><td class='exp'>增益 = 协方差/(协方差+测量噪声)：测量噪声越小（传感器越可信），增益越接近 1。</td></tr>
+<tr class=''><td class='no'>42</td><td class='src'>    filter-&gt;estimate += gain * (measurement - filter-&gt;estimate); /* 用测量残差修正上一时刻的估计。 */</td><td class='exp'>用测量残差修正估计。</td></tr>
+<tr class=''><td class='no'>43</td><td class='src'>    filter-&gt;covariance *= (1.0f - gain); /* 更新阶段后，不确定度随新测量的引入而降低。 */</td><td class='exp'>更新后不确定度收缩。</td></tr>
+<tr class='auto'><td class='no'>44</td><td class='src'>    return filter-&gt;estimate; /* 返回当前最优估计值。 */</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>45</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>46</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>47</td><td class='src'>/**</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>48</td><td class='src'> * @brief 通过三次相邻比较求出三个无符号样本中的中位数(中值滤波)。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>49</td><td class='src'> * @note 中位数能剔除一个异常尖峰，且不需要保存跨周期状态。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>50</td><td class='src'> */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>51</td><td class='src'>uint16_t Filter_Median3(uint16_t sample1, uint16_t sample2, uint16_t sample3)</td><td class='exp'><b>Filter_Median3(s1,s2,s3)</b>：三数取中。</td></tr>
+<tr class=''><td class='no'>52</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>53</td><td class='src'>    uint16_t temporary; /* 交换两个样本时使用的临时变量。 */</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='blank'><td class='no'>54</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>55</td><td class='src'>    /* 先确保 sample1 不大于 sample2。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>56</td><td class='src'>    if (sample1 &gt; sample2)</td><td class='exp'>第一步：保证 s1 ≤ s2（否则交换）。</td></tr>
+<tr class=''><td class='no'>57</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>58</td><td class='src'>        temporary = sample1; /* 暂存较大的第一个样本。 */</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>59</td><td class='src'>        sample1 = sample2;   /* 将较小的第二个样本放到前面。 */</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>60</td><td class='src'>        sample2 = temporary; /* 将较大的样本放到第二个位置。 */</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>61</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='comment'><td class='no'>62</td><td class='src'>    /* 再确保 sample2 不大于 sample3。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>63</td><td class='src'>    if (sample2 &gt; sample3)</td><td class='exp'>第二步：保证 s2 ≤ s3。</td></tr>
+<tr class=''><td class='no'>64</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>65</td><td class='src'>        temporary = sample2; /* 暂存当前第二个样本。 */</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>66</td><td class='src'>        sample2 = sample3;   /* 将较小的第三个样本移到中间。 */</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>67</td><td class='src'>        sample3 = temporary; /* 将较大的样本移到最后。 */</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>68</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='comment'><td class='no'>69</td><td class='src'>    /* 若最小值与中间值顺序仍颠倒，则第一个样本就是中位数。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>70</td><td class='src'>    if (sample1 &gt; sample2)</td><td class='exp'>第三步：若 s1 仍大于 s2，则 s2 即中位数（覆盖）。</td></tr>
+<tr class=''><td class='no'>71</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>72</td><td class='src'>        sample2 = sample1; /* 覆盖中间位置，使其保存三个值的中位数。 */</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>73</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>74</td><td class='src'>    return sample2; /* 排序后的中间值即为滤波结果。 */</td><td class='exp'>返回排好序后的中间值。中值的妙处：无论哪个通道出现一个异常尖峰，都会被剔除。</td></tr>
+<tr class=''><td class='no'>75</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>76</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>77</td><td class='src'>/**</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>78</td><td class='src'> * @brief 更新三点历史样本，并对最近三个样本执行中值滤波。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>79</td><td class='src'> * @note 第一个样本会同时写入三个历史位置，避免启动阶段出现人为的零值尖峰。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>80</td><td class='src'> */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>81</td><td class='src'>uint16_t Filter_Median3Update(Median3Filter_t *filter, uint16_t input)</td><td class='exp'><b>Filter_Median3Update(filter, input)</b>：滚动更新三点历史并求中值。</td></tr>
+<tr class=''><td class='no'>82</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>83</td><td class='src'>    /* 首次采样时没有历史数据，因此以当前真实值填充全部三个位置。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>84</td><td class='src'>    if (filter-&gt;initialized == 0U)</td><td class='exp'>首个样本同时写入三个位置——三个样本相同，中值=当前输入，避免启动阶段出现人为尖峰。</td></tr>
+<tr class=''><td class='no'>85</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>86</td><td class='src'>        filter-&gt;samples[0] = input;  /* 最早样本初始化为当前值。 */</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>87</td><td class='src'>        filter-&gt;samples[1] = input;  /* 中间样本初始化为当前值。 */</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>88</td><td class='src'>        filter-&gt;samples[2] = input;  /* 最新样本初始化为当前值。 */</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>89</td><td class='src'>        filter-&gt;initialized = 1U;    /* 标记历史样本已可用于后续滚动更新。 */</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>90</td><td class='src'>        return input;                /* 三个样本相同，中值就是当前输入。 */</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>91</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>92</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>93</td><td class='src'>    filter-&gt;samples[0] = filter-&gt;samples[1]; /* 丢弃最早样本，将原中间样本前移。 */</td><td class='exp'>丢弃最早样本，前移。</td></tr>
+<tr class=''><td class='no'>94</td><td class='src'>    filter-&gt;samples[1] = filter-&gt;samples[2]; /* 将原最新样本移到中间位置。 */</td><td class='exp'>原最新样本移到中间。</td></tr>
+<tr class=''><td class='no'>95</td><td class='src'>    filter-&gt;samples[2] = input;              /* 保存本周期最新 ADC 原始值。 */</td><td class='exp'>保存本周期最新原始值。</td></tr>
+<tr class=''><td class='no'>96</td><td class='src'>    return Filter_Median3(filter-&gt;samples[0], filter-&gt;samples[1], filter-&gt;samples[2]); /* 返回最近三个样本的中值。 */</td><td class='exp'>返回三样本中值。</td></tr>
+<tr class=''><td class='no'>97</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+</table><div class='summary'><b>小总结（三重降噪链）：</b>光照数据实际使用的降噪链是：DMA 原始值 →（Filter_Median3Update）三点中值去尖峰 →（Filter_LowPass shift=3）1/8 低通平滑。原理：中值滤波单点剔除脉冲干扰（例如荧光灯闪烁），低通滤波压制持续性的随机噪声（1/8 系数≈等效时间常数 8 个采样周期）。卡尔曼滤波器虽然实现完整，但采样链最终选择了更简单的中值+低通组合——在 20ms 采样周期下效果足够且 CPU 开销最小。</div><table class='code'><tr><th>行号</th><th>代码（Core/common/filter.c）</th><th>逐行讲解</th></tr>
+</table>
+<div class='summary'><h4>本文件小总结</h4><b>filter.c 总结：</b>三个独立滤波器：低通（移位实现，无浮点）、卡尔曼（标准 Q/R 更新）、三点中值（排序取中）。所有滤波器都遵循“首样本直接初始化”模式，避免冷启动误差。</div>
+</div>
+<div class='summary'><h4>本章总结</h4><b>本章总结：</b>PID 与滤波是整个系统的“感官后处理”与“执行前计算”：光敏原始值经过滤降噪后才进入追光比例控制；电机目标经过两级 PID（位置→速度）变成 q 轴电压。理解 PID_Update 中的试算-回退抗饱和，是读懂速度环稳定性的关键。</div>
+</div></body></html>

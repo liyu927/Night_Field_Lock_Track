@@ -1,0 +1,290 @@
+<!DOCTYPE html><html lang='zh-CN'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>第 15 章 · 用户参数管理（app_parameters.h/c） - 项目代码逐行详解</title><style>
+:root{
+  --bg:#14161a; --panel:#1d2026; --panel2:#22262e; --code:#171a20;
+  --text:#d8dde5; --dim:#8b93a1; --accent:#4da3ff; --accent2:#7ee2b8;
+  --line:#2c313b; --warn:#f0b429;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:"Microsoft YaHei","PingFang SC",Segoe UI,sans-serif;font-size:15px;line-height:1.75}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px 80px}
+nav.topbar{position:sticky;top:0;z-index:9;background:rgba(20,22,26,.96);
+  border-bottom:1px solid var(--line);padding:10px 0;backdrop-filter:blur(6px)}
+nav.topbar .wrap{padding:0 20px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+nav.topbar a{background:var(--panel2);color:var(--text);padding:4px 12px;border-radius:16px;
+  font-size:13px;border:1px solid var(--line);white-space:nowrap}
+nav.topbar a.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+nav.topbar a:hover{text-decoration:none;filter:brightness(1.15)}
+header.chapter{margin:28px 0 8px}
+header.chapter h1{font-size:26px;margin:0 0 6px;color:#fff}
+header.chapter .meta{color:var(--dim);font-size:13px}
+.intro{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);
+  border-radius:8px;padding:14px 18px;margin:18px 0}
+.summary{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent2);
+  border-radius:8px;padding:14px 18px;margin:18px 0}
+.summary h4,.intro h4{margin:0 0 8px;font-size:15px;color:var(--accent2)}
+.intro h4{color:var(--accent)}
+.section{margin:34px 0}
+.section > h2{font-size:20px;color:#fff;border-bottom:1px solid var(--line);padding-bottom:8px}
+.section .filepath{font-family:Consolas,monospace;color:var(--warn);font-size:14px}
+.section .filedesc{color:var(--dim);font-size:14px;margin:6px 0 10px}
+table.code{width:100%;border-collapse:collapse;background:var(--code);
+  border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:13px}
+table.code th{background:var(--panel2);color:var(--dim);font-weight:600;text-align:left;
+  padding:7px 10px;font-size:12px;position:sticky;top:44px}
+table.code td{padding:3px 10px;vertical-align:top;border-top:1px solid #20242c}
+td.no{width:52px;text-align:right;color:#5c6575;font-family:Consolas,monospace;user-select:none}
+td.src{width:46%;font-family:Consolas,"Courier New",monospace;color:#c9d2e0;white-space:pre;
+  overflow-x:auto}
+td.exp{color:var(--text);font-size:13.5px}
+tr.comment td.src{color:#5f7060}
+tr.comment td.exp{color:var(--dim);font-style:normal}
+tr.blank td.src{color:#3a4150}
+.pill{display:inline-block;background:var(--panel2);border:1px solid var(--line);color:var(--dim);
+  border-radius:12px;padding:1px 10px;font-size:12px;margin-right:6px}
+.diagram{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;
+  margin:18px 0;font-family:Consolas,monospace;white-space:pre;overflow-x:auto;color:#bcd3f5;font-size:13px;line-height:1.55}
+.toc{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 18px;margin:14px 0}
+.toc a{display:block;padding:3px 0;font-size:14px}
+.badge{display:inline-block;background:#2b3a55;color:#9ecbff;border-radius:4px;padding:0 8px;font-size:12px;margin-right:6px}
+tr.auto td.exp{color:#9aa6b8}
+.auto-tag{display:inline-block;background:#2c3140;color:#8fa0b8;border:1px solid #3a4150;
+  border-radius:10px;padding:0 7px;font-size:11px;margin-right:5px;font-style:normal}
+</style></head><body><nav class='topbar'><div class='wrap'><a href='index.html'>目录</a><a href='ch01_startup.html'>01 启动流程</a><a href='ch02_interrupt.html'>02 中断与时基</a><a href='ch03_gpio_dma.html'>03 GPIO/DMA</a><a href='ch04_adc.html'>04 ADC 采样</a><a href='ch05_i2c.html'>05 I2C 底层</a><a href='ch06_spi.html'>06 SPI 底层</a><a href='ch07_tim.html'>07 定时器PWM</a><a href='ch08_usart_rtc.html'>08 串口/RTC</a><a href='ch09_rtos.html'>09 RTOS骨架</a><a href='ch10_appframe.html'>10 应用框架</a><a href='ch11_systemtask.html'>11 SystemTask</a><a href='ch12_algorithm.html'>12 PID/滤波</a><a href='ch13_foc.html'>13 FOC/SVPWM</a><a href='ch14_w25q64.html'>14 W25Q64存储</a><a href='ch15_parameters.html' class='active'>15 参数管理</a><a href='ch16_sensors.html'>16 传感器驱动</a><a href='ch17_lvgl_port.html'>17 LVGL移植</a><a href='ch18_ui.html'>18 UI界面</a><a href='ch19.html'>19 调试与VOFA</a></div></nav>
+<div class='wrap'>
+<header class='chapter'><h1>第 15 章 · 用户参数管理（app_parameters.h/c）</h1><div class='meta'>文件：Core/App/app_parameters.h（53 行）、Core/App/app_parameters.c（159 行）</div></header>
+<div class='intro'><h4>本章导读</h4><p>9 项用户参数（亮度/熄屏时间/光差阈值/Kp 等）的完整生命周期在本章：默认值 → 出厂扇区同步 → 用户双槽加载 → 界面修改 → 校验保存 → 读回确认 → 运行时生效。恢复出厂与回归旧版都是一次新的“用户保存”。</div>
+<div class='section'>
+<h2><span class='filepath'>Core/App/app_parameters.h</span> <span class='pill'>0 行</span></h2>
+<div class='filedesc'>参数总数、出厂默认值、枚举下标、数据结构。</div>
+<table class='code'>
+<tr><th>行号</th><th>代码（Core/App/app_parameters.h）</th><th>逐行讲解</th></tr>
+<tr class='auto'><td class='no'>1</td><td class='src'>#ifndef NIGHT_FIELD_LOCK_TRACK_APP_PARAMETERS_H</td><td class='exp'><span class='auto-tag'>自动</span>条件编译入口（ifndef）：满足条件才编译下面的内容，不满足则整段跳过。</td></tr>
+<tr class='auto'><td class='no'>2</td><td class='src'>#define NIGHT_FIELD_LOCK_TRACK_APP_PARAMETERS_H</td><td class='exp'><span class='auto-tag'>自动</span>定义宏 <code>NIGHT_FIELD_LOCK_TRACK_APP_PARAMETERS_H</code>：编译前做纯文本替换，详见对应头文件小总结。</td></tr>
+<tr class='blank'><td class='no'>3</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>4</td><td class='src'>#include "main.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "main.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='blank'><td class='no'>5</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>6</td><td class='src'>/* 参数总数决定存储记录的长度；增加参数时需同时更新下方枚举、默认值和范围表。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>7</td><td class='src'>#define APP_PARAMETER_COUNT 9U</td><td class='exp'>参数总数 9：决定存储记录长度；增参数要同步更新枚举/默认值/范围表。</td></tr>
+<tr class='comment'><td class='no'>8</td><td class='src'>/* 以下数值是编译进固件的出厂值，上电时会同步到 W25Q64 的出厂扇区。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>9</td><td class='src'>#define APP_BRIGHTNESS_DEFAULT 100U          /* 背光 PWM 占空比，单位为百分比。 */</td><td class='exp'>默认亮度 100%。</td></tr>
+<tr class=''><td class='no'>10</td><td class='src'>#define APP_MANUAL_SLEEP_DEFAULT 20U         /* 手动模式无触摸后熄屏并进入低功耗的秒数。 */</td><td class='exp'>默认手动熄屏 20 秒。</td></tr>
+<tr class=''><td class='no'>11</td><td class='src'>#define APP_AUTO_SLEEP_DEFAULT 15U           /* 自动模式熄屏及满足低功耗条件的等待秒数。 */</td><td class='exp'>默认自动熄屏 15 秒。</td></tr>
+<tr class=''><td class='no'>12</td><td class='src'>#define APP_HORIZONTAL_BAND_DEFAULT 50U      /* 左右光差的停转范围，单位为 ADC 差值。 */</td><td class='exp'>默认左右光差停转区间 50（ADC 差值）。</td></tr>
+<tr class=''><td class='no'>13</td><td class='src'>#define APP_VERTICAL_BAND_DEFAULT 100U       /* 上下光差的停转范围，单位为 ADC 差值。 */</td><td class='exp'>默认上下光差停转区间 100。</td></tr>
+<tr class=''><td class='no'>14</td><td class='src'>#define APP_LOW_POWER_LIGHT_DEFAULT 1800U    /* 四路 ADC 平均值高于此值时视为偏暗。 */</td><td class='exp'>默认低功耗光强阈值 1800（四路平均高于它视为偏暗）。</td></tr>
+<tr class=''><td class='no'>15</td><td class='src'>#define APP_WAKE_INTERVAL_DEFAULT 5U         /* 自动低功耗期间定时唤醒采光的秒数。 */</td><td class='exp'>默认自动唤醒间隔 5 秒。</td></tr>
+<tr class=''><td class='no'>16</td><td class='src'>#define APP_MANUAL_SPEED_DEFAULT 60U         /* 手动控制目标速度，单位为度每秒。 */</td><td class='exp'>默认手动速度 60°/s。</td></tr>
+<tr class=''><td class='no'>17</td><td class='src'>#define APP_AUTO_KP_HUNDREDTHS_DEFAULT 12U   /* 自动追光比例系数的百分之一单位，10 表示 0.10。 */</td><td class='exp'>默认自动 Kp=12（百分之一单位，即 0.12）。</td></tr>
+<tr class='blank'><td class='no'>18</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>19</td><td class='src'>/* 数组下标与界面顺序、默认值顺序、范围表顺序一致，不能单独调整其中一处。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>20</td><td class='src'>typedef enum</td><td class='exp'>枚举：数组下标与界面顺序/默认值顺序/范围表顺序一一对应。</td></tr>
+<tr class=''><td class='no'>21</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>22</td><td class='src'>    APP_PARAM_BRIGHTNESS,       /* 背光亮度，30～100%。 */</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>23</td><td class='src'>    APP_PARAM_MANUAL_SLEEP,     /* 手动模式熄屏时间，单位为秒。 */</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>24</td><td class='src'>    APP_PARAM_AUTO_SLEEP,       /* 自动模式熄屏与入睡等待时间，单位为秒。 */</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>25</td><td class='src'>    APP_PARAM_HORIZONTAL_BAND,  /* 左右光差小于等于此值时不调整水平轴。 */</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>26</td><td class='src'>    APP_PARAM_VERTICAL_BAND,    /* 上下光差小于等于此值时不调整垂直轴。 */</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>27</td><td class='src'>    APP_PARAM_LOW_POWER_LIGHT,  /* 用于自动低功耗判断的四路 ADC 平均值阈值。 */</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>28</td><td class='src'>    APP_PARAM_WAKE_INTERVAL,    /* 自动低功耗定时唤醒间隔，单位为秒。 */</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>29</td><td class='src'>    APP_PARAM_MANUAL_SPEED,     /* 手动电机目标速度，单位为度每秒。 */</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>30</td><td class='src'>    APP_PARAM_AUTO_KP           /* 自动追光比例系数乘以 100 后的整数值。 */</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>31</td><td class='src'>} AppParameterIndex;</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='blank'><td class='no'>32</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>33</td><td class='src'>/* 持久化参数的数据格式；九个 uint16_t 按枚举顺序写入用户参数槽。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>34</td><td class='src'>typedef struct</td><td class='exp'>AppParameters 结构体：9 个 uint16_t，按枚举顺序写入用户槽。</td></tr>
+<tr class=''><td class='no'>35</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>36</td><td class='src'>    uint16_t values[APP_PARAMETER_COUNT];</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>values</code>（类型 <code>uint16_t</code>，数组）。</td></tr>
+<tr class='auto'><td class='no'>37</td><td class='src'>} AppParameters;</td><td class='exp'><span class='auto-tag'>自动</span>结束该结构体/枚举/联合的定义，并声明类型名 <code>AppParameters</code>。</td></tr>
+<tr class='blank'><td class='no'>38</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>39</td><td class='src'>/* 系统任务启动时调用：初始化 Flash、同步出厂值，并加载最新有效用户记录。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>40</td><td class='src'>void App_Parameters_Init(void);</td><td class='exp'>App_Parameters_Init：初始化 Flash、同步出厂、加载用户记录。</td></tr>
+<tr class='comment'><td class='no'>41</td><td class='src'>/* 原子复制当前生效参数；系统任务和 UI 通过返回值读取同一份运行时配置。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>42</td><td class='src'>AppParameters App_Parameters_Get(void);</td><td class='exp'>App_Parameters_Get：原子复制当前参数。</td></tr>
+<tr class='comment'><td class='no'>43</td><td class='src'>/* 返回指定参数的允许下限或上限；界面据此限制加减按钮与亮度滑块。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>44</td><td class='src'>uint16_t App_Parameters_Min(AppParameterIndex index);</td><td class='exp'>App_Parameters_Min/Max：取参数允许范围（界面限幅用）。</td></tr>
+<tr class='auto'><td class='no'>45</td><td class='src'>uint16_t App_Parameters_Max(AppParameterIndex index);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>App_Parameters_Max()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='comment'><td class='no'>46</td><td class='src'>/* 校验所有字段范围，保存到用户双槽，读回确认后立即更新运行时参数。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>47</td><td class='src'>HAL_StatusTypeDef App_Parameters_Save(const AppParameters *parameters);</td><td class='exp'>App_Parameters_Save：校验+保存+读回+生效。</td></tr>
+<tr class='comment'><td class='no'>48</td><td class='src'>/* 读取出厂扇区并作为新的用户版本保存，成功后无需重启即可生效。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>49</td><td class='src'>HAL_StatusTypeDef App_Parameters_RestoreFactory(void);</td><td class='exp'>App_Parameters_RestoreFactory：恢复出厂。</td></tr>
+<tr class='comment'><td class='no'>50</td><td class='src'>/* 读取用户双槽中的较旧版本并重新保存；无旧版本时返回 HAL_BUSY。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>51</td><td class='src'>HAL_StatusTypeDef App_Parameters_RestorePrevious(void);</td><td class='exp'>App_Parameters_RestorePrevious：回归旧版。</td></tr>
+<tr class='blank'><td class='no'>52</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>53</td><td class='src'>#endif</td><td class='exp'><span class='auto-tag'>自动</span>结束一个条件编译块。</td></tr>
+</table>
+<div class='summary'><h4>本文件小总结</h4><b>app_parameters.h 总结：</b>参数即“一个 18 字节的数组快照”。枚举下标是三个表（默认值/范围/界面）的公共索引，增删参数必须三处同步。</div>
+</div>
+<div class='section'>
+<h2><span class='filepath'>Core/App/app_parameters.c</span> <span class='pill'>0 行</span></h2>
+<div class='filedesc'>范围表、加载流程、原子读取、保存/恢复实现。</div>
+<table class='code'>
+<tr><th>行号</th><th>代码（Core/App/app_parameters.c）</th><th>逐行讲解</th></tr>
+<tr class='auto'><td class='no'>1</td><td class='src'>#include "app_parameters.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "app_parameters.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='auto'><td class='no'>2</td><td class='src'>#include "W25Q64.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "W25Q64.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='auto'><td class='no'>3</td><td class='src'>#include "cmsis_os2.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "cmsis_os2.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='auto'><td class='no'>4</td><td class='src'>#include "FreeRTOS.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "FreeRTOS.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='auto'><td class='no'>5</td><td class='src'>#include "task.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "task.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='blank'><td class='no'>6</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>7</td><td class='src'>/* 参数范围集中在此处维护，顺序通过下方两张范围表映射到枚举下标。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>8</td><td class='src'>/* 背光占空比至少 30%，避免用户把滑块调到近乎看不见。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>9</td><td class='src'>#define APP_BRIGHTNESS_MIN 30U</td><td class='exp'>亮度下限 30%：防止用户把屏调到近乎看不见。</td></tr>
+<tr class='auto'><td class='no'>10</td><td class='src'>#define APP_BRIGHTNESS_MAX 100U</td><td class='exp'><span class='auto-tag'>自动</span>定义宏 <code>APP_BRIGHTNESS_MAX</code>：编译前做纯文本替换，详见对应头文件小总结。</td></tr>
+<tr class='comment'><td class='no'>11</td><td class='src'>/* 手动和自动熄屏时间共用秒数范围；下限 10 秒大于熄屏前的 5 秒渐暗期。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>12</td><td class='src'>#define APP_SLEEP_MIN 10U</td><td class='exp'>熄屏秒数下限 10（必须大于 5 秒渐暗期）。</td></tr>
+<tr class='auto'><td class='no'>13</td><td class='src'>#define APP_SLEEP_MAX 100U</td><td class='exp'><span class='auto-tag'>自动</span>定义宏 <code>APP_SLEEP_MAX</code>：编译前做纯文本替换，详见对应头文件小总结。</td></tr>
+<tr class='comment'><td class='no'>14</td><td class='src'>/* 左右、上下光差分别以出厂值 50 和 100 为范围中点，单位均为 ADC 差值。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>15</td><td class='src'>#define APP_HORIZONTAL_BAND_MIN 0U</td><td class='exp'>左右光差范围 0~100（出厂 50 为中点）。</td></tr>
+<tr class='auto'><td class='no'>16</td><td class='src'>#define APP_HORIZONTAL_BAND_MAX 100U</td><td class='exp'><span class='auto-tag'>自动</span>定义宏 <code>APP_HORIZONTAL_BAND_MAX</code>：编译前做纯文本替换，详见对应头文件小总结。</td></tr>
+<tr class=''><td class='no'>17</td><td class='src'>#define APP_VERTICAL_BAND_MIN 0U</td><td class='exp'>上下光差范围 0~200（出厂 100 为中点）。</td></tr>
+<tr class='auto'><td class='no'>18</td><td class='src'>#define APP_VERTICAL_BAND_MAX 200U</td><td class='exp'><span class='auto-tag'>自动</span>定义宏 <code>APP_VERTICAL_BAND_MAX</code>：编译前做纯文本替换，详见对应头文件小总结。</td></tr>
+<tr class='comment'><td class='no'>19</td><td class='src'>/* 四路光敏电阻的 ADC 为 12 位，平均值阈值允许覆盖完整的 0～4095。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>20</td><td class='src'>#define APP_LOW_POWER_LIGHT_MIN 0U</td><td class='exp'>光强阈值允许 0~4095（12 位 ADC 全范围）。</td></tr>
+<tr class='auto'><td class='no'>21</td><td class='src'>#define APP_LOW_POWER_LIGHT_MAX 4095U</td><td class='exp'><span class='auto-tag'>自动</span>定义宏 <code>APP_LOW_POWER_LIGHT_MAX</code>：编译前做纯文本替换，详见对应头文件小总结。</td></tr>
+<tr class='comment'><td class='no'>22</td><td class='src'>/* 自动 STOP 中的 RTC 周期唤醒间隔，单位为秒。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>23</td><td class='src'>#define APP_WAKE_INTERVAL_MIN 3U</td><td class='exp'>唤醒间隔 3~100 秒。</td></tr>
+<tr class='auto'><td class='no'>24</td><td class='src'>#define APP_WAKE_INTERVAL_MAX 100U</td><td class='exp'><span class='auto-tag'>自动</span>定义宏 <code>APP_WAKE_INTERVAL_MAX</code>：编译前做纯文本替换，详见对应头文件小总结。</td></tr>
+<tr class='comment'><td class='no'>25</td><td class='src'>/* 手动运动速度以度每秒计，自动 Kp 以百分之一为保存和调节单位。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>26</td><td class='src'>#define APP_MANUAL_SPEED_MIN 1U</td><td class='exp'>手动速度 1~180°/s。</td></tr>
+<tr class='auto'><td class='no'>27</td><td class='src'>#define APP_MANUAL_SPEED_MAX 180U</td><td class='exp'><span class='auto-tag'>自动</span>定义宏 <code>APP_MANUAL_SPEED_MAX</code>：编译前做纯文本替换，详见对应头文件小总结。</td></tr>
+<tr class=''><td class='no'>28</td><td class='src'>#define APP_AUTO_KP_MIN 1U</td><td class='exp'>自动 Kp 1~100（百分之一单位）。</td></tr>
+<tr class='auto'><td class='no'>29</td><td class='src'>#define APP_AUTO_KP_MAX 100U</td><td class='exp'><span class='auto-tag'>自动</span>定义宏 <code>APP_AUTO_KP_MAX</code>：编译前做纯文本替换，详见对应头文件小总结。</td></tr>
+<tr class='blank'><td class='no'>30</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>31</td><td class='src'>/* 固件内置的出厂快照：只用于上电同步和首次无用户记录时的初值。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>32</td><td class='src'>static const AppParameters factory_parameters = {{</td><td class='exp'><b>factory_parameters</b>：编译进固件的出厂快照（const），用于上电同步出厂扇区。</td></tr>
+<tr class='auto'><td class='no'>33</td><td class='src'>    APP_BRIGHTNESS_DEFAULT, APP_MANUAL_SLEEP_DEFAULT, APP_AUTO_SLEEP_DEFAULT,</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>34</td><td class='src'>    APP_HORIZONTAL_BAND_DEFAULT, APP_VERTICAL_BAND_DEFAULT,</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>35</td><td class='src'>    APP_LOW_POWER_LIGHT_DEFAULT, APP_WAKE_INTERVAL_DEFAULT,</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>36</td><td class='src'>    APP_MANUAL_SPEED_DEFAULT, APP_AUTO_KP_HUNDREDTHS_DEFAULT</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>37</td><td class='src'>}};</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='comment'><td class='no'>38</td><td class='src'>/* 当前真正供系统任务使用的参数；保存成功并读回后才整体替换。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>39</td><td class='src'>static AppParameters active_parameters = {{</td><td class='exp'><b>active_parameters</b>：当前运行时参数；保存成功并读回后才整体替换。</td></tr>
+<tr class='auto'><td class='no'>40</td><td class='src'>    APP_BRIGHTNESS_DEFAULT, APP_MANUAL_SLEEP_DEFAULT, APP_AUTO_SLEEP_DEFAULT,</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>41</td><td class='src'>    APP_HORIZONTAL_BAND_DEFAULT, APP_VERTICAL_BAND_DEFAULT,</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>42</td><td class='src'>    APP_LOW_POWER_LIGHT_DEFAULT, APP_WAKE_INTERVAL_DEFAULT,</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>43</td><td class='src'>    APP_MANUAL_SPEED_DEFAULT, APP_AUTO_KP_HUNDREDTHS_DEFAULT</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>44</td><td class='src'>}};</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='comment'><td class='no'>45</td><td class='src'>/* JEDEC 检查通过且启动加载流程结束后，才允许界面发起保存或恢复操作。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>46</td><td class='src'>static uint8_t flash_ready;</td><td class='exp'>flash_ready：Flash 就绪标志——就绪前界面保存/恢复一律拒绝。</td></tr>
+<tr class='comment'><td class='no'>47</td><td class='src'>/* 两张表与 AppParameterIndex 一一对应，避免界面和存储校验采用不同范围。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>48</td><td class='src'>static const uint16_t parameter_minimum[APP_PARAMETER_COUNT] = {</td><td class='exp'>parameter_minimum[]：与枚举一一对应的下限表。</td></tr>
+<tr class='auto'><td class='no'>49</td><td class='src'>    APP_BRIGHTNESS_MIN, APP_SLEEP_MIN, APP_SLEEP_MIN,</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>50</td><td class='src'>    APP_HORIZONTAL_BAND_MIN, APP_VERTICAL_BAND_MIN, APP_LOW_POWER_LIGHT_MIN,</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>51</td><td class='src'>    APP_WAKE_INTERVAL_MIN, APP_MANUAL_SPEED_MIN, APP_AUTO_KP_MIN</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>52</td><td class='src'>};</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>53</td><td class='src'>static const uint16_t parameter_maximum[APP_PARAMETER_COUNT] = {</td><td class='exp'>parameter_maximum[]：上限表。</td></tr>
+<tr class='auto'><td class='no'>54</td><td class='src'>    APP_BRIGHTNESS_MAX, APP_SLEEP_MAX, APP_SLEEP_MAX,</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>55</td><td class='src'>    APP_HORIZONTAL_BAND_MAX, APP_VERTICAL_BAND_MAX, APP_LOW_POWER_LIGHT_MAX,</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>56</td><td class='src'>    APP_WAKE_INTERVAL_MAX, APP_MANUAL_SPEED_MAX, APP_AUTO_KP_MAX</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>57</td><td class='src'>};</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='blank'><td class='no'>58</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>59</td><td class='src'>/* 检查整份参数是否可用；空指针或任意字段越界均拒绝写入和应用。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>60</td><td class='src'>static uint8_t parameters_valid(const AppParameters *parameters)</td><td class='exp'><b>parameters_valid</b>：校验整份参数。</td></tr>
+<tr class=''><td class='no'>61</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>62</td><td class='src'>    if (parameters == NULL) return 0U;</td><td class='exp'>空指针拒绝。</td></tr>
+<tr class=''><td class='no'>63</td><td class='src'>    for (uint32_t i = 0U; i &lt; APP_PARAMETER_COUNT; ++i)</td><td class='exp'>逐字段比较范围表，任一越界即拒绝。</td></tr>
+<tr class='auto'><td class='no'>64</td><td class='src'>        if (parameters-&gt;values[i] &lt; parameter_minimum[i]</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='auto'><td class='no'>65</td><td class='src'>            || parameters-&gt;values[i] &gt; parameter_maximum[i])</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>66</td><td class='src'>            return 0U;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>0U</code>，本函数调用结束。</td></tr>
+<tr class='auto'><td class='no'>67</td><td class='src'>    return 1U;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>1U</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>68</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>69</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>70</td><td class='src'>/* 上电先确认 W25Q64，再核对出厂扇区，最后选取用户 A/B 中序号最新的有效记录。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>71</td><td class='src'>/* 两个用户槽都无效时保留 active_parameters 的代码默认值，首次烧录无需预写用户槽。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>72</td><td class='src'>void App_Parameters_Init(void)</td><td class='exp'><b>App_Parameters_Init()</b>：上电加载流程（SystemTask 启动时调用）。</td></tr>
+<tr class=''><td class='no'>73</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>74</td><td class='src'>    AppParameters loaded;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>loaded</code>（类型 <code>AppParameters</code>）。</td></tr>
+<tr class='auto'><td class='no'>75</td><td class='src'>    HAL_StatusTypeDef status = HAL_BUSY;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>HAL_BUSY</code> 赋给 <code>HAL_StatusTypeDef status</code>。</td></tr>
+<tr class=''><td class='no'>76</td><td class='src'>    for (uint32_t attempt = 0U; attempt &lt; 20U &amp;&amp; status == HAL_BUSY; ++attempt)</td><td class='exp'>第 1 步：W25Q64_Init 重试最多 20 次×10ms——芯片可能短暂未准备好（HAL_BUSY 才重试，其他错误立即放弃）。</td></tr>
+<tr class=''><td class='no'>77</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>78</td><td class='src'>        status = W25Q64_Init();</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>W25Q64_Init()</code> 赋给 <code>status</code>。</td></tr>
+<tr class='auto'><td class='no'>79</td><td class='src'>        if (status == HAL_BUSY) osDelay(10U);</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class=''><td class='no'>80</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>81</td><td class='src'>    if (status != HAL_OK) return;</td><td class='exp'>Flash 最终不可用：直接返回，flash_ready 保持 0，系统用默认参数运行（不阻塞启动）。</td></tr>
+<tr class='comment'><td class='no'>82</td><td class='src'>    /* 每次上电核对代码默认值，内容变化时才擦写出厂扇区。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>83</td><td class='src'>    for (uint32_t attempt = 0U; attempt &lt; 100U; ++attempt)</td><td class='exp'><span class='auto-tag'>自动</span>for 循环：按 初始化;条件;步进 三段式重复执行循环体。</td></tr>
+<tr class=''><td class='no'>84</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>85</td><td class='src'>        status = W25Q64_SyncFactoryParameters(&amp;factory_parameters, sizeof(factory_parameters));</td><td class='exp'>第 2 步：W25Q64_SyncFactoryParameters——核对出厂扇区与固件默认值，内容变了才擦写（重试 100 次×10ms）。</td></tr>
+<tr class='auto'><td class='no'>86</td><td class='src'>        if (status != HAL_BUSY) break;</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='auto'><td class='no'>87</td><td class='src'>        osDelay(10U);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>osDelay()</code>：FreeRTOS 任务级延时：本任务让出 CPU 进入阻塞态，调度器在指定节拍数后再把它放回就绪态。</td></tr>
+<tr class=''><td class='no'>88</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>89</td><td class='src'>    status = W25Q64_LoadUserParameters(&amp;loaded, sizeof(loaded), 0U);</td><td class='exp'>第 3 步：W25Q64_LoadUserParameters 读最新用户记录。</td></tr>
+<tr class=''><td class='no'>90</td><td class='src'>    if (status == HAL_OK &amp;&amp; parameters_valid(&amp;loaded) != 0U)</td><td class='exp'>读到了且校验通过 →</td></tr>
+<tr class=''><td class='no'>91</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>92</td><td class='src'>        taskENTER_CRITICAL();</td><td class='exp'>临界区内整体替换 active_parameters。</td></tr>
+<tr class='auto'><td class='no'>93</td><td class='src'>        active_parameters = loaded;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>loaded</code> 赋给 <code>active_parameters</code>。</td></tr>
+<tr class='auto'><td class='no'>94</td><td class='src'>        taskEXIT_CRITICAL();</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>taskEXIT_CRITICAL()</code>：退出临界区，恢复原来的中断屏蔽状态。</td></tr>
+<tr class=''><td class='no'>95</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>96</td><td class='src'>    flash_ready = 1U;</td><td class='exp'>标记 flash_ready=1（此后界面才能保存/恢复）。</td></tr>
+<tr class=''><td class='no'>97</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+</table><div class='summary'><b>小总结（上电加载三级策略）：</b>①Flash 芯片校验失败 → 用默认参数运行但不阻塞系统；②出厂扇区每次上电与固件默认值比对，内容一致不擦写（省寿命）；③用户双槽读最新有效记录并整份校验，两槽都无效（首次烧录）则保持代码默认值。flash_ready 门闩保证 Flash 未就绪时界面操作被礼貌拒绝而不是崩溃。</div><table class='code'><tr><th>行号</th><th>代码（Core/App/app_parameters.c）</th><th>逐行讲解</th></tr>
+<tr class='blank'><td class='no'>98</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>99</td><td class='src'>/* 临界区内一次性复制全部字段，避免界面保存时系统任务读到新旧混合值。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>100</td><td class='src'>AppParameters App_Parameters_Get(void)</td><td class='exp'><b>App_Parameters_Get()</b>：原子读参数。</td></tr>
+<tr class=''><td class='no'>101</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>102</td><td class='src'>    AppParameters result;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>result</code>（类型 <code>AppParameters</code>）。</td></tr>
+<tr class=''><td class='no'>103</td><td class='src'>    taskENTER_CRITICAL();</td><td class='exp'>临界区内整份拷贝到栈上返回——避免界面保存时其他任务读到“一半旧一半新”的混合值。</td></tr>
+<tr class='auto'><td class='no'>104</td><td class='src'>    result = active_parameters;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>active_parameters</code> 赋给 <code>result</code>。</td></tr>
+<tr class='auto'><td class='no'>105</td><td class='src'>    taskEXIT_CRITICAL();</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>taskEXIT_CRITICAL()</code>：退出临界区，恢复原来的中断屏蔽状态。</td></tr>
+<tr class='auto'><td class='no'>106</td><td class='src'>    return result;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>result</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>107</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>108</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>109</td><td class='src'>/* 非法下标返回 0；正常调用应使用 AppParameterIndex 中的下标。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>110</td><td class='src'>uint16_t App_Parameters_Min(AppParameterIndex index)</td><td class='exp'><b>App_Parameters_Min(index)</b>：非法下标返回 0。</td></tr>
+<tr class=''><td class='no'>111</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>112</td><td class='src'>    return index &lt; APP_PARAMETER_COUNT ? parameter_minimum[index] : 0U;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>index < APP_PARAMETER_COUNT ? parameter_minimum[index] : 0U</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>113</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>114</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>115</td><td class='src'>/* 非法下标返回 0；界面的上限与保存时的校验上限来自同一张表。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>116</td><td class='src'>uint16_t App_Parameters_Max(AppParameterIndex index)</td><td class='exp'><b>App_Parameters_Max(index)</b>：界面上限与保存校验共用同一张表。</td></tr>
+<tr class=''><td class='no'>117</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>118</td><td class='src'>    return index &lt; APP_PARAMETER_COUNT ? parameter_maximum[index] : 0U;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>index < APP_PARAMETER_COUNT ? parameter_maximum[index] : 0U</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>119</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>120</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>121</td><td class='src'>/* 先校验并写入较旧/无效槽，再从最新槽读回，确认无误后立即公布到运行时。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>122</td><td class='src'>/* HAL_OK 表示写入和应用均成功；其他状态表示底层忙或记录校验失败。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>123</td><td class='src'>HAL_StatusTypeDef App_Parameters_Save(const AppParameters *parameters)</td><td class='exp'><b>App_Parameters_Save(parameters)</b>：保存并立即生效。</td></tr>
+<tr class=''><td class='no'>124</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>125</td><td class='src'>    AppParameters checked;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>checked</code>（类型 <code>AppParameters</code>）。</td></tr>
+<tr class='auto'><td class='no'>126</td><td class='src'>    HAL_StatusTypeDef status;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>status</code>（类型 <code>HAL_StatusTypeDef</code>）。</td></tr>
+<tr class=''><td class='no'>127</td><td class='src'>    if (flash_ready == 0U || parameters_valid(parameters) == 0U) return HAL_ERROR;</td><td class='exp'>未就绪或校验失败直接 HAL_ERROR。</td></tr>
+<tr class=''><td class='no'>128</td><td class='src'>    status = W25Q64_SaveUserParameters(parameters, sizeof(*parameters));</td><td class='exp'>第 1 步：W25Q64_SaveUserParameters 写入双槽（内容相同会跳过擦写）。</td></tr>
+<tr class='auto'><td class='no'>129</td><td class='src'>    if (status != HAL_OK) return status;</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class=''><td class='no'>130</td><td class='src'>    status = W25Q64_LoadUserParameters(&amp;checked, sizeof(checked), 0U);</td><td class='exp'>第 2 步：<b>读回确认</b>——从最新槽重新读出，再校验一遍。这回答了“存储失败要不要重传”：保存时先写、再读回验证，失败返回错误让界面弹“保存失败，请重试”，旧版本仍在另一槽中不会丢失；用户重试即可，底层单次不做自动重传。</td></tr>
+<tr class='auto'><td class='no'>131</td><td class='src'>    if (status != HAL_OK || parameters_valid(&amp;checked) == 0U) return HAL_ERROR;</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class=''><td class='no'>132</td><td class='src'>    taskENTER_CRITICAL();</td><td class='exp'>读回成功 → 临界区内替换 active_parameters（立即对系统任务生效）。</td></tr>
+<tr class='auto'><td class='no'>133</td><td class='src'>    active_parameters = checked;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>checked</code> 赋给 <code>active_parameters</code>。</td></tr>
+<tr class='auto'><td class='no'>134</td><td class='src'>    taskEXIT_CRITICAL();</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>taskEXIT_CRITICAL()</code>：退出临界区，恢复原来的中断屏蔽状态。</td></tr>
+<tr class='auto'><td class='no'>135</td><td class='src'>    return HAL_OK;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>HAL_OK</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>136</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>137</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>138</td><td class='src'>/* 恢复出厂值属于一次新的用户保存，原用户版本因此仍可作为旧版回归。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>139</td><td class='src'>HAL_StatusTypeDef App_Parameters_RestoreFactory(void)</td><td class='exp'><b>App_Parameters_RestoreFactory()</b>：读出厂扇区→校验→当作一次新的用户保存（双槽版本链上多一版）。</td></tr>
+<tr class=''><td class='no'>140</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>141</td><td class='src'>    AppParameters selected;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>selected</code>（类型 <code>AppParameters</code>）。</td></tr>
+<tr class='auto'><td class='no'>142</td><td class='src'>    HAL_StatusTypeDef status;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>status</code>（类型 <code>HAL_StatusTypeDef</code>）。</td></tr>
+<tr class='auto'><td class='no'>143</td><td class='src'>    if (flash_ready == 0U) return HAL_ERROR;</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='auto'><td class='no'>144</td><td class='src'>    status = W25Q64_LoadFactoryParameters(&amp;selected, sizeof(selected));</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>W25Q64_LoadFactoryParameters(&selected, sizeof(selected))</code> 赋给 <code>status</code>。</td></tr>
+<tr class='auto'><td class='no'>145</td><td class='src'>    if (status != HAL_OK || parameters_valid(&amp;selected) == 0U) return HAL_ERROR;</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='auto'><td class='no'>146</td><td class='src'>    return App_Parameters_Save(&amp;selected);</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>App_Parameters_Save(&selected)</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>147</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>148</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>149</td><td class='src'>/* 将较旧槽的内容重新保存为最新版本，形成可再次切换的双版本记录。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>150</td><td class='src'>/* 旧版不存在或 Flash 正忙时可能返回 HAL_BUSY，界面需按操作未完成处理。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>151</td><td class='src'>HAL_StatusTypeDef App_Parameters_RestorePrevious(void)</td><td class='exp'><b>App_Parameters_RestorePrevious()</b>：读双槽中的旧版（previous=1）→校验→重新保存为最新版。旧版不存在或 Flash 忙返回 HAL_BUSY，界面提示“旧版本不可用”。</td></tr>
+<tr class=''><td class='no'>152</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>153</td><td class='src'>    AppParameters selected;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>selected</code>（类型 <code>AppParameters</code>）。</td></tr>
+<tr class='auto'><td class='no'>154</td><td class='src'>    HAL_StatusTypeDef status;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>status</code>（类型 <code>HAL_StatusTypeDef</code>）。</td></tr>
+<tr class='auto'><td class='no'>155</td><td class='src'>    if (flash_ready == 0U) return HAL_ERROR;</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='auto'><td class='no'>156</td><td class='src'>    status = W25Q64_LoadUserParameters(&amp;selected, sizeof(selected), 1U);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>W25Q64_LoadUserParameters(&selected, sizeof(selected), 1U)</code> 赋给 <code>status</code>。</td></tr>
+<tr class='auto'><td class='no'>157</td><td class='src'>    if (status != HAL_OK || parameters_valid(&amp;selected) == 0U) return status == HAL_BUSY ? HAL_BUSY : HAL_ERROR;</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='auto'><td class='no'>158</td><td class='src'>    return App_Parameters_Save(&amp;selected);</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>App_Parameters_Save(&selected)</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>159</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+</table><div class='summary'><b>小总结（保存的可靠性设计）：</b>App_Parameters_Save 的四步“校验→写→读回→生效”环环相扣：写失败/读回失败都返回错误码，界面弹“保存失败，请重试”，数据由双槽机制兜底；成功则临界区整体替换运行时参数——系统任务每 10ms 重新读参数快照，因此保存后无需重启立即生效。</div><table class='code'><tr><th>行号</th><th>代码（Core/App/app_parameters.c）</th><th>逐行讲解</th></tr>
+</table>
+<div class='summary'><h4>本文件小总结</h4><b>app_parameters.c 总结：</b>9 项参数经“出厂同步→用户双槽→读回确认→原子发布”的生命周期管理；范围表统一约束界面与存储；恢复出厂/回归旧版都是一次新的用户保存。</div>
+</div>
+<div class='summary'><h4>本章总结</h4><b>本章总结：</b>参数系统的三个设计要点：①读回确认（防写坏却不自知）；②整体替换+临界区（防混合值）；③范围表三处同源（界面、校验、存储一致）。结合第 14 章双槽机制，形成完整的“保存失败怎么办”答案。</div>
+</div></body></html>

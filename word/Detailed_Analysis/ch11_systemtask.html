@@ -1,0 +1,858 @@
+<!DOCTYPE html><html lang='zh-CN'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>第 11 章 · 系统状态机与低功耗（app_system.c 中的 SystemTask 部分） - 项目代码逐行详解</title><style>
+:root{
+  --bg:#14161a; --panel:#1d2026; --panel2:#22262e; --code:#171a20;
+  --text:#d8dde5; --dim:#8b93a1; --accent:#4da3ff; --accent2:#7ee2b8;
+  --line:#2c313b; --warn:#f0b429;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:"Microsoft YaHei","PingFang SC",Segoe UI,sans-serif;font-size:15px;line-height:1.75}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px 80px}
+nav.topbar{position:sticky;top:0;z-index:9;background:rgba(20,22,26,.96);
+  border-bottom:1px solid var(--line);padding:10px 0;backdrop-filter:blur(6px)}
+nav.topbar .wrap{padding:0 20px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+nav.topbar a{background:var(--panel2);color:var(--text);padding:4px 12px;border-radius:16px;
+  font-size:13px;border:1px solid var(--line);white-space:nowrap}
+nav.topbar a.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+nav.topbar a:hover{text-decoration:none;filter:brightness(1.15)}
+header.chapter{margin:28px 0 8px}
+header.chapter h1{font-size:26px;margin:0 0 6px;color:#fff}
+header.chapter .meta{color:var(--dim);font-size:13px}
+.intro{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);
+  border-radius:8px;padding:14px 18px;margin:18px 0}
+.summary{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent2);
+  border-radius:8px;padding:14px 18px;margin:18px 0}
+.summary h4,.intro h4{margin:0 0 8px;font-size:15px;color:var(--accent2)}
+.intro h4{color:var(--accent)}
+.section{margin:34px 0}
+.section > h2{font-size:20px;color:#fff;border-bottom:1px solid var(--line);padding-bottom:8px}
+.section .filepath{font-family:Consolas,monospace;color:var(--warn);font-size:14px}
+.section .filedesc{color:var(--dim);font-size:14px;margin:6px 0 10px}
+table.code{width:100%;border-collapse:collapse;background:var(--code);
+  border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:13px}
+table.code th{background:var(--panel2);color:var(--dim);font-weight:600;text-align:left;
+  padding:7px 10px;font-size:12px;position:sticky;top:44px}
+table.code td{padding:3px 10px;vertical-align:top;border-top:1px solid #20242c}
+td.no{width:52px;text-align:right;color:#5c6575;font-family:Consolas,monospace;user-select:none}
+td.src{width:46%;font-family:Consolas,"Courier New",monospace;color:#c9d2e0;white-space:pre;
+  overflow-x:auto}
+td.exp{color:var(--text);font-size:13.5px}
+tr.comment td.src{color:#5f7060}
+tr.comment td.exp{color:var(--dim);font-style:normal}
+tr.blank td.src{color:#3a4150}
+.pill{display:inline-block;background:var(--panel2);border:1px solid var(--line);color:var(--dim);
+  border-radius:12px;padding:1px 10px;font-size:12px;margin-right:6px}
+.diagram{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;
+  margin:18px 0;font-family:Consolas,monospace;white-space:pre;overflow-x:auto;color:#bcd3f5;font-size:13px;line-height:1.55}
+.toc{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 18px;margin:14px 0}
+.toc a{display:block;padding:3px 0;font-size:14px}
+.badge{display:inline-block;background:#2b3a55;color:#9ecbff;border-radius:4px;padding:0 8px;font-size:12px;margin-right:6px}
+tr.auto td.exp{color:#9aa6b8}
+.auto-tag{display:inline-block;background:#2c3140;color:#8fa0b8;border:1px solid #3a4150;
+  border-radius:10px;padding:0 7px;font-size:11px;margin-right:5px;font-style:normal}
+</style></head><body><nav class='topbar'><div class='wrap'><a href='index.html'>目录</a><a href='ch01_startup.html'>01 启动流程</a><a href='ch02_interrupt.html'>02 中断与时基</a><a href='ch03_gpio_dma.html'>03 GPIO/DMA</a><a href='ch04_adc.html'>04 ADC 采样</a><a href='ch05_i2c.html'>05 I2C 底层</a><a href='ch06_spi.html'>06 SPI 底层</a><a href='ch07_tim.html'>07 定时器PWM</a><a href='ch08_usart_rtc.html'>08 串口/RTC</a><a href='ch09_rtos.html'>09 RTOS骨架</a><a href='ch10_appframe.html'>10 应用框架</a><a href='ch11_systemtask.html' class='active'>11 SystemTask</a><a href='ch12_algorithm.html'>12 PID/滤波</a><a href='ch13_foc.html'>13 FOC/SVPWM</a><a href='ch14_w25q64.html'>14 W25Q64存储</a><a href='ch15_parameters.html'>15 参数管理</a><a href='ch16_sensors.html'>16 传感器驱动</a><a href='ch17_lvgl_port.html'>17 LVGL移植</a><a href='ch18_ui.html'>18 UI界面</a><a href='ch19.html'>19 调试与VOFA</a></div></nav>
+<div class='wrap'>
+<header class='chapter'><h1>第 11 章 · 系统状态机与低功耗（app_system.c 中的 SystemTask 部分）</h1><div class='meta'>文件：Core/App/SystemTask.c（784 行）</div></header>
+<div class='intro'><h4>本章导读</h4><p>SystemTask 是全系统的“大脑”：它管理手动/自动/异常三种模式的切换、把手动方向命令翻译成电机命令、分析四路光照生成自动追光目标、控制背光熄屏/渐暗、并在条件满足时进入 MCU STOP 深度低功耗（触摸或 RTC 定时唤醒，退出后重建时钟、补偿节拍）。本章逐行讲解整个状态机，重点是 power_stop 低功耗流程与触摸唤醒的竞态处理。</p></div>
+<div class='section'>
+<h2><span class='filepath'>Core/App/SystemTask.c</span> <span class='pill'>0 行</span></h2>
+<div class='filedesc'>状态机全局状态、触摸/RTC 中断钩子、手动命令接口、光照分析、背光控制、STOP 低功耗与主循环。</div>
+<table class='code'>
+<tr><th>行号</th><th>代码（Core/App/SystemTask.c）</th><th>逐行讲解</th></tr>
+<tr class='auto'><td class='no'>1</td><td class='src'>#include "app_system.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "app_system.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='auto'><td class='no'>2</td><td class='src'>#include "app_parameters.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "app_parameters.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='auto'><td class='no'>3</td><td class='src'>#include "AppMotorCommand.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "AppMotorCommand.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='auto'><td class='no'>4</td><td class='src'>#include "SmaplingTypes.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "SmaplingTypes.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='auto'><td class='no'>5</td><td class='src'>#include "cmsis_os2.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "cmsis_os2.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='auto'><td class='no'>6</td><td class='src'>#include "FreeRTOS.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "FreeRTOS.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='auto'><td class='no'>7</td><td class='src'>#include "task.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "task.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='auto'><td class='no'>8</td><td class='src'>#include "rtc.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "rtc.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='auto'><td class='no'>9</td><td class='src'>#include "tim.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "tim.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='auto'><td class='no'>10</td><td class='src'>#include "main.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "main.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='auto'><td class='no'>11</td><td class='src'>#include "adc.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "adc.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='auto'><td class='no'>12</td><td class='src'>#include "lv_port_lcd_stm32.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "lv_port_lcd_stm32.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='blank'><td class='no'>13</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>14</td><td class='src'>/* 连续无触摸达到当前模式的设定时间后关背光；手动模式同时进入 STOP。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>15</td><td class='src'>/* 关屏前五秒将背光降为正常亮度的 30%。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>16</td><td class='src'>#define POWER_DIM_MS              5000U</td><td class='exp'>宏：无触摸 5 秒后先把背光降暗（进入关屏前的预告）。</td></tr>
+<tr class=''><td class='no'>17</td><td class='src'>#define POWER_DIM_PERCENT         30U</td><td class='exp'>宏：渐暗后的亮度 = 正常亮度 × 30%。</td></tr>
+<tr class='comment'><td class='no'>18</td><td class='src'>/* 自动模式 A 或 B 连续成立达到设定时间后进入 STOP，与关背光分别计时。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>19</td><td class='src'>/* 自动模式 B 的 ADC 平均值门槛由低功耗光强阈值参数决定。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>20</td><td class='src'>/* RTC 使用 1 Hz 的 ck_spre；唤醒周期由参数决定。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>21</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>22</td><td class='src'>/* STOP 前暂停这些任务；系统任务负责恢复，不在中断里操作任务。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>23</td><td class='src'>extern osThreadId_t UiTaskHandle, MotorTaskHandle, SmaplingTaskHandle, DebugTaskHandle;</td><td class='exp'>extern 引用四个任务句柄：进 STOP 前要挂起它们，退出后恢复。</td></tr>
+<tr class='comment'><td class='no'>24</td><td class='src'>/* STM32F407 退出 STOP 后先运行 HSI，需要重新建立原来的系统时钟。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>25</td><td class='src'>extern void SystemClock_Config(void);</td><td class='exp'>extern 声明 SystemClock_Config：STOP 退出后时钟回落到 HSI，必须重建 168MHz PLL 时钟。</td></tr>
+<tr class='blank'><td class='no'>26</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>27</td><td class='src'>/* 触摸中断只递增序号；系统任务比较序号以识别新的触摸事件。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>28</td><td class='src'>static volatile uint32_t touch_sequence;</td><td class='exp'><b>touch_sequence</b>：触摸事件序号（volatile）。中断只 +1，任务比较序号判断“有没有新触摸”。用序号而非布尔标志，是因为任务处理前可能又来一次触摸——标志会丢事件，序号不会。</td></tr>
+<tr class='comment'><td class='no'>29</td><td class='src'>/* RTC 中断只递增序号；系统任务据此决定是否进行一轮光照检查。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>30</td><td class='src'>static volatile uint32_t rtc_sequence;</td><td class='exp'><b>rtc_sequence</b>：RTC 唤醒事件序号，同理。</td></tr>
+<tr class='comment'><td class='no'>31</td><td class='src'>/* LVGL 轮询到的手指接触状态；持续按住时禁止空闲入睡。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>32</td><td class='src'>static volatile uint8_t touch_held;</td><td class='exp'><b>touch_held</b>：LVGL 轮询到的“手指是否按住”。按住时禁止空闲入睡。</td></tr>
+<tr class='comment'><td class='no'>33</td><td class='src'>/* 黑屏后的首次触摸需要整次屏蔽，避免点亮时同时触发按钮。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>34</td><td class='src'>static volatile uint8_t touch_suppressed;</td><td class='exp'><b>touch_suppressed</b>：黑屏后的首次触摸需要整次屏蔽（防止点亮屏幕的触摸误触到按钮）。</td></tr>
+<tr class='comment'><td class='no'>35</td><td class='src'>/* 连续两次读到松手才解除屏蔽，避免一次 I2C 读取失败造成误点。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>36</td><td class='src'>static volatile uint8_t touch_release_count;</td><td class='exp'><b>touch_release_count</b>：连续读到“松手”的次数，达 2 次才解除屏蔽（防止一次 I2C 读失败造成误点）。</td></tr>
+<tr class='comment'><td class='no'>37</td><td class='src'>/* 背光状态独立于 MCU STOP：自动追光可以在黑屏下继续运行。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>38</td><td class='src'>static volatile uint8_t screen_on = 1U;</td><td class='exp'><b>screen_on</b>：背光开关状态。注意：黑屏≠MCU 已 STOP，自动追光可以黑屏运行。</td></tr>
+<tr class='comment'><td class='no'>39</td><td class='src'>/* 记录 UI 任务是否已暂停，防止对同一任务重复暂停或恢复。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>40</td><td class='src'>static uint8_t ui_suspended;</td><td class='exp'><b>ui_suspended</b>：UI 任务是否已被挂起，防止重复挂起/恢复。</td></tr>
+<tr class='blank'><td class='no'>41</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>42</td><td class='src'>/* 触摸 EXTI 回调入口：只记录事件；黑屏时标记本次触摸无效。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>43</td><td class='src'>void App_System_TouchInterrupt(void)</td><td class='exp'><b>App_System_TouchInterrupt()</b>：触摸 EXTI 中断的入口（由 FT6336.c 的回调调用）。</td></tr>
+<tr class=''><td class='no'>44</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>45</td><td class='src'>    /* 用序号而不是单个布尔标志，防止处理前又来一次触摸时丢事件。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>46</td><td class='src'>    ++touch_sequence;</td><td class='exp'>触摸序号加 1——这是中断里唯一要做的事。</td></tr>
+<tr class=''><td class='no'>47</td><td class='src'>    if (screen_on == 0U)</td><td class='exp'>如果当前是黑屏状态：</td></tr>
+<tr class=''><td class='no'>48</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>49</td><td class='src'>        /* 即使触摸落在“保存”按钮上，也只允许它唤醒背光。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>50</td><td class='src'>        touch_suppressed = 1U;</td><td class='exp'>置屏蔽标志：本次触摸只用于唤醒，整次手势（按住到松开）都不会传给 LVGL 控件。</td></tr>
+<tr class='comment'><td class='no'>51</td><td class='src'>        /* 本次手势尚未确认松开，重新开始松手判定。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>52</td><td class='src'>        touch_release_count = 0U;</td><td class='exp'>松手判定计数清零：本次手势还未确认松开。</td></tr>
+<tr class=''><td class='no'>53</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>54</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>55</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>56</td><td class='src'>/* RTC 唤醒中断回调：只留下标记，采样和状态判断放在系统任务。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>57</td><td class='src'>void HAL_RTCEx_WakeUpTimerEventCallback(RTC_HandleTypeDef *hrtc)</td><td class='exp'><b>HAL_RTCEx_WakeUpTimerEventCallback</b>：RTC 唤醒中断回调。</td></tr>
+<tr class=''><td class='no'>58</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>59</td><td class='src'>    /* HAL 回调要求传入句柄，本处不需要在中断里访问 RTC 寄存器。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>60</td><td class='src'>    (void)hrtc;</td><td class='exp'>(void)hrtc——HAL 回调要求传句柄，但本处不需要访问 RTC 寄存器，显式忽略。</td></tr>
+<tr class=''><td class='no'>61</td><td class='src'>    ++rtc_sequence;</td><td class='exp'>唤醒序号 +1。真正的采样与判断都在系统任务里做。</td></tr>
+<tr class=''><td class='no'>62</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>63</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>64</td><td class='src'>/* LVGL 输入层报告手指是否仍按在屏幕上，供空闲计时使用。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>65</td><td class='src'>void App_System_TouchHeld(uint8_t held)</td><td class='exp'><b>App_System_TouchHeld</b>：LVGL 输入层上报按住状态。</td></tr>
+<tr class=''><td class='no'>66</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>67</td><td class='src'>    touch_held = held;</td><td class='exp'>直接写入 volatile 标志（单字节写是原子的）。</td></tr>
+<tr class=''><td class='no'>68</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>69</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>70</td><td class='src'>/* 返回 1 时 LVGL 必须上报“松开”，直到唤醒手势真正结束。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>71</td><td class='src'>uint8_t App_System_SuppressTouch(uint8_t pressed)</td><td class='exp'><b>App_System_SuppressTouch(pressed)</b>：LVGL 每次读触摸时询问“要不要屏蔽”。返回 1 表示这次触摸按松开处理。</td></tr>
+<tr class=''><td class='no'>72</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>73</td><td class='src'>    /* 正常亮屏触摸直接传给 LVGL，不改变页面操作。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>74</td><td class='src'>    if (touch_suppressed == 0U) return 0U;</td><td class='exp'>正常亮屏状态（未屏蔽）：返回 0，触摸照常传给 LVGL。</td></tr>
+<tr class='comment'><td class='no'>75</td><td class='src'>    /* 仍在按住就重新等待松手，整次拖动也不能触发页面控件。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>76</td><td class='src'>    if (pressed != 0U) touch_release_count = 0U;</td><td class='exp'>屏蔽期间如果仍然按着：松手计数清零，重新等待真正的松手。</td></tr>
+<tr class='comment'><td class='no'>77</td><td class='src'>    /* 连续两次未按下才解除屏蔽；本次调用仍返回屏蔽状态。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>78</td><td class='src'>    else if (++touch_release_count &gt;= 2U) touch_suppressed = 0U;</td><td class='exp'>连续两次读到“未按下”才解除屏蔽——防止一次 I2C 读取失败(瞬时返回未按下)造成误点按钮。</td></tr>
+<tr class=''><td class='no'>79</td><td class='src'>    return 1U;</td><td class='exp'>本次调用仍返回 1（继续屏蔽）。</td></tr>
+<tr class=''><td class='no'>80</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+</table><div class='summary'><b>小总结（事件序号机制）：</b>中断与任务的同步不用信号量而用“递增序号”：中断只做 ++seq，任务保存 seen 值比较。优点：①不丢事件（处理期间来了新事件也不会覆盖标志）；②天然线程安全（32 位 volatile 读写在 ARM 上原子）；③不需要在任务里清中断标志。触摸唤醒手势屏蔽（34~36 行）同样是状态机：黑屏触摸→suppressed=1→必须连续 2 次读到松手才解除，杜绝误点。</div><table class='code'><tr><th>行号</th><th>代码（Core/App/SystemTask.c）</th><th>逐行讲解</th></tr>
+<tr class='blank'><td class='no'>81</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>82</td><td class='src'>/* 手动按住时的目标机械角速度，单位度/秒。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>83</td><td class='src'>/* 手动按住事件超过此时间未续发时改为保持当前位置。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>84</td><td class='src'>#define MANUAL_HOLD_TIMEOUT_MS    200U</td><td class='exp'>宏：手动按住命令超过 200ms 没有续发，就转入“位置保持”。</td></tr>
+<tr class='comment'><td class='no'>85</td><td class='src'>/* 上键和右键对应的电机正方向，实机方向不符时改符号。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>86</td><td class='src'>#define MANUAL_UP_SIGN            1.0f</td><td class='exp'>宏：上键的电机方向符号（实机方向反了就改 -1）。</td></tr>
+<tr class=''><td class='no'>87</td><td class='src'>#define MANUAL_RIGHT_SIGN         1.0f</td><td class='exp'>宏：右键方向符号。</td></tr>
+<tr class='comment'><td class='no'>88</td><td class='src'>/* 自动模式进入后等待三秒，再允许光强环输出。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>89</td><td class='src'>#define AUTO_ENTER_DELAY_MS       3000U</td><td class='exp'>宏：进入自动模式后等 3 秒才开始追光（给用户反应时间，避免切模式瞬间乱动）。</td></tr>
+<tr class='comment'><td class='no'>90</td><td class='src'>/* 超过此时间没有新光照帧时停止追光并保持当前位置。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>91</td><td class='src'>#define AUTO_SAMPLE_TIMEOUT_MS    100U</td><td class='exp'>宏：超过 100ms 没有新光照帧就停止追光（数据过期保护）。</td></tr>
+<tr class='comment'><td class='no'>92</td><td class='src'>/* 水平光强差处于此范围时锁定水平轴当前位置。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>93</td><td class='src'>/* 竖直光强差处于此范围时锁定竖直轴当前位置。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>94</td><td class='src'>/* 光强比例环增益：差值 1500 对应相对目标 150 度。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>95</td><td class='src'>/* 四路滤波 ADC 均严格高于此值时认为环境较暗，停止追光并保持位置。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>96</td><td class='src'>#define AUTO_ALL_DARK_ADC         1500U</td><td class='exp'>宏：四路 ADC 平均值都高于 1500 时认为环境全暗。</td></tr>
+<tr class='comment'><td class='no'>97</td><td class='src'>/* 单次相对角度命令的最大绝对值，单位度。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>98</td><td class='src'>#define AUTO_TARGET_LIMIT_DEG     360.0f</td><td class='exp'>宏：单次相对角度命令上限 360 度。</td></tr>
+<tr class='comment'><td class='no'>99</td><td class='src'>/* 水平轴追向左侧亮光、竖直轴追向上方亮光的方向系数。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>100</td><td class='src'>#define AUTO_HORIZONTAL_SIGN      (-MANUAL_RIGHT_SIGN)</td><td class='exp'>宏：自动模式水平轴方向 = 手动右方向的相反（左亮追左）。</td></tr>
+<tr class=''><td class='no'>101</td><td class='src'>#define AUTO_VERTICAL_SIGN        MANUAL_UP_SIGN</td><td class='exp'>宏：自动模式竖直轴方向 = 手动上方向。</td></tr>
+<tr class='blank'><td class='no'>102</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>103</td><td class='src'>/* 光照快照的派生量由系统任务集中计算。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>104</td><td class='src'>typedef struct</td><td class='exp'>定义 AppLightMetrics：光照快照的派生量结构体。</td></tr>
+<tr class=''><td class='no'>105</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>106</td><td class='src'>    int32_t horizontal_diff; /* 左上加左下，减右上加右下。 */</td><td class='exp'>水平差 = 左上+左下 − 右上−右下（正值表示左边更亮）。</td></tr>
+<tr class=''><td class='no'>107</td><td class='src'>    int32_t vertical_diff;   /* 左上加右上，减左下加右下。 */</td><td class='exp'>竖直差 = 左上+右上 − 左下−右下（正值表示上边更亮）。</td></tr>
+<tr class=''><td class='no'>108</td><td class='src'>    uint16_t average;        /* 四路滤波 ADC 的平均值。 */</td><td class='exp'>四路平均值。</td></tr>
+<tr class=''><td class='no'>109</td><td class='src'>    uint16_t total_diff;     /* 四路滤波 ADC 的最大值减最小值。 */</td><td class='exp'>四路最大值−最小值（总差，UI 显示用）。</td></tr>
+<tr class='auto'><td class='no'>110</td><td class='src'>} AppLightMetrics;</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='blank'><td class='no'>111</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>112</td><td class='src'>/* UI 发送的最新手动方向与时间戳。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>113</td><td class='src'>static AppManualDirection pending_direction = APP_MANUAL_STOP;</td><td class='exp'><b>pending_direction</b>：UI 最新发送的手动方向。</td></tr>
+<tr class=''><td class='no'>114</td><td class='src'>static uint32_t pending_tick;</td><td class='exp'>该命令的发送时间戳。</td></tr>
+<tr class=''><td class='no'>115</td><td class='src'>static uint32_t pending_sequence;</td><td class='exp'>命令序号：每条新命令 +1，用于检测“有新命令”。</td></tr>
+<tr class='comment'><td class='no'>116</td><td class='src'>/* UI 发送的模式请求及系统任务发布的当前模式。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>117</td><td class='src'>static AppMode pending_mode = APP_MODE_MANUAL;</td><td class='exp'>UI 请求的模式。</td></tr>
+<tr class=''><td class='no'>118</td><td class='src'>static uint32_t pending_mode_sequence;</td><td class='exp'>模式请求序号。</td></tr>
+<tr class=''><td class='no'>119</td><td class='src'>static AppMode current_mode = APP_MODE_MANUAL;</td><td class='exp'>当前生效的模式。</td></tr>
+<tr class='comment'><td class='no'>120</td><td class='src'>/* 故障请求与一次性弹窗通知；人工复查通过后才解除异常锁存。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>121</td><td class='src'>static uint8_t fault_requested;</td><td class='exp'>故障请求标志（电机任务置位）。</td></tr>
+<tr class=''><td class='no'>122</td><td class='src'>static uint8_t error_popup_pending;</td><td class='exp'>待领取的异常弹窗通知。</td></tr>
+<tr class=''><td class='no'>123</td><td class='src'>static uint8_t recovery_in_progress;</td><td class='exp'>恢复流程进行中标志。</td></tr>
+<tr class=''><td class='no'>124</td><td class='src'>static uint8_t recovery_result_pending;</td><td class='exp'>待领取的恢复结果。</td></tr>
+<tr class='comment'><td class='no'>125</td><td class='src'>/* CubeMX 创建的采样队列和自动角度命令队列。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>126</td><td class='src'>extern osMessageQueueId_t SmapToSystemHandle;</td><td class='exp'>extern 引用三个队列句柄。</td></tr>
+<tr class='auto'><td class='no'>127</td><td class='src'>extern osMessageQueueId_t SmapSystemToMotorHandle;</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>128</td><td class='src'>extern osMessageQueueId_t SmaplingHandle;</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='blank'><td class='no'>129</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>130</td><td class='src'>/* UI 只投递方向，实际电机命令由系统任务发出。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>131</td><td class='src'>void App_ManualControl_Send(AppManualDirection direction)</td><td class='exp'><b>App_ManualControl_Send(direction)</b>：UI 发送手动方向（按住时持续续发）。</td></tr>
+<tr class=''><td class='no'>132</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>133</td><td class='src'>    if (direction &gt; APP_MANUAL_RIGHT) return;</td><td class='exp'>参数合法性检查：大于“右”的值直接丢弃。</td></tr>
+<tr class=''><td class='no'>134</td><td class='src'>    taskENTER_CRITICAL();</td><td class='exp'>taskENTER_CRITICAL：进入临界区（关中断级别的保护）。</td></tr>
+<tr class=''><td class='no'>135</td><td class='src'>    pending_direction = direction;</td><td class='exp'>写入最新方向。</td></tr>
+<tr class=''><td class='no'>136</td><td class='src'>    pending_tick = osKernelGetTickCount();</td><td class='exp'>记录发送时刻（RTOS 毫秒）。</td></tr>
+<tr class=''><td class='no'>137</td><td class='src'>    ++pending_sequence;</td><td class='exp'>命令序号 +1——系统任务靠它发现“来了新命令”。</td></tr>
+<tr class=''><td class='no'>138</td><td class='src'>    taskEXIT_CRITICAL();</td><td class='exp'>退出临界区。三行写操作在临界区内保证原子性（UI 与系统任务并发访问）。</td></tr>
+<tr class=''><td class='no'>139</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+</table><div class='summary'><b>小总结（手动命令接口）：</b>UI 按住方向键时每帧调用 App_ManualControl_Send——三行写操作（方向/时间戳/序号）在临界区内原子完成。系统任务侧用“序号变化”发现新命令、用 200ms 超时判断松手，实现“按住=持续转动、松手=位置保持”的直觉交互。所有模式/故障/恢复接口同理：只写请求标志，决定权永远在系统任务。</div><table class='code'><tr><th>行号</th><th>代码（Core/App/SystemTask.c）</th><th>逐行讲解</th></tr>
+<tr class='blank'><td class='no'>140</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>141</td><td class='src'>/* UI 投递模式切换请求，不直接改变当前模式。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>142</td><td class='src'>void App_System_RequestMode(AppMode mode)</td><td class='exp'><b>App_System_RequestMode(mode)</b>：UI 请求切换模式。</td></tr>
+<tr class=''><td class='no'>143</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>144</td><td class='src'>    if (mode != APP_MODE_MANUAL &amp;&amp; mode != APP_MODE_AUTO) return;</td><td class='exp'>只接受手动/自动两种请求（异常模式不能由 UI 直接进入）。</td></tr>
+<tr class='auto'><td class='no'>145</td><td class='src'>    taskENTER_CRITICAL();</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>taskENTER_CRITICAL()</code>：进入 FreeRTOS 临界区：把中断屏蔽提升到 configMAX_SYSCALL_INTERRUPT_PRIORITY，保证接下来几行对共享变量的读取/修改不被中断打断。</td></tr>
+<tr class=''><td class='no'>146</td><td class='src'>    if (fault_requested == 0U &amp;&amp; current_mode != APP_MODE_ERROR)</td><td class='exp'>临界区内再检查：没有故障请求、且当前不是异常模式，才接受模式切换请求。</td></tr>
+<tr class=''><td class='no'>147</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>148</td><td class='src'>        pending_mode = mode;</td><td class='exp'>记录请求的模式。</td></tr>
+<tr class=''><td class='no'>149</td><td class='src'>        ++pending_mode_sequence;</td><td class='exp'>请求序号 +1。</td></tr>
+<tr class=''><td class='no'>150</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='auto'><td class='no'>151</td><td class='src'>    taskEXIT_CRITICAL();</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>taskEXIT_CRITICAL()</code>：退出临界区，恢复原来的中断屏蔽状态。</td></tr>
+<tr class=''><td class='no'>152</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>153</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>154</td><td class='src'>/* 故障报告只设置请求，不在其他任务中修改模式或调用 LVGL。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>155</td><td class='src'>void App_System_ReportFault(void)</td><td class='exp'><b>App_System_ReportFault()</b>：电机任务上报故障。</td></tr>
+<tr class=''><td class='no'>156</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>157</td><td class='src'>    taskENTER_CRITICAL();</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>taskENTER_CRITICAL()</code>：进入 FreeRTOS 临界区：把中断屏蔽提升到 configMAX_SYSCALL_INTERRUPT_PRIORITY，保证接下来几行对共享变量的读取/修改不被中断打断。</td></tr>
+<tr class=''><td class='no'>158</td><td class='src'>    fault_requested = 1U;</td><td class='exp'>临界区置位 fault_requested——不在电机任务里直接改模式（模式只有系统任务能改）。</td></tr>
+<tr class='auto'><td class='no'>159</td><td class='src'>    taskEXIT_CRITICAL();</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>taskEXIT_CRITICAL()</code>：退出临界区，恢复原来的中断屏蔽状态。</td></tr>
+<tr class=''><td class='no'>160</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>161</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>162</td><td class='src'>/* 弹窗通知仅由 UI 任务领取一次，关闭弹窗不清除异常锁存。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>163</td><td class='src'>uint8_t App_System_TakeErrorPopup(void)</td><td class='exp'><b>App_System_TakeErrorPopup()</b>：UI 任务领取弹窗通知。</td></tr>
+<tr class=''><td class='no'>164</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>165</td><td class='src'>    uint8_t pending;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>pending</code>（类型 <code>uint8_t</code>）。</td></tr>
+<tr class='auto'><td class='no'>166</td><td class='src'>    taskENTER_CRITICAL();</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>taskENTER_CRITICAL()</code>：进入 FreeRTOS 临界区：把中断屏蔽提升到 configMAX_SYSCALL_INTERRUPT_PRIORITY，保证接下来几行对共享变量的读取/修改不被中断打断。</td></tr>
+<tr class=''><td class='no'>167</td><td class='src'>    pending = error_popup_pending;</td><td class='exp'>临界区内读标志并清零（一次性领取）。</td></tr>
+<tr class='auto'><td class='no'>168</td><td class='src'>    error_popup_pending = 0U;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>0U</code> 赋给 <code>error_popup_pending</code>。</td></tr>
+<tr class='auto'><td class='no'>169</td><td class='src'>    taskEXIT_CRITICAL();</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>taskEXIT_CRITICAL()</code>：退出临界区，恢复原来的中断屏蔽状态。</td></tr>
+<tr class='auto'><td class='no'>170</td><td class='src'>    return pending;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>pending</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>171</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>172</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>173</td><td class='src'>void App_System_RequestRecovery(void)</td><td class='exp'><b>App_System_RequestRecovery()</b>：UI 请求恢复电机。</td></tr>
+<tr class=''><td class='no'>174</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>175</td><td class='src'>    uint8_t accepted = 0U;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>0U</code> 赋给 <code>uint8_t accepted</code>。</td></tr>
+<tr class='auto'><td class='no'>176</td><td class='src'>    taskENTER_CRITICAL();</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>taskENTER_CRITICAL()</code>：进入 FreeRTOS 临界区：把中断屏蔽提升到 configMAX_SYSCALL_INTERRUPT_PRIORITY，保证接下来几行对共享变量的读取/修改不被中断打断。</td></tr>
+<tr class=''><td class='no'>177</td><td class='src'>    if (current_mode == APP_MODE_ERROR &amp;&amp; recovery_in_progress == 0U)</td><td class='exp'>临界区检查：当前是异常模式且没有恢复进行中，才登记请求。</td></tr>
+<tr class=''><td class='no'>178</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>179</td><td class='src'>        recovery_in_progress = 1U;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>1U</code> 赋给 <code>recovery_in_progress</code>。</td></tr>
+<tr class='auto'><td class='no'>180</td><td class='src'>        accepted = 1U;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>1U</code> 赋给 <code>accepted</code>。</td></tr>
+<tr class=''><td class='no'>181</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='auto'><td class='no'>182</td><td class='src'>    taskEXIT_CRITICAL();</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>taskEXIT_CRITICAL()</code>：退出临界区，恢复原来的中断屏蔽状态。</td></tr>
+<tr class=''><td class='no'>183</td><td class='src'>    if (accepted != 0U &amp;&amp; SimpleFOC_Motor_RequestRecovery() == 0U)</td><td class='exp'>若电机任务拒绝受理（返回 0，例如电机任务正忙）：撤销请求并置“恢复失败”结果，UI 会收到失败提示。</td></tr>
+<tr class=''><td class='no'>184</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>185</td><td class='src'>        taskENTER_CRITICAL();</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>taskENTER_CRITICAL()</code>：进入 FreeRTOS 临界区：把中断屏蔽提升到 configMAX_SYSCALL_INTERRUPT_PRIORITY，保证接下来几行对共享变量的读取/修改不被中断打断。</td></tr>
+<tr class='auto'><td class='no'>186</td><td class='src'>        recovery_in_progress = 0U;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>0U</code> 赋给 <code>recovery_in_progress</code>。</td></tr>
+<tr class='auto'><td class='no'>187</td><td class='src'>        recovery_result_pending = 2U;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>2U</code> 赋给 <code>recovery_result_pending</code>。</td></tr>
+<tr class='auto'><td class='no'>188</td><td class='src'>        taskEXIT_CRITICAL();</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>taskEXIT_CRITICAL()</code>：退出临界区，恢复原来的中断屏蔽状态。</td></tr>
+<tr class=''><td class='no'>189</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>190</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>191</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>192</td><td class='src'>uint8_t App_System_TakeRecoveryResult(void)</td><td class='exp'><b>App_System_TakeRecoveryResult()</b>：UI 领取恢复结果。</td></tr>
+<tr class=''><td class='no'>193</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>194</td><td class='src'>    uint8_t result;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>result</code>（类型 <code>uint8_t</code>）。</td></tr>
+<tr class='auto'><td class='no'>195</td><td class='src'>    taskENTER_CRITICAL();</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>taskENTER_CRITICAL()</code>：进入 FreeRTOS 临界区：把中断屏蔽提升到 configMAX_SYSCALL_INTERRUPT_PRIORITY，保证接下来几行对共享变量的读取/修改不被中断打断。</td></tr>
+<tr class='auto'><td class='no'>196</td><td class='src'>    result = recovery_result_pending;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>recovery_result_pending</code> 赋给 <code>result</code>。</td></tr>
+<tr class='auto'><td class='no'>197</td><td class='src'>    recovery_result_pending = 0U;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>0U</code> 赋给 <code>recovery_result_pending</code>。</td></tr>
+<tr class='auto'><td class='no'>198</td><td class='src'>    taskEXIT_CRITICAL();</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>taskEXIT_CRITICAL()</code>：退出临界区，恢复原来的中断屏蔽状态。</td></tr>
+<tr class='auto'><td class='no'>199</td><td class='src'>    return result;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>result</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>200</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>201</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>202</td><td class='src'>/* 电机任务读取系统任务发布的当前模式。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>203</td><td class='src'>uint8_t App_System_IsAutoMode(void)</td><td class='exp'><b>App_System_IsAutoMode()</b>：电机任务查询当前是否自动模式。</td></tr>
+<tr class=''><td class='no'>204</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>205</td><td class='src'>    uint8_t enabled;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>enabled</code>（类型 <code>uint8_t</code>）。</td></tr>
+<tr class='auto'><td class='no'>206</td><td class='src'>    taskENTER_CRITICAL();</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>taskENTER_CRITICAL()</code>：进入 FreeRTOS 临界区：把中断屏蔽提升到 configMAX_SYSCALL_INTERRUPT_PRIORITY，保证接下来几行对共享变量的读取/修改不被中断打断。</td></tr>
+<tr class=''><td class='no'>207</td><td class='src'>    enabled = current_mode == APP_MODE_AUTO;</td><td class='exp'>临界区读取当前模式比较。</td></tr>
+<tr class='auto'><td class='no'>208</td><td class='src'>    taskEXIT_CRITICAL();</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>taskEXIT_CRITICAL()</code>：退出临界区，恢复原来的中断屏蔽状态。</td></tr>
+<tr class='auto'><td class='no'>209</td><td class='src'>    return enabled;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>enabled</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>210</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>211</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>212</td><td class='src'>/* 根据手动按钮选择竖直轴或水平轴。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>213</td><td class='src'>static SimpleFOC_MotorAxis manual_axis(AppManualDirection direction)</td><td class='exp'><b>manual_axis(direction)</b>：把手动方向映射到物理轴。</td></tr>
+<tr class=''><td class='no'>214</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>215</td><td class='src'>    return direction == APP_MANUAL_UP || direction == APP_MANUAL_DOWN</td><td class='exp'>上/下 → 竖直轴；否则（左/右）→ 水平轴。</td></tr>
+<tr class='auto'><td class='no'>216</td><td class='src'>        ? SIMPLEFOC_AXIS_VERTICAL : SIMPLEFOC_AXIS_HORIZONTAL;</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>217</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>218</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>219</td><td class='src'>/* 限制光强环给出的单次相对目标角度。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>220</td><td class='src'>static float auto_limit_target(float target_deg)</td><td class='exp'><b>auto_limit_target</b>：限制单次相对角度命令在 ±360 度。</td></tr>
+<tr class=''><td class='no'>221</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>222</td><td class='src'>    if (target_deg &gt; AUTO_TARGET_LIMIT_DEG) return AUTO_TARGET_LIMIT_DEG;</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='auto'><td class='no'>223</td><td class='src'>    if (target_deg &lt; -AUTO_TARGET_LIMIT_DEG) return -AUTO_TARGET_LIMIT_DEG;</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='auto'><td class='no'>224</td><td class='src'>    return target_deg;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>target_deg</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>225</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>226</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>227</td><td class='src'>/* 计算四路滤波光照的平均、极差和两个方向差。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>228</td><td class='src'>static AppLightMetrics light_analyze(const SmaplingData_t *sample)</td><td class='exp'><b>light_analyze(sample)</b>：计算四路光照的派生量。</td></tr>
+<tr class=''><td class='no'>229</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>230</td><td class='src'>    /* 四路值、最大值、最小值与总和。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>231</td><td class='src'>    uint16_t values[4] = {sample-&gt;left_top, sample-&gt;left_bottom,</td><td class='exp'>把四个通道值装进局部数组，便于循环处理。</td></tr>
+<tr class='auto'><td class='no'>232</td><td class='src'>                          sample-&gt;right_top, sample-&gt;right_bottom};</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>233</td><td class='src'>    uint16_t maximum = values[0], minimum = values[0];</td><td class='exp'>最大值/最小值初值取第一个元素。</td></tr>
+<tr class='auto'><td class='no'>234</td><td class='src'>    uint32_t sum = 0U;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>0U</code> 赋给 <code>uint32_t sum</code>。</td></tr>
+<tr class='comment'><td class='no'>235</td><td class='src'>    /* 本次采样对应的派生结果。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>236</td><td class='src'>    AppLightMetrics result;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>result</code>（类型 <code>AppLightMetrics</code>）。</td></tr>
+<tr class=''><td class='no'>237</td><td class='src'>    for (uint8_t i = 0U; i &lt; 4U; ++i)</td><td class='exp'>遍历四路：</td></tr>
+<tr class=''><td class='no'>238</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>239</td><td class='src'>        if (values[i] &gt; maximum) maximum = values[i];</td><td class='exp'>更新最大值。</td></tr>
+<tr class=''><td class='no'>240</td><td class='src'>        if (values[i] &lt; minimum) minimum = values[i];</td><td class='exp'>更新最小值。</td></tr>
+<tr class=''><td class='no'>241</td><td class='src'>        sum += values[i];</td><td class='exp'>累加求和。</td></tr>
+<tr class=''><td class='no'>242</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>243</td><td class='src'>    result.horizontal_diff = (int32_t)values[0] + values[1] - values[2] - values[3];</td><td class='exp'>水平差 = 左上+左下−右上−右下（转 int32 防止无符号下溢：差值可能为负）。</td></tr>
+<tr class=''><td class='no'>244</td><td class='src'>    result.vertical_diff = (int32_t)values[0] + values[2] - values[1] - values[3];</td><td class='exp'>竖直差 = 左上+右上−左下−右下。</td></tr>
+<tr class=''><td class='no'>245</td><td class='src'>    result.average = (uint16_t)(sum / 4U);</td><td class='exp'>平均值 = 总和/4。</td></tr>
+<tr class=''><td class='no'>246</td><td class='src'>    result.total_diff = maximum - minimum;</td><td class='exp'>总差 = 最大−最小（表示光照是否均匀）。</td></tr>
+<tr class='auto'><td class='no'>247</td><td class='src'>    return result;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>result</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>248</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+</table><div class='summary'><b>小总结（光照分析与熄屏条件）：</b>light_analyze 把四路 ADC 变成三个决策量：水平差（左右哪边亮）、竖直差（上下哪边亮）、平均值（环境明暗）。power_auto_idle 判定自动入睡条件：A=两轴光差都在停转区间内（已对准光源），或 B=平均值超阈值（环境太暗）。条件 B 的含义是“夜里没光源可追，睡了更省电”。</div><table class='code'><tr><th>行号</th><th>代码（Core/App/SystemTask.c）</th><th>逐行讲解</th></tr>
+<tr class='blank'><td class='no'>249</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>250</td><td class='src'>/* 自动入睡条件：A 为两轴光差都在停转区间，B 为四路平均值偏暗。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>251</td><td class='src'>static uint8_t power_auto_idle(const AppLightMetrics *light)</td><td class='exp'><b>power_auto_idle(light)</b>：判断自动熄屏条件 A/B 是否成立。</td></tr>
+<tr class=''><td class='no'>252</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>253</td><td class='src'>    AppParameters parameters = App_Parameters_Get();</td><td class='exp'>取当前参数快照。</td></tr>
+<tr class='comment'><td class='no'>254</td><td class='src'>    /* 四个比较必须同时成立才算 A；任一轴超限都表示可能需要追光。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>255</td><td class='src'>    int32_t horizontal = parameters.values[APP_PARAM_HORIZONTAL_BAND];</td><td class='exp'>取出水平停转区间（参数）。</td></tr>
+<tr class=''><td class='no'>256</td><td class='src'>    int32_t vertical = parameters.values[APP_PARAM_VERTICAL_BAND];</td><td class='exp'>取出竖直停转区间。</td></tr>
+<tr class=''><td class='no'>257</td><td class='src'>    uint8_t balanced = light-&gt;horizontal_diff &gt;= -horizontal</td><td class='exp'>条件 A：水平差和竖直差都在停转区间内（|diff|≤band）——两轴都不需要追光。</td></tr>
+<tr class='auto'><td class='no'>258</td><td class='src'>        &amp;&amp; light-&gt;horizontal_diff &lt;= horizontal</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>259</td><td class='src'>        &amp;&amp; light-&gt;vertical_diff &gt;= -vertical</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>260</td><td class='src'>        &amp;&amp; light-&gt;vertical_diff &lt;= vertical;</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='comment'><td class='no'>261</td><td class='src'>    /* A 或 B 满足即可继续累计同一只自动熄屏计时器。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>262</td><td class='src'>    return balanced != 0U || light-&gt;average &gt; parameters.values[APP_PARAM_LOW_POWER_LIGHT];</td><td class='exp'>条件 B：四路平均值高于低功耗光强阈值——环境偏暗，不值得追光。A 或 B 任一成立即返回 1。</td></tr>
+<tr class=''><td class='no'>263</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>264</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>265</td><td class='src'>/* TIM3 的 ARR 为 99，CCR4 取 0～100 正好对应 0～100% 占空比。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>266</td><td class='src'>static void power_backlight_set(uint8_t percent)</td><td class='exp'><b>power_backlight_set(percent)</b>：设置背光占空比。</td></tr>
+<tr class=''><td class='no'>267</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>268</td><td class='src'>    if (percent &gt; 100U) percent = 100U;</td><td class='exp'>限幅到 100。</td></tr>
+<tr class=''><td class='no'>269</td><td class='src'>    __HAL_TIM_SET_COMPARE(&amp;htim3, TIM_CHANNEL_4, percent);</td><td class='exp'>一行寄存器写：CCR4=percent。TIM3 的 ARR=99，所以 CCR∈[0,100] 正好对应 0~100% 占空比（见第 7 章）。</td></tr>
+<tr class=''><td class='no'>270</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>271</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>272</td><td class='src'>/* 定时器异常未产生更新事件时，才用 GPIO 保证背光关闭。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>273</td><td class='src'>static void power_backlight_pin_set(uint8_t pwm)</td><td class='exp'><b>power_backlight_pin_set(pwm)</b>：引脚级兜底：定时器异常时用 GPIO 强制关背光。</td></tr>
+<tr class=''><td class='no'>274</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>275</td><td class='src'>    GPIO_InitTypeDef gpio = {0};</td><td class='exp'>GPIO 配置结构体。</td></tr>
+<tr class=''><td class='no'>276</td><td class='src'>    gpio.Pin = GPIO_PIN_1;</td><td class='exp'>操作 PB1（背光引脚）。</td></tr>
+<tr class=''><td class='no'>277</td><td class='src'>    gpio.Pull = GPIO_NOPULL;</td><td class='exp'>无上下拉。</td></tr>
+<tr class='auto'><td class='no'>278</td><td class='src'>    if (pwm != 0U)</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class=''><td class='no'>279</td><td class='src'>    {</td><td class='exp'>pwm 非 0：把 PB1 恢复为 TIM3 复用推挽（AF2_TIM3），交还给 PWM 控制。</td></tr>
+<tr class='auto'><td class='no'>280</td><td class='src'>        gpio.Mode = GPIO_MODE_AF_PP;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>GPIO_MODE_AF_PP</code> 赋给 <code>gpio.Mode</code>。</td></tr>
+<tr class='auto'><td class='no'>281</td><td class='src'>        gpio.Speed = GPIO_SPEED_FREQ_LOW;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>GPIO_SPEED_FREQ_LOW</code> 赋给 <code>gpio.Speed</code>。</td></tr>
+<tr class='auto'><td class='no'>282</td><td class='src'>        gpio.Alternate = GPIO_AF2_TIM3;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>GPIO_AF2_TIM3</code> 赋给 <code>gpio.Alternate</code>。</td></tr>
+<tr class=''><td class='no'>283</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='auto'><td class='no'>284</td><td class='src'>    else</td><td class='exp'><span class='auto-tag'>自动</span>否则分支：上面所有条件都不满足时执行这里。</td></tr>
+<tr class=''><td class='no'>285</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>286</td><td class='src'>        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_RESET);</td><td class='exp'>pwm=0：先把引脚写低（背光灭）。</td></tr>
+<tr class=''><td class='no'>287</td><td class='src'>        gpio.Mode = GPIO_MODE_OUTPUT_PP;</td><td class='exp'>再把 PB1 改成普通推挽输出并固定为低——即使定时器坏掉也能保证熄屏。</td></tr>
+<tr class='auto'><td class='no'>288</td><td class='src'>        gpio.Speed = GPIO_SPEED_FREQ_LOW;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>GPIO_SPEED_FREQ_LOW</code> 赋给 <code>gpio.Speed</code>。</td></tr>
+<tr class=''><td class='no'>289</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>290</td><td class='src'>    HAL_GPIO_Init(GPIOB, &amp;gpio);</td><td class='exp'>写入 GPIOB。</td></tr>
+<tr class=''><td class='no'>291</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>292</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>293</td><td class='src'>/* 只切换背光和 UI 任务；黑屏不等于已进入 MCU STOP。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>294</td><td class='src'>static void power_screen_set(uint8_t on)</td><td class='exp'><b>power_screen_set(on)</b>：切换背光状态（不含 STOP）。</td></tr>
+<tr class=''><td class='no'>295</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>296</td><td class='src'>    AppParameters parameters = App_Parameters_Get();</td><td class='exp'>取参数（恢复亮度用）。</td></tr>
+<tr class='comment'><td class='no'>297</td><td class='src'>    /* 状态未变化时不重复操作背光和任务。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>298</td><td class='src'>    if (on == screen_on) return;</td><td class='exp'>状态没变化直接返回（幂等保护，防止重复操作）。</td></tr>
+<tr class=''><td class='no'>299</td><td class='src'>    if (on == 0U)</td><td class='exp'><b>关屏分支</b>：</td></tr>
+<tr class=''><td class='no'>300</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>301</td><td class='src'>        /* 先公布黑屏状态，之后到来的触摸中断才会屏蔽首次手势。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>302</td><td class='src'>        screen_on = 0U;</td><td class='exp'>先公布 screen_on=0——之后到来的触摸中断才会正确地屏蔽手势。</td></tr>
+<tr class=''><td class='no'>303</td><td class='src'>        if (UiTaskHandle != NULL &amp;&amp; ui_suspended == 0U)</td><td class='exp'>若 UI 任务在运行且未挂起：</td></tr>
+<tr class=''><td class='no'>304</td><td class='src'>        {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>305</td><td class='src'>            /* 保留 LVGL 对象和页面栈，只停止刷新；草稿不会被销毁。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>306</td><td class='src'>            (void)osThreadSuspend(UiTaskHandle);</td><td class='exp'>osThreadSuspend(UiTask)：挂起 UI 任务。LVGL 对象与页面栈都保留，只停止刷新（草稿不丢）。</td></tr>
+<tr class='auto'><td class='no'>307</td><td class='src'>            ui_suspended = 1U;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>1U</code> 赋给 <code>ui_suspended</code>。</td></tr>
+<tr class=''><td class='no'>308</td><td class='src'>        }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='comment'><td class='no'>309</td><td class='src'>        /* 等待已开始的 SPI DMA 刷屏结束，再关闭背光或进入 STOP。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>310</td><td class='src'>        lv_port_disp_wait_idle();</td><td class='exp'>lv_port_disp_wait_idle()：等待正在进行的 SPI DMA 刷屏完成——DMA 还在搬数据时关背光/进 STOP 会撕裂画面或损坏传输。</td></tr>
+<tr class='comment'><td class='no'>311</td><td class='src'>        /* CCR4 开启预装载，等待更新事件使 0 真正进入输出比较单元。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>312</td><td class='src'>        power_backlight_set(0U);</td><td class='exp'>power_backlight_set(0)：写 CCR4=0。CCR 有预装载，要等下一次更新事件才真正生效。</td></tr>
+<tr class=''><td class='no'>313</td><td class='src'>        __HAL_TIM_CLEAR_FLAG(&amp;htim3, TIM_FLAG_UPDATE);</td><td class='exp'>手动清除更新标志，准备用“是否再次置位”来判断 TIM3 是否还在正常计数。</td></tr>
+<tr class=''><td class='no'>314</td><td class='src'>        uint32_t start = HAL_GetTick();</td><td class='exp'>记录等待开始时刻。</td></tr>
+<tr class=''><td class='no'>315</td><td class='src'>        while (__HAL_TIM_GET_FLAG(&amp;htim3, TIM_FLAG_UPDATE) == RESET</td><td class='exp'>最多等 3ms：若 TIM3 正常计数，1ms 内必有更新事件把标志重新置位。</td></tr>
+<tr class='auto'><td class='no'>316</td><td class='src'>            &amp;&amp; (uint32_t)(HAL_GetTick() - start) &lt; 3U) {}</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='comment'><td class='no'>317</td><td class='src'>        /* TIM3 未正常计数时避免亮屏进入 STOP。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>318</td><td class='src'>        if (__HAL_TIM_GET_FLAG(&amp;htim3, TIM_FLAG_UPDATE) == RESET)</td><td class='exp'>3ms 后标志仍未置位 → TIM3 异常（未计数）：</td></tr>
+<tr class=''><td class='no'>319</td><td class='src'>            power_backlight_pin_set(0U);</td><td class='exp'>power_backlight_pin_set(0) 用 GPIO 方式强制熄屏兜底。</td></tr>
+<tr class=''><td class='no'>320</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>321</td><td class='src'>    else</td><td class='exp'><b>开屏分支</b>：</td></tr>
+<tr class=''><td class='no'>322</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>323</td><td class='src'>        /* 唤醒时恢复正常占空比。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>324</td><td class='src'>        power_backlight_set((uint8_t)parameters.values[APP_PARAM_BRIGHTNESS]);</td><td class='exp'>按参数恢复亮度（写 CCR4）。</td></tr>
+<tr class=''><td class='no'>325</td><td class='src'>        power_backlight_pin_set(1U);</td><td class='exp'>把 PB1 恢复为 TIM3 复用功能（若之前被 GPIO 兜底改写过）。</td></tr>
+<tr class=''><td class='no'>326</td><td class='src'>        screen_on = 1U;</td><td class='exp'>screen_on=1。</td></tr>
+<tr class=''><td class='no'>327</td><td class='src'>        if (ui_suspended != 0U)</td><td class='exp'>若 UI 任务此前被挂起：</td></tr>
+<tr class=''><td class='no'>328</td><td class='src'>        {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>329</td><td class='src'>            /* 继续刷新原页面，LVGL 不重新创建页面或参数控件。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>330</td><td class='src'>            (void)osThreadResume(UiTaskHandle);</td><td class='exp'>osThreadResume 恢复 UI 刷新——LVGL 不重建页面，原样继续。</td></tr>
+<tr class='auto'><td class='no'>331</td><td class='src'>            ui_suspended = 0U;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>0U</code> 赋给 <code>ui_suspended</code>。</td></tr>
+<tr class=''><td class='no'>332</td><td class='src'>        }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>333</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>334</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+</table><div class='summary'><b>小总结（背光控制）：</b>power_backlight_set 一行写 CCR 完成调光（TIM3 的 ARR=99 使 CCR=percent 直接成立）。power_screen_set 是状态切换器：先挂 UI 任务再等 DMA 空闲再关背光，次序保证不撕裂画面；关屏前先置 screen_on=0 保证之后来的触摸被正确屏蔽；开屏则反向恢复。GPIO 兜底函数应对“定时器计数异常”的极端情况。</div><table class='code'><tr><th>行号</th><th>代码（Core/App/SystemTask.c）</th><th>逐行讲解</th></tr>
+<tr class='blank'><td class='no'>335</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>336</td><td class='src'>/* 读取 RTC 的当日毫秒数，用于补偿 MCU STOP 期间暂停的 RTOS 节拍。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>337</td><td class='src'>static uint32_t power_rtc_ms(void)</td><td class='exp'><b>power_rtc_ms()</b>：读 RTC 当前“当日毫秒数”。</td></tr>
+<tr class=''><td class='no'>338</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>339</td><td class='src'>    RTC_TimeTypeDef time;</td><td class='exp'>时间结构体。</td></tr>
+<tr class=''><td class='no'>340</td><td class='src'>    RTC_DateTypeDef date;</td><td class='exp'>日期结构体。</td></tr>
+<tr class='comment'><td class='no'>341</td><td class='src'>    /* HAL 要求读完时间再读日期，才能释放日历影子寄存器。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>342</td><td class='src'>    (void)HAL_RTC_GetTime(&amp;hrtc, &amp;time, RTC_FORMAT_BIN);</td><td class='exp'>HAL_RTC_GetTime：读时间。HAL 规定必须成对：读完时间必须再读日期才能解锁日历影子寄存器（343 行）。</td></tr>
+<tr class=''><td class='no'>343</td><td class='src'>    (void)HAL_RTC_GetDate(&amp;hrtc, &amp;date, RTC_FORMAT_BIN);</td><td class='exp'>紧接着读日期：HAL 规定必须先读时间再读日期，读完日期后日历影子寄存器才会释放，否则下次读会锁死旧值。</td></tr>
+<tr class='comment'><td class='no'>344</td><td class='src'>    /* 秒字段转毫秒；亚秒寄存器向下计数，所以用预分频值减它。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>345</td><td class='src'>    return ((uint32_t)time.Hours * 3600U + (uint32_t)time.Minutes * 60U</td><td class='exp'>时×3600 + 分×60 的秒数换算成毫秒。</td></tr>
+<tr class=''><td class='no'>346</td><td class='src'>        + time.Seconds) * 1000U</td><td class='exp'>整数秒部分换算成毫秒：时×3600 + 分×60 + 秒，再 ×1000。</td></tr>
+<tr class=''><td class='no'>347</td><td class='src'>        + ((uint32_t)(hrtc.Init.SynchPrediv - time.SubSeconds) * 1000U)</td><td class='exp'>亚秒寄存器是向下计数的（从 SynchPrediv 递减到 0 再进位到秒），所以用 (SynchPrediv−SubSeconds)×1000/(SynchPrediv+1) 得到秒内毫秒数。</td></tr>
+<tr class=''><td class='no'>348</td><td class='src'>          / (hrtc.Init.SynchPrediv + 1U);</td><td class='exp'>除以 (SynchPrediv+1) 得到亚秒折算的毫秒数——分母是'1 秒内的计数总数'，与亚秒寄存器的计数范围严格对应。</td></tr>
+<tr class=''><td class='no'>349</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>350</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>351</td><td class='src'>/* RTC 唤醒后短暂恢复 ADC，读取多次完整四路数据后返回最新滤波结果。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>352</td><td class='src'>static uint8_t power_probe(SmaplingData_t *sample, AppLightMetrics *light)</td><td class='exp'><b>power_probe(sample, light)</b>：RTC 唤醒后的短暂采光探测。</td></tr>
+<tr class=''><td class='no'>353</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>354</td><td class='src'>    uint8_t received = 0U;</td><td class='exp'>received 标志：本轮是否拿到新光照帧。</td></tr>
+<tr class='comment'><td class='no'>355</td><td class='src'>    /* 先清空 STOP 前的队列，不能拿睡前旧值决定是否重新睡眠。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>356</td><td class='src'>    if (SmapToSystemHandle != NULL) (void)osMessageQueueReset(SmapToSystemHandle);</td><td class='exp'>先清空两条光照队列——睡前的旧帧不能用来决定是否继续睡。</td></tr>
+<tr class=''><td class='no'>357</td><td class='src'>    if (SmaplingHandle != NULL) (void)osMessageQueueReset(SmaplingHandle);</td><td class='exp'>同样清空原始采样队列：STOP 期间 ADC 已停，队列里的旧数据全部作废。</td></tr>
+<tr class=''><td class='no'>358</td><td class='src'>    /* 重置中值、低通滤波历史并重新启动四通道循环 DMA。 */</td><td class='exp'>App_Smapling_Init()：重置滤波历史并重新启动 ADC 循环 DMA。</td></tr>
+<tr class=''><td class='no'>359</td><td class='src'>    App_Smapling_Init();</td><td class='exp'>重新初始化采样链路：复位中值/低通滤波历史 + 重启四通道 ADC 循环 DMA，保证醒来后读到的是全新数据。</td></tr>
+<tr class='comment'><td class='no'>360</td><td class='src'>    /* 每隔 5 ms 处理一次，一共取三帧；首帧只使用新的 ADC 缓冲。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>361</td><td class='src'>    for (uint8_t i = 0U; i &lt; 3U; ++i)</td><td class='exp'>循环 3 次，每次等 5ms 处理一帧：首帧只是让滤波器建立新基准。</td></tr>
+<tr class=''><td class='no'>362</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>363</td><td class='src'>        osDelay(5U);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>osDelay()</code>：FreeRTOS 任务级延时：本任务让出 CPU 进入阻塞态，调度器在指定节拍数后再把它放回就绪态。</td></tr>
+<tr class=''><td class='no'>364</td><td class='src'>        App_Smapling_Run();</td><td class='exp'>App_Smapling_Run()：滤波并发布。</td></tr>
+<tr class=''><td class='no'>365</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='comment'><td class='no'>366</td><td class='src'>    /* 排空队列，留下这一轮检查中时间最近的完整光照帧。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>367</td><td class='src'>    if (SmapToSystemHandle != NULL)</td><td class='exp'>排空 SmapToSystem 队列，保留时间最近的一帧（while 不断覆盖 sample）。</td></tr>
+<tr class=''><td class='no'>368</td><td class='src'>        while (osMessageQueueGet(SmapToSystemHandle, sample, NULL, 0U) == osOK)</td><td class='exp'>循环排空 SmapToSystem 队列：不断取出消息覆盖 sample，最终留下的是这一轮检查中时间最近的完整光照帧。</td></tr>
+<tr class=''><td class='no'>369</td><td class='src'>            received = 1U;</td><td class='exp'>只要取到过一帧就把 received 置 1，供调用方判断'是否有新鲜数据可决策'。</td></tr>
+<tr class='comment'><td class='no'>370</td><td class='src'>    /* 没有新帧时不更新指标，调用者保持电机停转并回到 STOP。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>371</td><td class='src'>    if (received != 0U) *light = light_analyze(sample);</td><td class='exp'>拿到新帧才更新光照指标；没拿到则调用者保持电机停转并回到 STOP。</td></tr>
+<tr class=''><td class='no'>372</td><td class='src'>    return received;</td><td class='exp'>返回 1 表示拿到了唤醒后的有效光照数据；0 表示没有新帧，调用者应保持电机停转并回到 STOP。</td></tr>
+<tr class=''><td class='no'>373</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>374</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>375</td><td class='src'>/* 执行一次或多次 STOP 周期：手动只等触摸，自动每次由 RTC 检查 A/B。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>376</td><td class='src'>/* automatic 为 1 时启用 RTC；sample/light 用来带回最后一轮新光照结果。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>377</td><td class='src'>/* 返回 1 表示触摸唤醒，2 表示 A/B 全不满足或 RTC 配置失败，3 表示故障请求。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>378</td><td class='src'>static uint8_t power_stop(uint8_t automatic, SmaplingData_t *sample,</td><td class='exp'><b>power_stop(automatic, sample, light)</b>：执行低功耗 STOP 的核心函数。返回 1=触摸唤醒、2=A/B 不满足或 RTC 配置失败、3=故障请求。</td></tr>
+<tr class='auto'><td class='no'>379</td><td class='src'>                          AppLightMetrics *light)</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>380</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>381</td><td class='src'>    /* 保存入睡前事件序号；中断只改序号，不直接恢复任务或点亮屏幕。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>382</td><td class='src'>    uint32_t seen_touch = touch_sequence;</td><td class='exp'>记录入睡时的触摸序号——醒来后比较即可知道“睡着期间是否有新触摸”。</td></tr>
+<tr class=''><td class='no'>383</td><td class='src'>    uint32_t seen_rtc = rtc_sequence;</td><td class='exp'>记录 RTC 序号同理。</td></tr>
+<tr class='comment'><td class='no'>384</td><td class='src'>    /* adc_running 表示最后一次探测后 ADC 是否仍运行，避免重复启动 DMA。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>385</td><td class='src'>    uint8_t result = 0U, adc_running = 0U;</td><td class='exp'>result 存返回原因；adc_running 记录探测后 ADC 是否还开着（避免重复启动）。</td></tr>
+<tr class='comment'><td class='no'>386</td><td class='src'>    /* 先清除两轴运动目标和排队中的自动命令，防止唤醒后旧命令重启。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>387</td><td class='src'>    MotorSpeed_Stop(SIMPLEFOC_AXIS_VERTICAL);</td><td class='exp'>清两轴运动目标（速度命令清零）——防止唤醒后旧命令突然执行。</td></tr>
+<tr class='auto'><td class='no'>388</td><td class='src'>    MotorSpeed_Stop(SIMPLEFOC_AXIS_HORIZONTAL);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>MotorSpeed_Stop()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>389</td><td class='src'>    if (SmapSystemToMotorHandle != NULL)</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class=''><td class='no'>390</td><td class='src'>        (void)osMessageQueueReset(SmapSystemToMotorHandle);</td><td class='exp'>清空自动角度命令队列。</td></tr>
+<tr class='comment'><td class='no'>391</td><td class='src'>    /* 停止电机周期任务后再关闭两轴 EN，避免任务重新使能驱动。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>392</td><td class='src'>    if (MotorTaskHandle != NULL) (void)osThreadSuspend(MotorTaskHandle);</td><td class='exp'>挂起 MotorTask——它一旦恢复运行可能重新使能驱动，所以必须先停任务再关 EN。</td></tr>
+<tr class=''><td class='no'>393</td><td class='src'>    SimpleFOC_Motor_Disable(SIMPLEFOC_AXIS_VERTICAL);</td><td class='exp'>关竖直轴 EN（断开驱动）。</td></tr>
+<tr class=''><td class='no'>394</td><td class='src'>    SimpleFOC_Motor_Disable(SIMPLEFOC_AXIS_HORIZONTAL);</td><td class='exp'>关水平轴 EN。</td></tr>
+<tr class='comment'><td class='no'>395</td><td class='src'>    /* 停止采样任务及 DMA；STOP 中不能继续沿用旧的 ADC 缓冲。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>396</td><td class='src'>    if (SmaplingTaskHandle != NULL) (void)osThreadSuspend(SmaplingTaskHandle);</td><td class='exp'>挂起 SmaplingTask。</td></tr>
+<tr class=''><td class='no'>397</td><td class='src'>    App_Smapling_Stop();</td><td class='exp'>App_Smapling_Stop()：停 ADC DMA。</td></tr>
+<tr class=''><td class='no'>398</td><td class='src'>    if (SmapToSystemHandle != NULL) (void)osMessageQueueReset(SmapToSystemHandle);</td><td class='exp'>清空光照队列（STOP 期间缓冲无效）。</td></tr>
+<tr class='auto'><td class='no'>399</td><td class='src'>    if (SmaplingHandle != NULL) (void)osMessageQueueReset(SmaplingHandle);</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='comment'><td class='no'>400</td><td class='src'>    /* 调试打印不参与唤醒判断，STOP 期间一并暂停。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>401</td><td class='src'>    if (DebugTaskHandle != NULL) (void)osThreadSuspend(DebugTaskHandle);</td><td class='exp'>挂起 DebugTask（串口打印不需要在睡眠期间工作）。</td></tr>
+<tr class='comment'><td class='no'>402</td><td class='src'>    /* 保留原 LVGL 页面，只关闭背光并暂停 UI 刷新。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>403</td><td class='src'>    power_screen_set(0U);</td><td class='exp'>power_screen_set(0)：关背光、挂起 UI 任务（保留 LVGL 页面）。</td></tr>
+<tr class=''><td class='no'>404</td><td class='src'>    do</td><td class='exp'><b>STOP 主循环</b>：可能经历多轮“RTC 短暂唤醒→探测→继续睡”，只有明确原因才退出。</td></tr>
+<tr class=''><td class='no'>405</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>406</td><td class='src'>        /* 每轮 STOP 前后各读一次 RTC，计算真实经过时间以补偿系统节拍。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>407</td><td class='src'>        uint32_t before, after, elapsed;</td><td class='exp'>before/after 存 STOP 前后的 RTC 毫秒数，elapsed 存真实经过时间。</td></tr>
+<tr class='comment'><td class='no'>408</td><td class='src'>        /* 异常优先于低功耗；故障请求到来后退出本循环交还状态机处理。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>409</td><td class='src'>        if (fault_requested != 0U)</td><td class='exp'>故障请求优先：有故障就不睡了，交给状态机弹窗。</td></tr>
+<tr class=''><td class='no'>410</td><td class='src'>        {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>411</td><td class='src'>            result = 3U;</td><td class='exp'>故障请求优先级最高：置 result=3 立刻跳出 STOP 循环，把控制权交还主状态机去处理异常。</td></tr>
+<tr class=''><td class='no'>412</td><td class='src'>            break;</td><td class='exp'>跳出本轮 while(1) STOP 循环。</td></tr>
+<tr class=''><td class='no'>413</td><td class='src'>        }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='comment'><td class='no'>414</td><td class='src'>        /* 先停用上次的唤醒定时器，自动模式再按设定周期重装。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>415</td><td class='src'>        (void)HAL_RTCEx_DeactivateWakeUpTimer(&amp;hrtc);</td><td class='exp'>先停用上一次的唤醒定时器（RTC 硬件要求重装前必须先关）。</td></tr>
+<tr class='comment'><td class='no'>416</td><td class='src'>        /* 每次进入 STOP 前读取当前周期，参数页保存后下次定时唤醒立即使用新秒数。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>417</td><td class='src'>        AppParameters parameters = App_Parameters_Get();</td><td class='exp'>每轮重新读参数——用户在参数页改了唤醒间隔，下一轮立即生效。</td></tr>
+<tr class=''><td class='no'>418</td><td class='src'>        if (automatic != 0U</td><td class='exp'>自动模式才装 RTC 定时器：周期 = 参数秒数−1（ck_spre 计数从 N−1 数到 0 共 N 秒）。</td></tr>
+<tr class=''><td class='no'>419</td><td class='src'>            &amp;&amp; HAL_RTCEx_SetWakeUpTimer_IT(&amp;hrtc,</td><td class='exp'>自动模式才重装 RTC 唤醒定时器：向 RTC 写入唤醒比较值并使能唤醒中断——STOP 期间唯一能叫醒系统的时钟源。</td></tr>
+<tr class='auto'><td class='no'>420</td><td class='src'>                                           parameters.values[APP_PARAM_WAKE_INTERVAL] - 1U,</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>421</td><td class='src'>                                           RTC_WAKEUPCLOCK_CK_SPRE_16BITS) != HAL_OK)</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>422</td><td class='src'>        {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>423</td><td class='src'>            /* RTC 设置失败时不冒险进入无法定时检查的 STOP。 */</td><td class='exp'>RTC 设置失败：不冒险进入“无法定时检查”的 STOP，返回 2 让系统保持清醒。</td></tr>
+<tr class='auto'><td class='no'>424</td><td class='src'>            result = 2U;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>2U</code> 赋给 <code>result</code>。</td></tr>
+<tr class='auto'><td class='no'>425</td><td class='src'>            break;</td><td class='exp'><span class='auto-tag'>自动</span>跳出当前 switch/case 或循环。</td></tr>
+<tr class=''><td class='no'>426</td><td class='src'>        }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>427</td><td class='src'>        seen_rtc = rtc_sequence;</td><td class='exp'>重读 RTC 序号（刚刚 415 行的操作可能间接影响时序，保守重取）。</td></tr>
+<tr class=''><td class='no'>428</td><td class='src'>        before = power_rtc_ms();</td><td class='exp'>记录睡前 RTC 毫秒。</td></tr>
+<tr class='comment'><td class='no'>429</td><td class='src'>        /* 分别暂停 HAL 的 TIM6 节拍和 FreeRTOS 的 SysTick 中断。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>430</td><td class='src'>        HAL_SuspendTick();</td><td class='exp'>HAL_SuspendTick()：关 TIM6 毫秒中断（第 2 章）。</td></tr>
+<tr class=''><td class='no'>431</td><td class='src'>        SysTick-&gt;CTRL &amp;= ~SysTick_CTRL_TICKINT_Msk;</td><td class='exp'>再关 FreeRTOS 的 SysTick 中断（清 CTRL 的 TICKINT 位）——两个心跳源都静音，WFI 才能真正长睡。</td></tr>
+<tr class='comment'><td class='no'>432</td><td class='src'>        /* 清除已有 SysTick 待处理中断，避免刚入 STOP 就被旧节拍唤醒。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>433</td><td class='src'>        SCB-&gt;ICSR = SCB_ICSR_PENDSTCLR_Msk;</td><td class='exp'>SCB->ICSR 写 PENDSTCLR：清掉已挂起的 SysTick 中断，避免刚进 STOP 就被旧节拍叫醒。</td></tr>
+<tr class='comment'><td class='no'>434</td><td class='src'>        /* 关中断后复查触摸，消除“检查完触摸、尚未 WFI”之间的竞态。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>435</td><td class='src'>        __disable_irq();</td><td class='exp'>__disable_irq 关中断后复查触摸序号：这消除了“437 行检查完触摸、还没执行 WFI，触摸恰好到来”的竞态——关中断后检查，若期间来了触摸，中断挂起标志会保持，WFI 指令立即退出（PendSTM 行为），不会睡过去。</td></tr>
+<tr class=''><td class='no'>436</td><td class='src'>        if (touch_sequence == seen_touch)</td><td class='exp'>触摸序号没变（睡着期间没有新触摸）才执行 WFI 进入 STOP 模式；已变化则跳过睡眠直接退出。</td></tr>
+<tr class=''><td class='no'>437</td><td class='src'>            HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);</td><td class='exp'>HAL_PWR_EnterSTOPMode：真正的深度睡眠指令（WFI）。MCU 停止 168MHz 时钟，只有触摸 EXTI/RTC 唤醒定时器等低功耗源能唤醒。</td></tr>
+<tr class='comment'><td class='no'>438</td><td class='src'>        /* 待处理的 RTC/触摸中断在这里执行回调并更新事件序号。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>439</td><td class='src'>        __enable_irq();</td><td class='exp'>__enable_irq：醒来后恢复中断。待处理的 RTC/触摸中断在这里执行回调并更新各自序号。</td></tr>
+<tr class='comment'><td class='no'>440</td><td class='src'>        /* STOP 退出先恢复 HAL 节拍和 PLL 系统时钟，之后才使用常规外设。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>441</td><td class='src'>        HAL_ResumeTick();</td><td class='exp'>HAL_ResumeTick：恢复 TIM6 毫秒节拍。</td></tr>
+<tr class=''><td class='no'>442</td><td class='src'>        SystemClock_Config();</td><td class='exp'><b>SystemClock_Config()</b>：STOP 退出后 MCU 默认跑在 HSI（内部 16MHz），必须重建 PLL 时钟回 168MHz，否则 PWM/波特率全错。</td></tr>
+<tr class=''><td class='no'>443</td><td class='src'>        after = power_rtc_ms();</td><td class='exp'>记录醒来的 RTC 毫秒。</td></tr>
+<tr class='comment'><td class='no'>444</td><td class='src'>        /* 处理 RTC 跨午夜回零；一次 STOP 最多一个设定唤醒周期。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>445</td><td class='src'>        elapsed = after &gt;= before ? after - before : 86400000U - before + after;</td><td class='exp'>计算真实经过时长；处理 RTC 跨午夜回零（after<before 时加一天 86400000ms）。</td></tr>
+<tr class='comment'><td class='no'>446</td><td class='src'>        /* SysTick 中断暂停期间由 RTC 补回 RTOS 毫秒，保持任务延时语义。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>447</td><td class='src'>        if (elapsed != 0U) (void)xTaskCatchUpTicks(elapsed);</td><td class='exp'>xTaskCatchUpTicks(elapsed)：把睡眠期间“欠”的 RTOS 毫秒补回内核——各任务的 osDelay 语义保持正确（睡 5 秒醒来，相当于这 5 秒内所有到期延时都被处理）。</td></tr>
+<tr class=''><td class='no'>448</td><td class='src'>        SysTick-&gt;CTRL |= SysTick_CTRL_TICKINT_Msk;</td><td class='exp'>重新打开 SysTick 中断（RTOS 节拍恢复）。</td></tr>
+<tr class='comment'><td class='no'>449</td><td class='src'>        /* 同时收到触摸和 RTC 时触摸优先：只有触摸能点亮屏幕。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>450</td><td class='src'>        if (touch_sequence != seen_touch)</td><td class='exp'>触摸序号变了 → 触摸唤醒：返回 1，外层会点亮屏幕。</td></tr>
+<tr class=''><td class='no'>451</td><td class='src'>        {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>452</td><td class='src'>            result = 1U;</td><td class='exp'>触摸事件置 result=1 并跳出循环：触摸唤醒需要点亮屏幕并进入手动交互流程。</td></tr>
+<tr class='auto'><td class='no'>453</td><td class='src'>            break;</td><td class='exp'><span class='auto-tag'>自动</span>跳出当前 switch/case 或循环。</td></tr>
+<tr class=''><td class='no'>454</td><td class='src'>        }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>455</td><td class='src'>        if (automatic != 0U &amp;&amp; rtc_sequence != seen_rtc)</td><td class='exp'>自动模式且 RTC 序号变了 → 定时醒来：</td></tr>
+<tr class=''><td class='no'>456</td><td class='src'>        {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>457</td><td class='src'>            /* RTC 只短暂启动 ADC；没有新样本时不允许启动自动电机。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>458</td><td class='src'>            if (power_probe(sample, light) != 0U)</td><td class='exp'>power_probe 采光。拿到新帧才继续（并标记 ADC 还在跑）。</td></tr>
+<tr class=''><td class='no'>459</td><td class='src'>            {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>460</td><td class='src'>                adc_running = 1U;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>1U</code> 赋给 <code>adc_running</code>。</td></tr>
+<tr class='comment'><td class='no'>461</td><td class='src'>                /* A、B 均不成立：退出 STOP 恢复追光，但保持黑屏。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>462</td><td class='src'>                if (power_auto_idle(light) == 0U)</td><td class='exp'>power_auto_idle==0：A/B 都不成立（环境够亮且光差超限）→ 该恢复追光了，返回 2（保持黑屏，外层恢复电机）。</td></tr>
+<tr class=''><td class='no'>463</td><td class='src'>                {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>464</td><td class='src'>                    result = 2U;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>2U</code> 赋给 <code>result</code>。</td></tr>
+<tr class='auto'><td class='no'>465</td><td class='src'>                    break;</td><td class='exp'><span class='auto-tag'>自动</span>跳出当前 switch/case 或循环。</td></tr>
+<tr class=''><td class='no'>466</td><td class='src'>                }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>467</td><td class='src'>            }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='comment'><td class='no'>468</td><td class='src'>            /* A 或 B 仍成立：关 ADC 后立即继续下一轮 STOP。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>469</td><td class='src'>            App_Smapling_Stop();</td><td class='exp'>A 或 B 仍成立：关掉 ADC，回到循环顶部继续下一轮 STOP。</td></tr>
+<tr class='auto'><td class='no'>470</td><td class='src'>            adc_running = 0U;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>0U</code> 赋给 <code>adc_running</code>。</td></tr>
+<tr class=''><td class='no'>471</td><td class='src'>        }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='auto'><td class='no'>472</td><td class='src'>    } while (result == 0U);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>while()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='comment'><td class='no'>473</td><td class='src'>    /* 真正离开 STOP 流程后取消 RTC 周期中断。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>474</td><td class='src'>    (void)HAL_RTCEx_DeactivateWakeUpTimer(&amp;hrtc);</td><td class='exp'>彻底退出 STOP 流程：取消 RTC 周期中断。</td></tr>
+<tr class='comment'><td class='no'>475</td><td class='src'>    /* 丢弃本次探测留在队列中的旧帧，恢复运行后只处理持续采样的新帧。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>476</td><td class='src'>    if (SmapToSystemHandle != NULL) (void)osMessageQueueReset(SmapToSystemHandle);</td><td class='exp'>清空光照队列——探测留下的旧帧不再使用。</td></tr>
+<tr class='auto'><td class='no'>477</td><td class='src'>    if (SmaplingHandle != NULL) (void)osMessageQueueReset(SmaplingHandle);</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='comment'><td class='no'>478</td><td class='src'>    /* RTC 探测可能已经启动 ADC；只在未运行时重新初始化。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>479</td><td class='src'>    if (adc_running == 0U) App_Smapling_Init();</td><td class='exp'>ADC 若未在跑（非探测路径），重新初始化采样。</td></tr>
+<tr class='comment'><td class='no'>480</td><td class='src'>    /* 电机先前已清除目标，恢复任务不会自动执行睡前运动命令。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>481</td><td class='src'>    if (SmaplingTaskHandle != NULL) (void)osThreadResume(SmaplingTaskHandle);</td><td class='exp'>恢复 SmaplingTask / MotorTask / DebugTask 三任务。</td></tr>
+<tr class='auto'><td class='no'>482</td><td class='src'>    if (MotorTaskHandle != NULL) (void)osThreadResume(MotorTaskHandle);</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='auto'><td class='no'>483</td><td class='src'>    if (DebugTaskHandle != NULL) (void)osThreadResume(DebugTaskHandle);</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='comment'><td class='no'>484</td><td class='src'>    /* 背光是否开启由外层按唤醒原因决定；RTC 分支在此始终黑屏。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>485</td><td class='src'>    return result;</td><td class='exp'>返回唤醒原因。注意：背光是否点亮由外层根据原因决定（RTC 唤醒路径始终黑屏）。</td></tr>
+<tr class=''><td class='no'>486</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+</table><div class='summary'><b>小总结（STOP 低功耗全流程）：</b>power_stop 的工作顺序是：①停电机（先挂任务再关 EN，防竞态）→②停采样→③挂调试→④关背光挂 UI →⑤循环{装 RTC 定时器→停两个心跳→关中断复查触摸→WFI 睡眠→醒来重建时钟→用 RTC 补偿 RTOS 节拍→按唤醒原因处理}。关键技术点：a) 触摸竞态用“关中断后复查+WFI 立即返回”消除；b) 醒来必须 SystemClock_Config（STOP 退出默认 HSI）；c) xTaskCatchUpTicks 补回睡眠毫秒，任务延时语义不变；d) RTC 唤醒只探测 3 帧光照（15ms），A/B 仍成立就继续睡，黑屏运行。</div><table class='code'><tr><th>行号</th><th>代码（Core/App/SystemTask.c）</th><th>逐行讲解</th></tr>
+<tr class='blank'><td class='no'>487</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>488</td><td class='src'>/* 队列满时替换最旧角度命令，使电机任务最终使用最新光照。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>489</td><td class='src'>static void auto_send_target(const AppMotorCommand *command)</td><td class='exp'><b>auto_send_target(command)</b>：发送自动追光命令，队列满时替换最旧。</td></tr>
+<tr class=''><td class='no'>490</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>491</td><td class='src'>    if (SmapSystemToMotorHandle == NULL) return;</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class=''><td class='no'>492</td><td class='src'>    if (osMessageQueuePut(SmapSystemToMotorHandle, command, 0U, 0U) != osOK)</td><td class='exp'>尝试非阻塞发送。</td></tr>
+<tr class=''><td class='no'>493</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>494</td><td class='src'>        /* 被覆盖的旧命令不再代表当前光照。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>495</td><td class='src'>        AppMotorCommand old_command;</td><td class='exp'>失败（队列满）：取走最旧一条再重发——被覆盖的旧光照命令已过时，替换是正确策略。</td></tr>
+<tr class='auto'><td class='no'>496</td><td class='src'>        (void)osMessageQueueGet(SmapSystemToMotorHandle, &amp;old_command, NULL, 0U);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>osMessageQueueGet()</code>：从 CMSIS-RTOS2 消息队列取出一条消息；超时参数为 0 表示队列为空时立即返回失败。</td></tr>
+<tr class='auto'><td class='no'>497</td><td class='src'>        (void)osMessageQueuePut(SmapSystemToMotorHandle, command, 0U, 0U);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>osMessageQueuePut()</code>：向 CMSIS-RTOS2 消息队列投递一条消息；超时参数为 0 表示队列已满时立即返回失败而不等待。</td></tr>
+<tr class=''><td class='no'>498</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>499</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>500</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>501</td><td class='src'>/* 系统任务独占模式与光照分析，手动模式只更新数据而不发布光强命令。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>502</td><td class='src'>void StartSystemStateTask(void *argument)</td><td class='exp'><b>StartSystemStateTask</b>：系统任务主函数（覆盖 freertos.c 的 weak 占位）。</td></tr>
+<tr class=''><td class='no'>503</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>504</td><td class='src'>    /* 手动命令的当前方向、事件序号和最后续发时间。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>505</td><td class='src'>    AppManualDirection active = APP_MANUAL_STOP;</td><td class='exp'>active：当前正在执行的手动方向。</td></tr>
+<tr class=''><td class='no'>506</td><td class='src'>    uint32_t seen_sequence = 0U, last_tick = 0U;</td><td class='exp'>手动命令序号与最后续发时刻。</td></tr>
+<tr class='comment'><td class='no'>507</td><td class='src'>    /* 模式事件序号、自动模式进入时间和最新采样时间。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>508</td><td class='src'>    uint32_t seen_mode_sequence = 0U, auto_enter_tick = 0U, last_sample_tick = 0U;</td><td class='exp'>模式序号、自动模式进入时刻、最新采样时刻。</td></tr>
+<tr class='comment'><td class='no'>509</td><td class='src'>    /* 上次处理过的触摸序号及最近操作时间，手动 STOP 和全局黑屏共用后者。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>510</td><td class='src'>    uint32_t seen_touch = touch_sequence, last_touch_tick = osKernelGetTickCount();</td><td class='exp'>已处理过的触摸序号与最近一次触摸时刻（手动熄屏和全局黑屏共用后者计时）。</td></tr>
+<tr class='comment'><td class='no'>511</td><td class='src'>    /* 自动 A/B 首次连续成立的时间，与无触摸黑屏计时独立。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>512</td><td class='src'>    uint32_t auto_idle_tick = 0U;</td><td class='exp'>自动 A/B 连续成立计时器。</td></tr>
+<tr class='comment'><td class='no'>513</td><td class='src'>    /* auto_counting 表示自动熄屏计时有效；was_held 用于捕获松手瞬间。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>514</td><td class='src'>    uint8_t auto_counting = 0U, was_held = 0U;</td><td class='exp'>auto_counting=计时是否有效；was_held=上次轮询的按住状态（用于捕获松手瞬间）。</td></tr>
+<tr class='comment'><td class='no'>515</td><td class='src'>    /* 采样超时后只锁定一次保持点。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>516</td><td class='src'>    uint8_t sample_stale = 0U;</td><td class='exp'>sample_stale：采样超时后只锁定一次保持点（避免反复发保持命令）。</td></tr>
+<tr class='comment'><td class='no'>517</td><td class='src'>    /* 最新光照与其派生结果。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>518</td><td class='src'>    SmaplingData_t sample;</td><td class='exp'>最新一帧光照数据。</td></tr>
+<tr class=''><td class='no'>519</td><td class='src'>    AppLightMetrics light = {0};</td><td class='exp'>光照派生指标。</td></tr>
+<tr class='auto'><td class='no'>520</td><td class='src'>    (void)argument;</td><td class='exp'><span class='auto-tag'>自动</span>执行一条函数调用语句。</td></tr>
+<tr class='comment'><td class='no'>521</td><td class='src'>    /* 初始化背光 PWM；ARR 为 99 时 CCR 为 100 即持续高电平。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>522</td><td class='src'>    /* 先同步出厂扇区并加载最新用户参数，再按已生效的亮度启动背光。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>523</td><td class='src'>    App_Parameters_Init();</td><td class='exp'><b>App_Parameters_Init()</b>：同步出厂扇区并加载最新用户参数（第 15 章）。</td></tr>
+<tr class=''><td class='no'>524</td><td class='src'>    power_backlight_set((uint8_t)App_Parameters_Get().values[APP_PARAM_BRIGHTNESS]);</td><td class='exp'>按参数中的亮度值设置背光 CCR。</td></tr>
+<tr class=''><td class='no'>525</td><td class='src'>    if (HAL_TIM_PWM_Start(&amp;htim3, TIM_CHANNEL_4) != HAL_OK) Error_Handler();</td><td class='exp'>HAL_TIM_PWM_Start 启动 TIM3_CH4——背光 PWM 从此真正输出。</td></tr>
+<tr class='comment'><td class='no'>526</td><td class='src'>    /* CubeMX 初始化时已启动 RTC；平时关闭周期中断，仅自动 STOP 时启用。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>527</td><td class='src'>    (void)HAL_RTCEx_DeactivateWakeUpTimer(&amp;hrtc);</td><td class='exp'>关闭 RTC 唤醒定时器（平时不需要周期唤醒，只在自动 STOP 时启用）。</td></tr>
+<tr class='blank'><td class='no'>528</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>529</td><td class='src'>    for (;;)</td><td class='exp'><b>任务主循环</b>：每 10ms 一轮。</td></tr>
+<tr class=''><td class='no'>530</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>531</td><td class='src'>        /* 从 UI 邮箱取出本周期的模式与方向请求。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>532</td><td class='src'>        AppMode requested_mode;</td><td class='exp'>本周期将要读取的请求变量。</td></tr>
+<tr class='auto'><td class='no'>533</td><td class='src'>        AppManualDirection direction;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>direction</code>（类型 <code>AppManualDirection</code>）。</td></tr>
+<tr class='auto'><td class='no'>534</td><td class='src'>        uint32_t mode_sequence, sequence, tick;</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>535</td><td class='src'>        uint8_t sample_received = 0U, fault;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>0U, fault</code> 赋给 <code>uint8_t sample_received</code>。</td></tr>
+<tr class='comment'><td class='no'>536</td><td class='src'>        /* 统一用本周期的 RTOS 毫秒值作倒计时基准，避免多处读数不一致。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>537</td><td class='src'>        uint32_t now = osKernelGetTickCount();</td><td class='exp'>now = 本周期统一的毫秒基准（所有倒计时都用同一个 now，避免多次读数不一致）。</td></tr>
+<tr class='comment'><td class='no'>538</td><td class='src'>        /* 每轮读取整份快照；界面保存后无需重启即可改变熄屏、电机和光照逻辑。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>539</td><td class='src'>        AppParameters parameters = App_Parameters_Get();</td><td class='exp'>读整份参数快照——界面保存后无需重启即可生效。</td></tr>
+<tr class=''><td class='no'>540</td><td class='src'>        uint32_t screen_idle_ms = (uint32_t)parameters.values[</td><td class='exp'>按当前模式选择熄屏时间参数（手动用 MANUAL_SLEEP，自动用 AUTO_SLEEP）×1000 变毫秒。</td></tr>
+<tr class='auto'><td class='no'>541</td><td class='src'>            current_mode == APP_MODE_AUTO ? APP_PARAM_AUTO_SLEEP : APP_PARAM_MANUAL_SLEEP] * 1000U;</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>542</td><td class='src'>        taskENTER_CRITICAL();</td><td class='exp'>临界区读整组共享状态（故障标志、请求模式、两个序号、方向、时间戳）。</td></tr>
+<tr class='auto'><td class='no'>543</td><td class='src'>        fault = fault_requested;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>fault_requested</code> 赋给 <code>fault</code>。</td></tr>
+<tr class='auto'><td class='no'>544</td><td class='src'>        requested_mode = pending_mode;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>pending_mode</code> 赋给 <code>requested_mode</code>。</td></tr>
+<tr class='auto'><td class='no'>545</td><td class='src'>        mode_sequence = pending_mode_sequence;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>pending_mode_sequence</code> 赋给 <code>mode_sequence</code>。</td></tr>
+<tr class='auto'><td class='no'>546</td><td class='src'>        direction = pending_direction;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>pending_direction</code> 赋给 <code>direction</code>。</td></tr>
+<tr class='auto'><td class='no'>547</td><td class='src'>        tick = pending_tick;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>pending_tick</code> 赋给 <code>tick</code>。</td></tr>
+<tr class='auto'><td class='no'>548</td><td class='src'>        sequence = pending_sequence;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>pending_sequence</code> 赋给 <code>sequence</code>。</td></tr>
+<tr class='auto'><td class='no'>549</td><td class='src'>        taskEXIT_CRITICAL();</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>taskEXIT_CRITICAL()</code>：退出临界区，恢复原来的中断屏蔽状态。</td></tr>
+<tr class='blank'><td class='no'>550</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>551</td><td class='src'>        /* 触摸中断只记录序号；在任务上下文重置计时并决定是否点亮。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>552</td><td class='src'>        if (touch_sequence != seen_touch)</td><td class='exp'>触摸序号变化 → 有新触摸：</td></tr>
+<tr class=''><td class='no'>553</td><td class='src'>        {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>554</td><td class='src'>            seen_touch = touch_sequence;</td><td class='exp'>更新已处理序号。</td></tr>
+<tr class=''><td class='no'>555</td><td class='src'>            last_touch_tick = now;</td><td class='exp'>刷新最近触摸时刻。</td></tr>
+<tr class='comment'><td class='no'>556</td><td class='src'>            /* 自动 STOP 倒计时因用户触摸从零重新计算。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>557</td><td class='src'>            auto_counting = 0U;</td><td class='exp'>自动熄屏计时因用户触摸而清零。</td></tr>
+<tr class=''><td class='no'>558</td><td class='src'>            power_screen_set(1U);</td><td class='exp'>确保屏幕点亮（黑屏时触摸唤醒）。</td></tr>
+<tr class=''><td class='no'>559</td><td class='src'>        }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='comment'><td class='no'>560</td><td class='src'>        /* 长按期间不睡；松开时重新起算设定的无触摸时间。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>561</td><td class='src'>        if (was_held != 0U &amp;&amp; touch_held == 0U) last_touch_tick = now;</td><td class='exp'>捕获松手瞬间：上一轮按住、这一轮松开 → 重新起算无触摸时间（否则按住期间累计的时间会在松手瞬间立即触发熄屏）。</td></tr>
+<tr class=''><td class='no'>562</td><td class='src'>        was_held = touch_held;</td><td class='exp'>记录本轮按住状态。</td></tr>
+<tr class='blank'><td class='no'>563</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>564</td><td class='src'>        if (fault != 0U &amp;&amp; current_mode != APP_MODE_ERROR)</td><td class='exp'>故障处理：有故障请求且当前不是异常模式 →</td></tr>
+<tr class=''><td class='no'>565</td><td class='src'>        {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>566</td><td class='src'>            taskENTER_CRITICAL();</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>taskENTER_CRITICAL()</code>：进入 FreeRTOS 临界区：把中断屏蔽提升到 configMAX_SYSCALL_INTERRUPT_PRIORITY，保证接下来几行对共享变量的读取/修改不被中断打断。</td></tr>
+<tr class=''><td class='no'>567</td><td class='src'>            current_mode = APP_MODE_ERROR;</td><td class='exp'>进入异常模式（只有系统任务能做这个决定）。</td></tr>
+<tr class=''><td class='no'>568</td><td class='src'>            error_popup_pending = 1U;</td><td class='exp'>置弹窗通知（UI 领取后显示）。</td></tr>
+<tr class='auto'><td class='no'>569</td><td class='src'>            taskEXIT_CRITICAL();</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>taskEXIT_CRITICAL()</code>：退出临界区，恢复原来的中断屏蔽状态。</td></tr>
+<tr class='auto'><td class='no'>570</td><td class='src'>            if (SmapSystemToMotorHandle != NULL)</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class=''><td class='no'>571</td><td class='src'>                (void)osMessageQueueReset(SmapSystemToMotorHandle);</td><td class='exp'>清空自动命令队列。</td></tr>
+<tr class=''><td class='no'>572</td><td class='src'>            MotorSpeed_Stop(SIMPLEFOC_AXIS_VERTICAL);</td><td class='exp'>两轴速度清零（停转）。</td></tr>
+<tr class='auto'><td class='no'>573</td><td class='src'>            MotorSpeed_Stop(SIMPLEFOC_AXIS_HORIZONTAL);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>MotorSpeed_Stop()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>574</td><td class='src'>            active = APP_MANUAL_STOP;</td><td class='exp'>手动方向复位。</td></tr>
+<tr class='auto'><td class='no'>575</td><td class='src'>            auto_counting = 0U;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>0U</code> 赋给 <code>auto_counting</code>。</td></tr>
+<tr class='comment'><td class='no'>576</td><td class='src'>            /* 故障发生在黑屏或 STOP 退出时，也要唤醒 UI 供用户查看并操作恢复按钮。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>577</td><td class='src'>            last_touch_tick = now;</td><td class='exp'>故障可能发生在黑屏/STOP 退出时：刷新触摸时刻并强制点亮屏幕，让用户能看到弹窗并点恢复按钮。</td></tr>
+<tr class='auto'><td class='no'>578</td><td class='src'>            power_screen_set(1U);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>power_screen_set()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>579</td><td class='src'>        }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>580</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>581</td><td class='src'>        if (current_mode == APP_MODE_ERROR &amp;&amp; recovery_in_progress != 0U)</td><td class='exp'>恢复流程轮询：处于异常模式且恢复进行中 →</td></tr>
+<tr class=''><td class='no'>582</td><td class='src'>        {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>583</td><td class='src'>            uint8_t result = SimpleFOC_Motor_TakeRecoveryResult();</td><td class='exp'>查电机任务的复查结果。</td></tr>
+<tr class='auto'><td class='no'>584</td><td class='src'>            if (result != 0U)</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class=''><td class='no'>585</td><td class='src'>            {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>586</td><td class='src'>                taskENTER_CRITICAL();</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>taskENTER_CRITICAL()</code>：进入 FreeRTOS 临界区：把中断屏蔽提升到 configMAX_SYSCALL_INTERRUPT_PRIORITY，保证接下来几行对共享变量的读取/修改不被中断打断。</td></tr>
+<tr class='auto'><td class='no'>587</td><td class='src'>                recovery_in_progress = 0U;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>0U</code> 赋给 <code>recovery_in_progress</code>。</td></tr>
+<tr class=''><td class='no'>588</td><td class='src'>                recovery_result_pending = result;</td><td class='exp'>拿到结果：清进行中标志，结果转存给 UI 领取。</td></tr>
+<tr class='auto'><td class='no'>589</td><td class='src'>                if (result == 1U)</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class=''><td class='no'>590</td><td class='src'>                {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>591</td><td class='src'>                    fault_requested = 0U;</td><td class='exp'>恢复成功：清故障标志，回到手动模式，重置所有请求序号。</td></tr>
+<tr class='auto'><td class='no'>592</td><td class='src'>                    current_mode = APP_MODE_MANUAL;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>APP_MODE_MANUAL</code> 赋给 <code>current_mode</code>。</td></tr>
+<tr class='auto'><td class='no'>593</td><td class='src'>                    pending_mode = APP_MODE_MANUAL;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>APP_MODE_MANUAL</code> 赋给 <code>pending_mode</code>。</td></tr>
+<tr class='auto'><td class='no'>594</td><td class='src'>                    ++pending_mode_sequence;</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>595</td><td class='src'>                    pending_direction = APP_MANUAL_STOP;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>APP_MANUAL_STOP</code> 赋给 <code>pending_direction</code>。</td></tr>
+<tr class='auto'><td class='no'>596</td><td class='src'>                    ++pending_sequence;</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>597</td><td class='src'>                }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='auto'><td class='no'>598</td><td class='src'>                taskEXIT_CRITICAL();</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>taskEXIT_CRITICAL()</code>：退出临界区，恢复原来的中断屏蔽状态。</td></tr>
+<tr class='auto'><td class='no'>599</td><td class='src'>                if (result == 1U)</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class=''><td class='no'>600</td><td class='src'>                {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>601</td><td class='src'>                    if (SmapSystemToMotorHandle != NULL)</td><td class='exp'>成功后清自动命令队列、复位手动状态。</td></tr>
+<tr class='auto'><td class='no'>602</td><td class='src'>                        (void)osMessageQueueReset(SmapSystemToMotorHandle);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>osMessageQueueReset()</code>：清空指定消息队列中全部未处理消息，常用于切换模式时丢弃过期采样。</td></tr>
+<tr class='auto'><td class='no'>603</td><td class='src'>                    active = APP_MANUAL_STOP;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>APP_MANUAL_STOP</code> 赋给 <code>active</code>。</td></tr>
+<tr class='auto'><td class='no'>604</td><td class='src'>                    auto_counting = 0U;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>0U</code> 赋给 <code>auto_counting</code>。</td></tr>
+<tr class='auto'><td class='no'>605</td><td class='src'>                    last_touch_tick = now;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>now</code> 赋给 <code>last_touch_tick</code>。</td></tr>
+<tr class=''><td class='no'>606</td><td class='src'>                }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>607</td><td class='src'>                continue;</td><td class='exp'>continue：本轮到此为止，下一轮继续等待 UI 领取结果。</td></tr>
+<tr class=''><td class='no'>608</td><td class='src'>            }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>609</td><td class='src'>        }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>610</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>611</td><td class='src'>        if (current_mode != APP_MODE_ERROR &amp;&amp; mode_sequence != seen_mode_sequence)</td><td class='exp'>模式切换处理：非异常模式且模式请求序号有新 →</td></tr>
+<tr class=''><td class='no'>612</td><td class='src'>        {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>613</td><td class='src'>            seen_mode_sequence = mode_sequence;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>mode_sequence</code> 赋给 <code>seen_mode_sequence</code>。</td></tr>
+<tr class='auto'><td class='no'>614</td><td class='src'>            if (requested_mode != current_mode)</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class=''><td class='no'>615</td><td class='src'>            {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>616</td><td class='src'>                taskENTER_CRITICAL();</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>taskENTER_CRITICAL()</code>：进入 FreeRTOS 临界区：把中断屏蔽提升到 configMAX_SYSCALL_INTERRUPT_PRIORITY，保证接下来几行对共享变量的读取/修改不被中断打断。</td></tr>
+<tr class=''><td class='no'>617</td><td class='src'>                current_mode = requested_mode;</td><td class='exp'>临界区内切换 current_mode。</td></tr>
+<tr class='auto'><td class='no'>618</td><td class='src'>                taskEXIT_CRITICAL();</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>taskEXIT_CRITICAL()</code>：退出临界区，恢复原来的中断屏蔽状态。</td></tr>
+<tr class=''><td class='no'>619</td><td class='src'>                if (SmapSystemToMotorHandle != NULL)</td><td class='exp'>清自动命令队列。</td></tr>
+<tr class='auto'><td class='no'>620</td><td class='src'>                    (void)osMessageQueueReset(SmapSystemToMotorHandle);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>osMessageQueueReset()</code>：清空指定消息队列中全部未处理消息，常用于切换模式时丢弃过期采样。</td></tr>
+<tr class=''><td class='no'>621</td><td class='src'>                (void)MotorPosition_HoldCurrent(SIMPLEFOC_AXIS_VERTICAL);</td><td class='exp'>两轴 MotorPosition_HoldCurrent：以当前位置为新目标保持（切模式瞬间不乱动）。</td></tr>
+<tr class='auto'><td class='no'>622</td><td class='src'>                (void)MotorPosition_HoldCurrent(SIMPLEFOC_AXIS_HORIZONTAL);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>MotorPosition_HoldCurrent()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>623</td><td class='src'>                active = APP_MANUAL_STOP;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>APP_MANUAL_STOP</code> 赋给 <code>active</code>。</td></tr>
+<tr class=''><td class='no'>624</td><td class='src'>                auto_enter_tick = osKernelGetTickCount();</td><td class='exp'>记录自动模式进入时刻（3 秒延迟从此起算）。</td></tr>
+<tr class='auto'><td class='no'>625</td><td class='src'>                last_sample_tick = auto_enter_tick;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>auto_enter_tick</code> 赋给 <code>last_sample_tick</code>。</td></tr>
+<tr class=''><td class='no'>626</td><td class='src'>                sample_stale = 0U;</td><td class='exp'>sample_stale 复位。</td></tr>
+<tr class='comment'><td class='no'>627</td><td class='src'>                /* 切换模式时不能继承上一个模式的自动倒计时或触摸时间。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>628</td><td class='src'>                auto_counting = 0U;</td><td class='exp'>切换模式不继承上一个模式的自动倒计时。</td></tr>
+<tr class='auto'><td class='no'>629</td><td class='src'>                last_touch_tick = now;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>now</code> 赋给 <code>last_touch_tick</code>。</td></tr>
+<tr class=''><td class='no'>630</td><td class='src'>            }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='auto'><td class='no'>631</td><td class='src'>            seen_sequence = sequence;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>sequence</code> 赋给 <code>seen_sequence</code>。</td></tr>
+<tr class=''><td class='no'>632</td><td class='src'>        }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>633</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>634</td><td class='src'>        /* 手动模式沿用按住速度控制，自动模式完全忽略方向事件。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>635</td><td class='src'>        if (current_mode == APP_MODE_MANUAL &amp;&amp; sequence != seen_sequence)</td><td class='exp'>手动命令处理：手动模式且方向序号有新 →</td></tr>
+<tr class=''><td class='no'>636</td><td class='src'>        {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>637</td><td class='src'>            seen_sequence = sequence;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>sequence</code> 赋给 <code>seen_sequence</code>。</td></tr>
+<tr class='auto'><td class='no'>638</td><td class='src'>            last_tick = tick;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>tick</code> 赋给 <code>last_tick</code>。</td></tr>
+<tr class=''><td class='no'>639</td><td class='src'>            if (direction != active)</td><td class='exp'>方向有变化时：</td></tr>
+<tr class=''><td class='no'>640</td><td class='src'>            {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>641</td><td class='src'>                if (active != APP_MANUAL_STOP</td><td class='exp'>如果之前在动，且新方向是停止或换轴：先把旧轴保持住。</td></tr>
+<tr class='auto'><td class='no'>642</td><td class='src'>                    &amp;&amp; (direction == APP_MANUAL_STOP</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>643</td><td class='src'>                        || manual_axis(direction) != manual_axis(active)))</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>644</td><td class='src'>                    (void)MotorPosition_HoldCurrent(manual_axis(active));</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>MotorPosition_HoldCurrent()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>645</td><td class='src'>                active = APP_MANUAL_STOP;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>APP_MANUAL_STOP</code> 赋给 <code>active</code>。</td></tr>
+<tr class=''><td class='no'>646</td><td class='src'>                if (direction != APP_MANUAL_STOP)</td><td class='exp'>新方向不是停止：</td></tr>
+<tr class=''><td class='no'>647</td><td class='src'>                {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>648</td><td class='src'>                    /* 方向符号与手动页保持一致。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>649</td><td class='src'>                    float sign = direction == APP_MANUAL_UP ? MANUAL_UP_SIGN</td><td class='exp'>按按钮计算方向符号（上=+1、下=−1、右=+1、左=−1，乘参数里的手动速度）。</td></tr>
+<tr class='auto'><td class='no'>650</td><td class='src'>                        : direction == APP_MANUAL_DOWN ? -MANUAL_UP_SIGN</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>651</td><td class='src'>                        : direction == APP_MANUAL_RIGHT ? MANUAL_RIGHT_SIGN</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>652</td><td class='src'>                        : -MANUAL_RIGHT_SIGN;</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='comment'><td class='no'>653</td><td class='src'>                    /* 本次按钮要控制的物理轴。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>654</td><td class='src'>                    SimpleFOC_MotorAxis axis = manual_axis(direction);</td><td class='exp'>确定按钮对应的物理轴。</td></tr>
+<tr class=''><td class='no'>655</td><td class='src'>                    if (MotorSpeed_SetTargetSpeed(axis,</td><td class='exp'>MotorSpeed_SetTargetSpeed 设置目标角速度（度/秒 ÷360 → 圈/秒）。返回 1 表示底层接受 → active 更新为新方向；返回 0（未就绪/故障）则退而保持当前位置。</td></tr>
+<tr class='auto'><td class='no'>656</td><td class='src'>                        sign * parameters.values[APP_PARAM_MANUAL_SPEED] / 360.0f) != 0U)</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>657</td><td class='src'>                        active = direction;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>direction</code> 赋给 <code>active</code>。</td></tr>
+<tr class='auto'><td class='no'>658</td><td class='src'>                    else</td><td class='exp'><span class='auto-tag'>自动</span>否则分支：上面所有条件都不满足时执行这里。</td></tr>
+<tr class='auto'><td class='no'>659</td><td class='src'>                        (void)MotorPosition_HoldCurrent(axis);</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>660</td><td class='src'>                }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>661</td><td class='src'>            }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>662</td><td class='src'>        }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>663</td><td class='src'>        if (current_mode == APP_MODE_MANUAL &amp;&amp; active != APP_MANUAL_STOP</td><td class='exp'>手动按住超时处理：正在动但 200ms 没续发 → 转入位置保持（松手保持原地，而不是继续转）。</td></tr>
+<tr class='auto'><td class='no'>664</td><td class='src'>            &amp;&amp; (uint32_t)(osKernelGetTickCount() - last_tick) &gt; MANUAL_HOLD_TIMEOUT_MS)</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>665</td><td class='src'>        {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>666</td><td class='src'>            (void)MotorPosition_HoldCurrent(manual_axis(active));</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>MotorPosition_HoldCurrent()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>667</td><td class='src'>            active = APP_MANUAL_STOP;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>APP_MANUAL_STOP</code> 赋给 <code>active</code>。</td></tr>
+<tr class=''><td class='no'>668</td><td class='src'>        }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>669</td><td class='src'>        if (current_mode == APP_MODE_AUTO) seen_sequence = sequence;</td><td class='exp'>自动模式完全忽略手动方向事件（只同步序号）。</td></tr>
+<tr class='blank'><td class='no'>670</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>671</td><td class='src'>        /* 排空采样队列，只分析本周期最新的一帧。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>672</td><td class='src'>        if (SmapToSystemHandle != NULL)</td><td class='exp'>排空采样队列，只保留最新一帧（过时光照直接丢弃）。</td></tr>
+<tr class=''><td class='no'>673</td><td class='src'>        {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>674</td><td class='src'>            while (osMessageQueueGet(SmapToSystemHandle, &amp;sample, NULL, 0U) == osOK)</td><td class='exp'><span class='auto-tag'>自动</span>while 循环：条件为真期间重复执行循环体。</td></tr>
+<tr class='auto'><td class='no'>675</td><td class='src'>                sample_received = 1U;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>1U</code> 赋给 <code>sample_received</code>。</td></tr>
+<tr class=''><td class='no'>676</td><td class='src'>        }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>677</td><td class='src'>        if (sample_received != 0U)</td><td class='exp'>拿到新帧：更新光照指标与采样时刻，sample_stale 复位。</td></tr>
+<tr class=''><td class='no'>678</td><td class='src'>        {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>679</td><td class='src'>            light = light_analyze(&amp;sample);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>light_analyze(&sample)</code> 赋给 <code>light</code>。</td></tr>
+<tr class='auto'><td class='no'>680</td><td class='src'>            last_sample_tick = osKernelGetTickCount();</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>osKernelGetTickCount()</code> 赋给 <code>last_sample_tick</code>。</td></tr>
+<tr class='auto'><td class='no'>681</td><td class='src'>            sample_stale = 0U;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>0U</code> 赋给 <code>sample_stale</code>。</td></tr>
+<tr class=''><td class='no'>682</td><td class='src'>        }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>683</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>684</td><td class='src'>        /* 自动入睡只依据新鲜光照；进入自动后的三秒等待也不累计。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>685</td><td class='src'>        if (current_mode == APP_MODE_AUTO)</td><td class='exp'>自动熄屏(A/B)计时：</td></tr>
+<tr class=''><td class='no'>686</td><td class='src'>        {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>687</td><td class='src'>            /* 超过采样超时的旧帧不能继续维持 A/B 成立。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>688</td><td class='src'>            uint8_t fresh = sample_stale == 0U</td><td class='exp'>fresh = 数据未过期且距最新采样 ≤100ms。</td></tr>
+<tr class='auto'><td class='no'>689</td><td class='src'>                &amp;&amp; (uint32_t)(now - last_sample_tick) &lt;= AUTO_SAMPLE_TIMEOUT_MS;</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>690</td><td class='src'>            if (fresh != 0U &amp;&amp; touch_held == 0U</td><td class='exp'>四个条件都满足（数据新鲜、没按住、过了 3 秒进入期、A/B 成立）→</td></tr>
+<tr class='auto'><td class='no'>691</td><td class='src'>                &amp;&amp; (uint32_t)(now - auto_enter_tick) &gt;= AUTO_ENTER_DELAY_MS</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>692</td><td class='src'>                &amp;&amp; power_auto_idle(&amp;light) != 0U)</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>693</td><td class='src'>            {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>694</td><td class='src'>                /* A 或 B 从不成立变为成立时记录起点；两者交替成立不重计。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>695</td><td class='src'>                if (auto_counting == 0U)</td><td class='exp'>计时从 0 开始（A/B 从不成立变为成立才起算；两者交替成立不重计）。</td></tr>
+<tr class=''><td class='no'>696</td><td class='src'>                {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>697</td><td class='src'>                    auto_counting = 1U;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>1U</code> 赋给 <code>auto_counting</code>。</td></tr>
+<tr class='auto'><td class='no'>698</td><td class='src'>                    auto_idle_tick = now;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>now</code> 赋给 <code>auto_idle_tick</code>。</td></tr>
+<tr class=''><td class='no'>699</td><td class='src'>                }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>700</td><td class='src'>            }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='comment'><td class='no'>701</td><td class='src'>            /* 同一帧数据使 A、B 都不成立，或采样失效时显示无穷秒。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>702</td><td class='src'>            else auto_counting = 0U;</td><td class='exp'>任一条件破坏 → 计时清零。</td></tr>
+<tr class=''><td class='no'>703</td><td class='src'>        }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='auto'><td class='no'>704</td><td class='src'>        else auto_counting = 0U;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>0U</code> 赋给 <code>else auto_counting</code>。</td></tr>
+<tr class='blank'><td class='no'>705</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>706</td><td class='src'>        /* 无触摸关屏前五秒变暗；触摸或持续手动运动会恢复正常亮度。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>707</td><td class='src'>        if (screen_on != 0U)</td><td class='exp'>背光管理（亮屏状态）：</td></tr>
+<tr class=''><td class='no'>708</td><td class='src'>        {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>709</td><td class='src'>            if (touch_held == 0U &amp;&amp; active == APP_MANUAL_STOP</td><td class='exp'>没按住、电机没在手动运动、距上次触摸超过 (熄屏时间−5秒)：</td></tr>
+<tr class='auto'><td class='no'>710</td><td class='src'>                &amp;&amp; (uint32_t)(now - last_touch_tick) &gt;= screen_idle_ms - POWER_DIM_MS)</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>711</td><td class='src'>            {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>712</td><td class='src'>                if ((uint32_t)(now - last_touch_tick) &gt;= screen_idle_ms)</td><td class='exp'>若已到熄屏时间：power_screen_set(0) 关屏。</td></tr>
+<tr class='auto'><td class='no'>713</td><td class='src'>                    power_screen_set(0U);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>power_screen_set()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>714</td><td class='src'>                else power_backlight_set((uint8_t)(parameters.values[APP_PARAM_BRIGHTNESS]</td><td class='exp'>否则进入渐暗期：背光降到 30%。</td></tr>
+<tr class='auto'><td class='no'>715</td><td class='src'>                    * POWER_DIM_PERCENT / 100U));</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>716</td><td class='src'>            }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>717</td><td class='src'>            else power_backlight_set((uint8_t)parameters.values[APP_PARAM_BRIGHTNESS]);</td><td class='exp'>其他情况恢复正常亮度（触摸或手动运动会立刻回来）。</td></tr>
+<tr class=''><td class='no'>718</td><td class='src'>        }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>719</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>720</td><td class='src'>        /* 手动无触摸到期或自动 A/B 连续成立到期，才真正进入 STOP。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>721</td><td class='src'>        if ((current_mode == APP_MODE_MANUAL &amp;&amp; touch_held == 0U</td><td class='exp'><b>真正入睡判定</b>：手动模式（没按住、电机静止、无触摸到期）或自动模式（A/B 连续成立到期）→</td></tr>
+<tr class='auto'><td class='no'>722</td><td class='src'>             &amp;&amp; active == APP_MANUAL_STOP</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>723</td><td class='src'>             &amp;&amp; (uint32_t)(now - last_touch_tick) &gt;= screen_idle_ms)</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>724</td><td class='src'>            || (current_mode == APP_MODE_AUTO &amp;&amp; auto_counting != 0U</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>725</td><td class='src'>                &amp;&amp; (uint32_t)(now - auto_idle_tick) &gt;=</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>726</td><td class='src'>                   (uint32_t)parameters.values[APP_PARAM_AUTO_SLEEP] * 1000U))</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>727</td><td class='src'>        {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>728</td><td class='src'>            /* STOP 内部可能经历多次 RTC 短暂唤醒；返回才是状态转换。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>729</td><td class='src'>            uint8_t reason = power_stop(current_mode == APP_MODE_AUTO,</td><td class='exp'>调用 power_stop 进入低功耗。返回原因：1 触摸唤醒 / 2 RTC 探测判定 / 3 故障。</td></tr>
+<tr class='auto'><td class='no'>730</td><td class='src'>                                        &amp;sample, &amp;light);</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>731</td><td class='src'>            now = osKernelGetTickCount();</td><td class='exp'>醒来后刷新时间基准。</td></tr>
+<tr class='comment'><td class='no'>732</td><td class='src'>            /* 旧光照时间和旧手动命令作废，恢复后等待新采样或新按键。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>733</td><td class='src'>            last_sample_tick = now;</td><td class='exp'>旧光照、旧手动命令全部作废。</td></tr>
+<tr class='auto'><td class='no'>734</td><td class='src'>            auto_counting = 0U;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>0U</code> 赋给 <code>auto_counting</code>。</td></tr>
+<tr class='auto'><td class='no'>735</td><td class='src'>            active = APP_MANUAL_STOP;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>APP_MANUAL_STOP</code> 赋给 <code>active</code>。</td></tr>
+<tr class='auto'><td class='no'>736</td><td class='src'>            seen_sequence = pending_sequence;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>pending_sequence</code> 赋给 <code>seen_sequence</code>。</td></tr>
+<tr class=''><td class='no'>737</td><td class='src'>            if (reason == 1U)</td><td class='exp'>触摸唤醒：同步触摸序号、刷新时刻、点亮屏幕。</td></tr>
+<tr class=''><td class='no'>738</td><td class='src'>            {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>739</td><td class='src'>                /* 触摸唤醒才开背光；RTC 唤醒返回时继续保持黑屏。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>740</td><td class='src'>                seen_touch = touch_sequence;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>touch_sequence</code> 赋给 <code>seen_touch</code>。</td></tr>
+<tr class='auto'><td class='no'>741</td><td class='src'>                last_touch_tick = now;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>now</code> 赋给 <code>last_touch_tick</code>。</td></tr>
+<tr class='auto'><td class='no'>742</td><td class='src'>                power_screen_set(1U);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>power_screen_set()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>743</td><td class='src'>            }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>744</td><td class='src'>            continue;</td><td class='exp'>continue：下一轮重新开始完整流程。</td></tr>
+<tr class=''><td class='no'>745</td><td class='src'>        }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+</table><div class='summary'><b>小总结（主循环状态机）：</b>每 10ms 一轮：读请求快照→处理触摸（点亮/重置计时）→处理故障→轮询恢复→切模式→处理手动方向（200ms 超时保持）→消费最新光照→自动熄屏计时→背光渐暗/熄屏→判定入睡→生成追光命令。所有时间基准统一用本轮 now，所有参数每轮重读——保证界面保存立即生效。模式切换时两轴 HoldCurrent 保持原地，3 秒进入期防止切模式瞬间电机乱动。</div><table class='code'><tr><th>行号</th><th>代码（Core/App/SystemTask.c）</th><th>逐行讲解</th></tr>
+<tr class='blank'><td class='no'>746</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>747</td><td class='src'>        if (current_mode == APP_MODE_AUTO &amp;&amp; sample_stale == 0U</td><td class='exp'>自动模式采样超时检测：100ms 没有新光照 →</td></tr>
+<tr class='auto'><td class='no'>748</td><td class='src'>            &amp;&amp; (uint32_t)(osKernelGetTickCount() - last_sample_tick) &gt; AUTO_SAMPLE_TIMEOUT_MS)</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>749</td><td class='src'>        {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>750</td><td class='src'>            if (SmapSystemToMotorHandle != NULL)</td><td class='exp'>清自动命令队列。</td></tr>
+<tr class='auto'><td class='no'>751</td><td class='src'>                (void)osMessageQueueReset(SmapSystemToMotorHandle);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>osMessageQueueReset()</code>：清空指定消息队列中全部未处理消息，常用于切换模式时丢弃过期采样。</td></tr>
+<tr class=''><td class='no'>752</td><td class='src'>            (void)MotorPosition_HoldCurrent(SIMPLEFOC_AXIS_VERTICAL);</td><td class='exp'>两轴保持当前位置（没有光照数据就不能继续追）。</td></tr>
+<tr class='auto'><td class='no'>753</td><td class='src'>            (void)MotorPosition_HoldCurrent(SIMPLEFOC_AXIS_HORIZONTAL);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>MotorPosition_HoldCurrent()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>754</td><td class='src'>            sample_stale = 1U;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>1U</code> 赋给 <code>sample_stale</code>。</td></tr>
+<tr class=''><td class='no'>755</td><td class='src'>        }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>756</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>757</td><td class='src'>        if (current_mode == APP_MODE_AUTO &amp;&amp; sample_received != 0U</td><td class='exp'>自动追光命令生成：自动模式、拿到新帧、过了 3 秒进入期 →</td></tr>
+<tr class='auto'><td class='no'>758</td><td class='src'>            &amp;&amp; (uint32_t)(osKernelGetTickCount() - auto_enter_tick) &gt;= AUTO_ENTER_DELAY_MS)</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>759</td><td class='src'>        {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>760</td><td class='src'>            /* 两轴都发送最新目标；电机任务只在首次进入零区间时锁定位置。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>761</td><td class='src'>            AppMotorCommand command = {0};</td><td class='exp'>构造命令结构体（默认双轴 0 度=保持）。</td></tr>
+<tr class='comment'><td class='no'>762</td><td class='src'>            /* 四路都偏暗时保留双轴零度目标；否则沿用方向差比例控制。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>763</td><td class='src'>            if (!(sample.left_top &gt; AUTO_ALL_DARK_ADC</td><td class='exp'>若四路不是全部偏暗：</td></tr>
+<tr class='auto'><td class='no'>764</td><td class='src'>                &amp;&amp; sample.left_bottom &gt; AUTO_ALL_DARK_ADC</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>765</td><td class='src'>                &amp;&amp; sample.right_top &gt; AUTO_ALL_DARK_ADC</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>766</td><td class='src'>                &amp;&amp; sample.right_bottom &gt; AUTO_ALL_DARK_ADC))</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>767</td><td class='src'>            {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>768</td><td class='src'>                /* Kp 以百分之一存储，乘 0.01 后恢复实际比例系数，双轴共用。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>769</td><td class='src'>                if (light.horizontal_diff &lt; -(int32_t)parameters.values[APP_PARAM_HORIZONTAL_BAND]</td><td class='exp'>水平差超出停转区间 → 计算水平目标角：方向符号 × Kp(百分之一→×0.01) × 水平差，再限幅到 ±360。原理是比例控制：光差越大，相对转角越大。</td></tr>
+<tr class='auto'><td class='no'>770</td><td class='src'>                    || light.horizontal_diff &gt; (int32_t)parameters.values[APP_PARAM_HORIZONTAL_BAND])</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>771</td><td class='src'>                    command.horizontal_deg = auto_limit_target(</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>772</td><td class='src'>                        AUTO_HORIZONTAL_SIGN * parameters.values[APP_PARAM_AUTO_KP]</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>773</td><td class='src'>                        * 0.01f * light.horizontal_diff);</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>774</td><td class='src'>                if (light.vertical_diff &lt; -(int32_t)parameters.values[APP_PARAM_VERTICAL_BAND]</td><td class='exp'>竖直差同理。</td></tr>
+<tr class='auto'><td class='no'>775</td><td class='src'>                    || light.vertical_diff &gt; (int32_t)parameters.values[APP_PARAM_VERTICAL_BAND])</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>776</td><td class='src'>                    command.vertical_deg = auto_limit_target(</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>777</td><td class='src'>                        AUTO_VERTICAL_SIGN * parameters.values[APP_PARAM_AUTO_KP]</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>778</td><td class='src'>                        * 0.01f * light.vertical_diff);</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>779</td><td class='src'>            }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>780</td><td class='src'>            auto_send_target(&amp;command);</td><td class='exp'>auto_send_target 发送（满则替换最旧）。</td></tr>
+<tr class=''><td class='no'>781</td><td class='src'>        }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>782</td><td class='src'>        osDelay(10U);</td><td class='exp'>osDelay(10)：任务 10ms 一拍的节奏。</td></tr>
+<tr class=''><td class='no'>783</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>784</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+</table>
+<div class='summary'><h4>本文件小总结</h4><b>SystemTask.c 全文总结：</b>这个 784 行的文件实现了产品的全部“决策智能”：三种模式状态机、手动按住-保持交互、比例式自动追光（光差×Kp→相对角度）、异常锁存与人工恢复、背光渐暗熄屏、以及两段式低功耗（黑屏→STOP）。它与电机任务的分工：这里只算“目标角度”，那里只管“怎么转到目标”；它与 UI 的分工：这里只置标志，那边只领标志。</div>
+</div>
+<div class='summary'><h4>本章总结</h4><b>本章总结：</b>SystemTask 是理解本项目的钥匙。三个高频面试级问题：①为什么用序号不用布尔标志？——不丢事件；②为什么 STOP 前要先挂任务再关 EN？——防止任务恢复运行时重新使能驱动；③为什么醒来要 SystemClock_Config+xTaskCatchUpTicks？——STOP 退出默认 HSI 16MHz，RTOS 节拍在睡眠期间停摆，必须补。</div>
+</div></body></html>

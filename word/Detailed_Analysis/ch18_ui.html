@@ -1,0 +1,1333 @@
+<!DOCTYPE html><html lang='zh-CN'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>第 18 章 · 界面实现（user_home.c/h、ui.c/h、mylist.c/h） - 项目代码逐行详解</title><style>
+:root{
+  --bg:#14161a; --panel:#1d2026; --panel2:#22262e; --code:#171a20;
+  --text:#d8dde5; --dim:#8b93a1; --accent:#4da3ff; --accent2:#7ee2b8;
+  --line:#2c313b; --warn:#f0b429;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:"Microsoft YaHei","PingFang SC",Segoe UI,sans-serif;font-size:15px;line-height:1.75}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px 80px}
+nav.topbar{position:sticky;top:0;z-index:9;background:rgba(20,22,26,.96);
+  border-bottom:1px solid var(--line);padding:10px 0;backdrop-filter:blur(6px)}
+nav.topbar .wrap{padding:0 20px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+nav.topbar a{background:var(--panel2);color:var(--text);padding:4px 12px;border-radius:16px;
+  font-size:13px;border:1px solid var(--line);white-space:nowrap}
+nav.topbar a.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+nav.topbar a:hover{text-decoration:none;filter:brightness(1.15)}
+header.chapter{margin:28px 0 8px}
+header.chapter h1{font-size:26px;margin:0 0 6px;color:#fff}
+header.chapter .meta{color:var(--dim);font-size:13px}
+.intro{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);
+  border-radius:8px;padding:14px 18px;margin:18px 0}
+.summary{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent2);
+  border-radius:8px;padding:14px 18px;margin:18px 0}
+.summary h4,.intro h4{margin:0 0 8px;font-size:15px;color:var(--accent2)}
+.intro h4{color:var(--accent)}
+.section{margin:34px 0}
+.section > h2{font-size:20px;color:#fff;border-bottom:1px solid var(--line);padding-bottom:8px}
+.section .filepath{font-family:Consolas,monospace;color:var(--warn);font-size:14px}
+.section .filedesc{color:var(--dim);font-size:14px;margin:6px 0 10px}
+table.code{width:100%;border-collapse:collapse;background:var(--code);
+  border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:13px}
+table.code th{background:var(--panel2);color:var(--dim);font-weight:600;text-align:left;
+  padding:7px 10px;font-size:12px;position:sticky;top:44px}
+table.code td{padding:3px 10px;vertical-align:top;border-top:1px solid #20242c}
+td.no{width:52px;text-align:right;color:#5c6575;font-family:Consolas,monospace;user-select:none}
+td.src{width:46%;font-family:Consolas,"Courier New",monospace;color:#c9d2e0;white-space:pre;
+  overflow-x:auto}
+td.exp{color:var(--text);font-size:13.5px}
+tr.comment td.src{color:#5f7060}
+tr.comment td.exp{color:var(--dim);font-style:normal}
+tr.blank td.src{color:#3a4150}
+.pill{display:inline-block;background:var(--panel2);border:1px solid var(--line);color:var(--dim);
+  border-radius:12px;padding:1px 10px;font-size:12px;margin-right:6px}
+.diagram{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;
+  margin:18px 0;font-family:Consolas,monospace;white-space:pre;overflow-x:auto;color:#bcd3f5;font-size:13px;line-height:1.55}
+.toc{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 18px;margin:14px 0}
+.toc a{display:block;padding:3px 0;font-size:14px}
+.badge{display:inline-block;background:#2b3a55;color:#9ecbff;border-radius:4px;padding:0 8px;font-size:12px;margin-right:6px}
+tr.auto td.exp{color:#9aa6b8}
+.auto-tag{display:inline-block;background:#2c3140;color:#8fa0b8;border:1px solid #3a4150;
+  border-radius:10px;padding:0 7px;font-size:11px;margin-right:5px;font-style:normal}
+</style></head><body><nav class='topbar'><div class='wrap'><a href='index.html'>目录</a><a href='ch01_startup.html'>01 启动流程</a><a href='ch02_interrupt.html'>02 中断与时基</a><a href='ch03_gpio_dma.html'>03 GPIO/DMA</a><a href='ch04_adc.html'>04 ADC 采样</a><a href='ch05_i2c.html'>05 I2C 底层</a><a href='ch06_spi.html'>06 SPI 底层</a><a href='ch07_tim.html'>07 定时器PWM</a><a href='ch08_usart_rtc.html'>08 串口/RTC</a><a href='ch09_rtos.html'>09 RTOS骨架</a><a href='ch10_appframe.html'>10 应用框架</a><a href='ch11_systemtask.html'>11 SystemTask</a><a href='ch12_algorithm.html'>12 PID/滤波</a><a href='ch13_foc.html'>13 FOC/SVPWM</a><a href='ch14_w25q64.html'>14 W25Q64存储</a><a href='ch15_parameters.html'>15 参数管理</a><a href='ch16_sensors.html'>16 传感器驱动</a><a href='ch17_lvgl_port.html'>17 LVGL移植</a><a href='ch18_ui.html' class='active'>18 UI界面</a><a href='ch19.html'>19 调试与VOFA</a></div></nav>
+<div class='wrap'>
+<header class='chapter'><h1>第 18 章 · 界面实现（user_home.c/h、ui.c/h、mylist.c/h）</h1><div class='meta'>文件：Core/ui/user_home.c（578 行）、user_home.h、ui.c（479 行）、ui.h、mylist.c（96 行）、mylist.h（42 行）</div></header>
+<div class='intro'><h4>本章导读</h4><p>user_home.c 是产品真正的界面：双 Tileview 模式切换（手动/自动）、手动控制方向键、参数调节双页（滑块+加减按钮）、光敏数据底栏、全屏弹窗、页面返回栈与“未保存询问”。ui.c 与 mylist.c 是学习性质的练习代码（LVGL 控件教程），本项目主界面不调用它们，本章一并逐行讲解其 LVGL 用法。</div>
+<div class='section'>
+<h2><span class='filepath'>Core/ui/user_home.h</span> <span class='pill'>0 行</span></h2>
+<div class='filedesc'>界面接口声明。</div>
+<table class='code'>
+<tr><th>行号</th><th>代码（Core/ui/user_home.h）</th><th>逐行讲解</th></tr>
+<tr class='auto'><td class='no'>1</td><td class='src'>#ifndef _USER_HOME_H_</td><td class='exp'><span class='auto-tag'>自动</span>条件编译入口（ifndef）：满足条件才编译下面的内容，不满足则整段跳过。</td></tr>
+<tr class='auto'><td class='no'>2</td><td class='src'>#define _USER_HOME_H_</td><td class='exp'><span class='auto-tag'>自动</span>定义宏 <code>_USER_HOME_H_</code>：编译前做纯文本替换，详见对应头文件小总结。</td></tr>
+<tr class='blank'><td class='no'>3</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>4</td><td class='src'>#include "lvgl.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "lvgl.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='blank'><td class='no'>5</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>6</td><td class='src'>/* 创建主界面与全屏弹窗容器。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>7</td><td class='src'>void user_home_create(void);</td><td class='exp'>user_home_create：创建主界面与弹窗容器。</td></tr>
+<tr class='blank'><td class='no'>8</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>9</td><td class='src'>/* 仅由 UI 任务调用，在当前任意页面显示设备异常弹窗。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>10</td><td class='src'>void user_home_show_error(void);</td><td class='exp'>user_home_show_error：任意页面显示设备异常弹窗（仅 UI 任务调用）。</td></tr>
+<tr class='blank'><td class='no'>11</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>12</td><td class='src'>/* 电机复查完成后显示结果，并在成功时隐藏手动页恢复按钮。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>13</td><td class='src'>void user_home_show_recovery_result(uint8_t result);</td><td class='exp'>user_home_show_recovery_result：显示电机恢复结果，成功时隐藏恢复按钮。</td></tr>
+<tr class='blank'><td class='no'>14</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>15</td><td class='src'>#endif</td><td class='exp'><span class='auto-tag'>自动</span>结束一个条件编译块。</td></tr>
+</table>
+<div class='summary'><h4>本文件小总结</h4><b>user_home.h 总结：</b>三个接口对应 UI 生命周期：创建一次、异常弹窗一次、恢复结果一次。</div>
+</div>
+<div class='section'>
+<h2><span class='filepath'>Core/ui/user_home.c</span> <span class='pill'>0 行</span></h2>
+<div class='filedesc'>全部界面构建与事件处理。</div>
+<table class='code'>
+<tr><th>行号</th><th>代码（Core/ui/user_home.c）</th><th>逐行讲解</th></tr>
+<tr class='auto'><td class='no'>1</td><td class='src'>#include "user_home.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "user_home.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='auto'><td class='no'>2</td><td class='src'>#include "app_system.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "app_system.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='auto'><td class='no'>3</td><td class='src'>#include "app_parameters.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "app_parameters.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='auto'><td class='no'>4</td><td class='src'>#include "cmsis_os2.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "cmsis_os2.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='auto'><td class='no'>5</td><td class='src'>#include "SmaplingTypes.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "SmaplingTypes.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='auto'><td class='no'>6</td><td class='src'>#include &lt;stdint.h&gt;</td><td class='exp'><span class='auto-tag'>自动</span>包含系统头文件 &lt;stdint.h&gt;：引入标准库/库的声明。</td></tr>
+<tr class='blank'><td class='no'>7</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>8</td><td class='src'>/* 屏幕上方 260 像素为可切换页面，底部 60 像素固定显示光敏数据。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>9</td><td class='src'>#define UI_SCREEN_W          240</td><td class='exp'>屏宽 240。</td></tr>
+<tr class=''><td class='no'>10</td><td class='src'>#define UI_CONTENT_H         260</td><td class='exp'>内容区高 260（上方可切换）。</td></tr>
+<tr class=''><td class='no'>11</td><td class='src'>#define UI_FOOTER_H          60</td><td class='exp'>底栏高 60（固定显示光敏数据）。</td></tr>
+<tr class='comment'><td class='no'>12</td><td class='src'>/* 光敏数据标签的刷新周期，以及页面返回栈和参数瓦片的容量。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>13</td><td class='src'>#define UI_ADC_REFRESH_MS    200</td><td class='exp'>底栏刷新周期 200ms。</td></tr>
+<tr class=''><td class='no'>14</td><td class='src'>#define UI_PAGE_STACK_DEPTH  4</td><td class='exp'>页面返回栈深度 4。</td></tr>
+<tr class=''><td class='no'>15</td><td class='src'>#define UI_PARAM_COUNT       APP_PARAMETER_COUNT</td><td class='exp'>参数数量 = 9（引用 app_parameters.h 的宏）。</td></tr>
+<tr class=''><td class='no'>16</td><td class='src'>#define UI_PARAMS_PER_TILE   5U</td><td class='exp'>每个参数瓦片最多 5 项（9 项分两页）。</td></tr>
+<tr class='blank'><td class='no'>17</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>18</td><td class='src'>extern osMessageQueueId_t SmaplingHandle;</td><td class='exp'>extern 引用 Smapling 队列（底栏数据源）。</td></tr>
+<tr class='blank'><td class='no'>19</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>20</td><td class='src'>/* UI 页面编号用于 pages 数组和返回栈；主页面本身由上方模式 Tileview 承载。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>21</td><td class='src'>typedef enum {</td><td class='exp'>页面编号枚举（返回栈用）。</td></tr>
+<tr class=''><td class='no'>22</td><td class='src'>    UI_PAGE_MAIN,</td><td class='exp'>主页面（Tileview 承载）。</td></tr>
+<tr class=''><td class='no'>23</td><td class='src'>    UI_PAGE_CONTROL,</td><td class='exp'>手动控制页。</td></tr>
+<tr class=''><td class='no'>24</td><td class='src'>    UI_PAGE_PARAMS,</td><td class='exp'>参数调节页。</td></tr>
+<tr class=''><td class='no'>25</td><td class='src'>    UI_PAGE_ABOUT,</td><td class='exp'>产品说明页。</td></tr>
+<tr class=''><td class='no'>26</td><td class='src'>    UI_PAGE_APP</td><td class='exp'>App 观测页。</td></tr>
+<tr class='auto'><td class='no'>27</td><td class='src'>} UiPage;</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='blank'><td class='no'>28</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>29</td><td class='src'>/* 主 Tileview 在手动/自动模式间纵向切换；参数 Tileview 在两页参数间横向切换。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>30</td><td class='src'>static lv_obj_t *tileview;</td><td class='exp'>主 Tileview（手动/自动纵向切换）。</td></tr>
+<tr class=''><td class='no'>31</td><td class='src'>static lv_obj_t *manual_tile;</td><td class='exp'>手动瓦片。</td></tr>
+<tr class=''><td class='no'>32</td><td class='src'>static lv_obj_t *recovery_button;</td><td class='exp'>恢复电机按钮（异常时显示）。</td></tr>
+<tr class='comment'><td class='no'>33</td><td class='src'>/* 自动模式瓦片用于识别用户的模式切换。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>34</td><td class='src'>static lv_obj_t *auto_tile;</td><td class='exp'>自动瓦片。</td></tr>
+<tr class=''><td class='no'>35</td><td class='src'>static lv_obj_t *pages[UI_PAGE_APP + 1];</td><td class='exp'>pages[]：各子页面对象数组。</td></tr>
+<tr class=''><td class='no'>36</td><td class='src'>static lv_obj_t *adc_labels[8];</td><td class='exp'>8 个底栏标签（四路值/均值/总差/左右差/上下差）。</td></tr>
+<tr class=''><td class='no'>37</td><td class='src'>static lv_obj_t *auto_avg_label;</td><td class='exp'>自动页平均光照标签。</td></tr>
+<tr class=''><td class='no'>38</td><td class='src'>static lv_obj_t *auto_diff_label;</td><td class='exp'>自动页光照总差标签。</td></tr>
+<tr class=''><td class='no'>39</td><td class='src'>static lv_obj_t *direction_label;</td><td class='exp'>手动控制页的方向显示标签。</td></tr>
+<tr class='comment'><td class='no'>40</td><td class='src'>/* 每个参数的数值标签与亮度滑块；页码标签和底部按钮不随参数瓦片移动。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>41</td><td class='src'>static lv_obj_t *param_labels[UI_PARAM_COUNT];</td><td class='exp'>每个参数的数值标签数组。</td></tr>
+<tr class=''><td class='no'>42</td><td class='src'>static lv_obj_t *param_slider;</td><td class='exp'>亮度滑块。</td></tr>
+<tr class=''><td class='no'>43</td><td class='src'>static lv_obj_t *param_tileview;</td><td class='exp'>参数页内嵌 Tileview（两页横向切换）。</td></tr>
+<tr class=''><td class='no'>44</td><td class='src'>static lv_obj_t *param_page_label;</td><td class='exp'>页码标签（1/2）。</td></tr>
+<tr class=''><td class='no'>45</td><td class='src'>static lv_obj_t *dialog_layer;</td><td class='exp'>弹窗遮罩层。</td></tr>
+<tr class=''><td class='no'>46</td><td class='src'>static lv_obj_t *dialog;</td><td class='exp'>弹窗主体。</td></tr>
+<tr class=''><td class='no'>47</td><td class='src'>static lv_obj_t *dialog_text;</td><td class='exp'>弹窗文本。</td></tr>
+<tr class=''><td class='no'>48</td><td class='src'>static lv_obj_t *dialog_buttons[3];</td><td class='exp'>弹窗三按钮（保存/放弃/取消）。</td></tr>
+<tr class=''><td class='no'>49</td><td class='src'>static UiPage page_stack[UI_PAGE_STACK_DEPTH];</td><td class='exp'>返回栈数组。</td></tr>
+<tr class=''><td class='no'>50</td><td class='src'>static uint8_t page_stack_size;</td><td class='exp'>栈顶指针。</td></tr>
+<tr class=''><td class='no'>51</td><td class='src'>static UiPage current_page;</td><td class='exp'>当前页面编号。</td></tr>
+<tr class='comment'><td class='no'>52</td><td class='src'>/* demo_params 是屏幕上的待保存草稿，entry_params 是进入页面时的已生效快照。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>53</td><td class='src'>static int32_t demo_params[UI_PARAM_COUNT];</td><td class='exp'>demo_params：屏幕上的待保存<b>草稿</b>。</td></tr>
+<tr class=''><td class='no'>54</td><td class='src'>static int32_t entry_params[UI_PARAM_COUNT];</td><td class='exp'>entry_params：进入页面时的<b>已生效快照</b>（放弃时恢复用）。</td></tr>
+<tr class=''><td class='no'>55</td><td class='src'>static bool params_dirty;      /* 草稿变化后，返回时询问保存还是放弃。 */</td><td class='exp'>params_dirty：草稿被修改过。</td></tr>
+<tr class=''><td class='no'>56</td><td class='src'>static bool param_refreshing;  /* 程序设置滑块时阻止回调把操作误判为用户修改。 */</td><td class='exp'>param_refreshing：程序设置滑块时阻止回调误判为用户修改。</td></tr>
+<tr class=''><td class='no'>57</td><td class='src'>static bool save_then_back;    /* 从返回弹窗保存成功后再退出参数页。 */</td><td class='exp'>save_then_back：从返回弹窗保存成功后先退页。</td></tr>
+<tr class=''><td class='no'>58</td><td class='src'>static uint8_t dialog_action;  /* 0 为保存草稿，1 为恢复出厂，2 为回归旧版。 */</td><td class='exp'>dialog_action：弹窗动作（0 保存/1 恢复出厂/2 回归旧版）。</td></tr>
+<tr class=''><td class='no'>59</td><td class='src'>static AppManualDirection manual_direction;</td><td class='exp'>manual_direction：当前手动方向（松手时发停止）。</td></tr>
+<tr class='blank'><td class='no'>60</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>61</td><td class='src'>/* 标签顺序必须与 AppParameterIndex 一致，索引同时用于取范围和读取参数值。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>62</td><td class='src'>static const char *const param_names[UI_PARAM_COUNT] = {</td><td class='exp'>参数中文名数组：顺序必须与 AppParameterIndex 一致。</td></tr>
+<tr class='auto'><td class='no'>63</td><td class='src'>    "亮度调节", "手动熄屏时间", "自动熄屏时间", "左右光最小差异", "上下光最小差异",</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>64</td><td class='src'>    "低功耗光强阈值", "自动唤醒读光时间", "手动基础速度", "自动Kp"</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>65</td><td class='src'>};</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='blank'><td class='no'>66</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>67</td><td class='src'>static void ui_param_refresh(uint8_t index);</td><td class='exp'>ui_param_refresh 前向声明。</td></tr>
+<tr class='blank'><td class='no'>68</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>69</td><td class='src'>/* 在指定父对象内创建文本标签，并用像素坐标确定位置和显示宽度。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>70</td><td class='src'>static lv_obj_t *ui_label(lv_obj_t *parent, const char *text,</td><td class='exp'><b>ui_label</b>：建标签的封装（位置+宽度）。</td></tr>
+<tr class='auto'><td class='no'>71</td><td class='src'>                          int32_t x, int32_t y, int32_t width)</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>72</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>73</td><td class='src'>    lv_obj_t *label = lv_label_create(parent);</td><td class='exp'>lv_label_create。</td></tr>
+<tr class=''><td class='no'>74</td><td class='src'>    lv_obj_set_pos(label, x, y);</td><td class='exp'>设置位置。</td></tr>
+<tr class=''><td class='no'>75</td><td class='src'>    lv_obj_set_width(label, width);</td><td class='exp'>设置显示宽度。</td></tr>
+<tr class=''><td class='no'>76</td><td class='src'>    lv_label_set_text(label, text);</td><td class='exp'>设置文本。</td></tr>
+<tr class='auto'><td class='no'>77</td><td class='src'>    return label;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>label</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>78</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>79</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>80</td><td class='src'>/* 创建带居中标题的按钮；callback 非空时绑定单击事件并传入 user_data。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>81</td><td class='src'>static lv_obj_t *ui_button(lv_obj_t *parent, const char *text,</td><td class='exp'><b>ui_button</b>：建按钮的封装（位置/大小/回调/居中文字）。</td></tr>
+<tr class='auto'><td class='no'>82</td><td class='src'>                           int32_t x, int32_t y, int32_t width, int32_t height,</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>83</td><td class='src'>                           lv_event_cb_t callback, void *user_data)</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>84</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>85</td><td class='src'>    lv_obj_t *button = lv_button_create(parent);</td><td class='exp'>lv_button_create。</td></tr>
+<tr class='auto'><td class='no'>86</td><td class='src'>    lv_obj_set_pos(button, x, y);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>lv_obj_set_pos()</code>：设置 LVGL 对象在父容器中的 x/y 坐标。</td></tr>
+<tr class='auto'><td class='no'>87</td><td class='src'>    lv_obj_set_size(button, width, height);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>lv_obj_set_size()</code>：设置 LVGL 对象的宽度和高度。</td></tr>
+<tr class=''><td class='no'>88</td><td class='src'>    if (callback != NULL) {</td><td class='exp'>callback 非空时绑定单击事件并传 user_data——LVGL 事件模式的核心用法。</td></tr>
+<tr class='auto'><td class='no'>89</td><td class='src'>        lv_obj_add_event_cb(button, callback, LV_EVENT_CLICKED, user_data);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>lv_obj_add_event_cb()</code>：为 LVGL 对象注册事件回调：指定事件（如点击）发生时执行对应函数。</td></tr>
+<tr class=''><td class='no'>90</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>91</td><td class='src'>    lv_obj_t *label = lv_label_create(button);</td><td class='exp'>创建按钮内标签。</td></tr>
+<tr class='auto'><td class='no'>92</td><td class='src'>    lv_label_set_text(label, text);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>lv_label_set_text()</code>：设置 LVGL 文本标签显示的内容（LVGL 会重绘该标签）。</td></tr>
+<tr class=''><td class='no'>93</td><td class='src'>    lv_obj_center(label);</td><td class='exp'>lv_obj_center 让文字居中。</td></tr>
+<tr class='auto'><td class='no'>94</td><td class='src'>    return button;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>button</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>95</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>96</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>97</td><td class='src'>/* 创建默认隐藏的内容页面，不覆盖屏幕底部固定的光敏数据栏。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>98</td><td class='src'>static lv_obj_t *ui_subpage(const char *title)</td><td class='exp'><b>ui_subpage</b>：创建默认隐藏的内容页（不盖住底栏）。</td></tr>
+<tr class=''><td class='no'>99</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>100</td><td class='src'>    lv_obj_t *page = lv_obj_create(lv_screen_active());</td><td class='exp'>直接在屏幕根对象上创建。</td></tr>
+<tr class='auto'><td class='no'>101</td><td class='src'>    lv_obj_set_pos(page, 0, 0);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>lv_obj_set_pos()</code>：设置 LVGL 对象在父容器中的 x/y 坐标。</td></tr>
+<tr class=''><td class='no'>102</td><td class='src'>    lv_obj_set_size(page, UI_SCREEN_W, UI_CONTENT_H);</td><td class='exp'>尺寸 = 屏宽×内容高。</td></tr>
+<tr class=''><td class='no'>103</td><td class='src'>    lv_obj_set_style_pad_all(page, 0, 0);</td><td class='exp'>边距清零。</td></tr>
+<tr class=''><td class='no'>104</td><td class='src'>    lv_obj_set_scrollable(page, false);</td><td class='exp'>禁止滚动。</td></tr>
+<tr class=''><td class='no'>105</td><td class='src'>    lv_obj_set_hidden(page, true);</td><td class='exp'>默认隐藏。</td></tr>
+<tr class=''><td class='no'>106</td><td class='src'>    ui_label(page, title, 8, 8, 164);</td><td class='exp'>页标题标签。</td></tr>
+<tr class='auto'><td class='no'>107</td><td class='src'>    return page;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>page</code>，本函数调用结束。</td></tr>
+<tr class=''><td class='no'>108</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>109</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>110</td><td class='src'>/* 隐藏旧页面并显示目标页面；离开手动控制页时先发送停止命令。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>111</td><td class='src'>static void ui_show_page(UiPage page)</td><td class='exp'><b>ui_show_page</b>：切页核心。</td></tr>
+<tr class=''><td class='no'>112</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>113</td><td class='src'>    if (current_page == UI_PAGE_CONTROL &amp;&amp; page != UI_PAGE_CONTROL) {</td><td class='exp'>离开手动控制页时：方向复位并发送停止命令（防止离开页面电机还在转）。</td></tr>
+<tr class='auto'><td class='no'>114</td><td class='src'>        manual_direction = APP_MANUAL_STOP;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>APP_MANUAL_STOP</code> 赋给 <code>manual_direction</code>。</td></tr>
+<tr class='auto'><td class='no'>115</td><td class='src'>        App_ManualControl_Send(APP_MANUAL_STOP);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>App_ManualControl_Send()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>116</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>117</td><td class='src'>    lv_obj_set_hidden(tileview, true);</td><td class='exp'>隐藏主 Tileview。</td></tr>
+<tr class=''><td class='no'>118</td><td class='src'>    if (current_page != UI_PAGE_MAIN) {</td><td class='exp'>隐藏旧子页。</td></tr>
+<tr class='auto'><td class='no'>119</td><td class='src'>        lv_obj_set_hidden(pages[current_page], true);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_obj_set_hidden()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>120</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>121</td><td class='src'>    current_page = page;</td><td class='exp'>更新当前页编号。</td></tr>
+<tr class=''><td class='no'>122</td><td class='src'>    if (page == UI_PAGE_MAIN) {</td><td class='exp'>主页面显示 Tileview，子页面显示 pages[page]。</td></tr>
+<tr class='auto'><td class='no'>123</td><td class='src'>        lv_obj_set_hidden(tileview, false);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_obj_set_hidden()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>124</td><td class='src'>    } else {</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>125</td><td class='src'>        lv_obj_set_hidden(pages[page], false);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_obj_set_hidden()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>126</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>127</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>128</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>129</td><td class='src'>/* 记录返回路径；进入参数页时从运行时配置重新装载草稿和数值标签。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>130</td><td class='src'>static void ui_push_page(UiPage page)</td><td class='exp'><b>ui_push_page</b>：进入子页（压栈）。</td></tr>
+<tr class=''><td class='no'>131</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>132</td><td class='src'>    if (page_stack_size &gt;= UI_PAGE_STACK_DEPTH) return;</td><td class='exp'>栈满不再压。</td></tr>
+<tr class=''><td class='no'>133</td><td class='src'>    page_stack[page_stack_size++] = current_page;</td><td class='exp'>当前页压入栈。</td></tr>
+<tr class=''><td class='no'>134</td><td class='src'>    if (page == UI_PAGE_PARAMS &amp;&amp; !params_dirty) {</td><td class='exp'>进入参数页且草稿干净：从运行时配置重装草稿快照并刷新数值标签。</td></tr>
+<tr class='auto'><td class='no'>135</td><td class='src'>        AppParameters active = App_Parameters_Get();</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>App_Parameters_Get()</code> 赋给 <code>AppParameters active</code>。</td></tr>
+<tr class='auto'><td class='no'>136</td><td class='src'>        for (uint8_t i = 0; i &lt; UI_PARAM_COUNT; i++) {</td><td class='exp'><span class='auto-tag'>自动</span>for 循环：按 初始化;条件;步进 三段式重复执行循环体。</td></tr>
+<tr class='auto'><td class='no'>137</td><td class='src'>            entry_params[i] = active.values[i];</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>active.values[i]</code> 赋给 <code>entry_params[i]</code>。</td></tr>
+<tr class='auto'><td class='no'>138</td><td class='src'>            demo_params[i] = active.values[i];</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>active.values[i]</code> 赋给 <code>demo_params[i]</code>。</td></tr>
+<tr class='auto'><td class='no'>139</td><td class='src'>            if (param_labels[i] != NULL) ui_param_refresh(i);</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class=''><td class='no'>140</td><td class='src'>        }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>141</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='auto'><td class='no'>142</td><td class='src'>    ui_show_page(page);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>ui_show_page()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>143</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>144</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>145</td><td class='src'>/* 从页面栈弹出上一页；没有历史记录时返回模式主页面。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>146</td><td class='src'>static void ui_go_back(void)</td><td class='exp'><b>ui_go_back</b>：返回上一页。</td></tr>
+<tr class=''><td class='no'>147</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>148</td><td class='src'>    if (current_page == UI_PAGE_CONTROL) {</td><td class='exp'>从控制页返回时方向标签复位。</td></tr>
+<tr class='auto'><td class='no'>149</td><td class='src'>        lv_label_set_text(direction_label, "方向：未按下");</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>lv_label_set_text()</code>：设置 LVGL 文本标签显示的内容（LVGL 会重绘该标签）。</td></tr>
+<tr class=''><td class='no'>150</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>151</td><td class='src'>    ui_show_page(page_stack_size ? page_stack[--page_stack_size] : UI_PAGE_MAIN);</td><td class='exp'>弹出栈顶页；空栈回主页面。</td></tr>
+<tr class=''><td class='no'>152</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>153</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>154</td><td class='src'>/* 只隐藏弹窗遮罩，不改变其下方页面或参数草稿。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>155</td><td class='src'>static void ui_dialog_hide(void)</td><td class='exp'><b>ui_dialog_hide</b>：只隐藏遮罩，不碰下层页面/草稿。</td></tr>
+<tr class=''><td class='no'>156</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>157</td><td class='src'>    lv_obj_set_hidden(dialog_layer, true);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_obj_set_hidden()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>158</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>159</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>160</td><td class='src'>/* confirm 为真时显示操作按钮和取消按钮；为假时仅显示提示和关闭按钮。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>161</td><td class='src'>static void ui_dialog_show(const char *text, bool confirm)</td><td class='exp'><b>ui_dialog_show(text, confirm)</b>：弹窗显示。</td></tr>
+<tr class=''><td class='no'>162</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>163</td><td class='src'>    dialog_action = 0U;</td><td class='exp'>动作复位为 0（保存草稿）。</td></tr>
+<tr class='auto'><td class='no'>164</td><td class='src'>    lv_label_set_text(dialog_text, text);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>lv_label_set_text()</code>：设置 LVGL 文本标签显示的内容（LVGL 会重绘该标签）。</td></tr>
+<tr class=''><td class='no'>165</td><td class='src'>    for (uint8_t i = 0; i &lt; 2; i++) {</td><td class='exp'>confirm=true 显示保存/放弃按钮，false 只留关闭按钮。</td></tr>
+<tr class='auto'><td class='no'>166</td><td class='src'>        if (confirm) lv_obj_set_hidden(dialog_buttons[i], false);</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='auto'><td class='no'>167</td><td class='src'>        else lv_obj_set_hidden(dialog_buttons[i], true);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_obj_set_hidden()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>168</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>169</td><td class='src'>    lv_obj_set_pos(dialog_buttons[2], confirm ? 149 : 77, 100);</td><td class='exp'>关闭按钮位置调整（两按钮布局 vs 单按钮布局）。</td></tr>
+<tr class=''><td class='no'>170</td><td class='src'>    lv_obj_t *close_label = lv_obj_get_child(dialog_buttons[2], 0);</td><td class='exp'>取关闭按钮的文字标签。</td></tr>
+<tr class=''><td class='no'>171</td><td class='src'>    lv_label_set_text(close_label, confirm ? "取消" : "关闭");</td><td class='exp'>文字改为“取消”或“关闭”。</td></tr>
+<tr class='auto'><td class='no'>172</td><td class='src'>    lv_obj_set_hidden(dialog_layer, false);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_obj_set_hidden()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>173</td><td class='src'>    lv_obj_move_foreground(dialog_layer);</td><td class='exp'>显示遮罩并置于最前。</td></tr>
+<tr class=''><td class='no'>174</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+</table><div class='summary'><b>小总结（页面导航与弹窗框架）：</b>本段完成“页面栈+全屏弹窗”两套 UI 骨架。页面栈让任意子页可逐级返回（深度 4）；弹窗遮罩建在屏幕根对象上，因此无论当前在哪个页面都能弹出。离开控制页自动发停止命令、参数页未保存修改先询问——这些细节保证 UI 状态与系统状态永远一致。</div><table class='code'><tr><th>行号</th><th>代码（Core/ui/user_home.c）</th><th>逐行讲解</th></tr>
+<tr class='blank'><td class='no'>175</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>176</td><td class='src'>/* 使用屏幕根对象上的遮罩层，当前页面无论显示什么都能弹出。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>177</td><td class='src'>void user_home_show_error(void)</td><td class='exp'><b>user_home_show_error</b>：异常弹窗（系统任务置标志→UI 领取后调用）。</td></tr>
+<tr class=''><td class='no'>178</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>179</td><td class='src'>    ui_show_page(UI_PAGE_MAIN);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>ui_show_page()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>180</td><td class='src'>    page_stack_size = 0U;</td><td class='exp'>回到主页面并清空返回栈。</td></tr>
+<tr class='auto'><td class='no'>181</td><td class='src'>    params_dirty = false;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>false</code> 赋给 <code>params_dirty</code>。</td></tr>
+<tr class='auto'><td class='no'>182</td><td class='src'>    save_then_back = false;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>false</code> 赋给 <code>save_then_back</code>。</td></tr>
+<tr class=''><td class='no'>183</td><td class='src'>    lv_tileview_set_tile(tileview, manual_tile, LV_ANIM_OFF);</td><td class='exp'>Tileview 切回手动瓦片。</td></tr>
+<tr class=''><td class='no'>184</td><td class='src'>    lv_obj_remove_state(recovery_button, LV_STATE_DISABLED);</td><td class='exp'>恢复按钮解除禁用状态并显示。</td></tr>
+<tr class='auto'><td class='no'>185</td><td class='src'>    lv_obj_set_hidden(recovery_button, false);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_obj_set_hidden()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>186</td><td class='src'>    ui_dialog_show("设备异常，电机已停止", false);</td><td class='exp'>弹出“设备异常，电机已停止”。</td></tr>
+<tr class=''><td class='no'>187</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>188</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>189</td><td class='src'>void user_home_show_recovery_result(uint8_t result)</td><td class='exp'><b>user_home_show_recovery_result</b>：恢复结果提示。</td></tr>
+<tr class=''><td class='no'>190</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>191</td><td class='src'>    if (result == 1U) lv_obj_set_hidden(recovery_button, true);</td><td class='exp'>成功则隐藏恢复按钮。</td></tr>
+<tr class='auto'><td class='no'>192</td><td class='src'>    else lv_obj_remove_state(recovery_button, LV_STATE_DISABLED);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_obj_remove_state()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>193</td><td class='src'>    ui_dialog_show(result == 1U ? "恢复成功，一切恢复正常" : "保存失败", false);</td><td class='exp'>弹出成功/失败提示。</td></tr>
+<tr class=''><td class='no'>194</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>195</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>196</td><td class='src'>/* 恢复按钮只登记请求，检查和故障清除分别由电机任务、系统任务执行。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>197</td><td class='src'>static void ui_recovery_cb(lv_event_t *event)</td><td class='exp'><b>ui_recovery_cb</b>：恢复按钮回调——只登记请求（App_System_RequestRecovery），然后禁用按钮防重复点击。</td></tr>
+<tr class=''><td class='no'>198</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>199</td><td class='src'>    (void)event;</td><td class='exp'><span class='auto-tag'>自动</span>执行一条函数调用语句。</td></tr>
+<tr class='auto'><td class='no'>200</td><td class='src'>    App_System_RequestRecovery();</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>App_System_RequestRecovery()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>201</td><td class='src'>    lv_obj_add_state(recovery_button, LV_STATE_DISABLED);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_obj_add_state()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>202</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>203</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>204</td><td class='src'>/* 点击关闭或取消后收起弹窗，保留当前页面状态。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>205</td><td class='src'>static void ui_close_dialog_cb(lv_event_t *event)</td><td class='exp'><b>ui_close_dialog_cb</b>：关闭/取消按钮回调。</td></tr>
+<tr class=''><td class='no'>206</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>207</td><td class='src'>    (void)event;</td><td class='exp'><span class='auto-tag'>自动</span>执行一条函数调用语句。</td></tr>
+<tr class='auto'><td class='no'>208</td><td class='src'>    ui_dialog_hide();</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>ui_dialog_hide()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>209</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>210</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>211</td><td class='src'>/* 参数草稿未保存时先询问；没有修改时直接返回。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>212</td><td class='src'>static void ui_back_cb(lv_event_t *event)</td><td class='exp'><b>ui_back_cb</b>：返回按钮回调。</td></tr>
+<tr class=''><td class='no'>213</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>214</td><td class='src'>    (void)event;</td><td class='exp'><span class='auto-tag'>自动</span>执行一条函数调用语句。</td></tr>
+<tr class=''><td class='no'>215</td><td class='src'>    if (current_page == UI_PAGE_PARAMS &amp;&amp; params_dirty) {</td><td class='exp'>参数页有未保存修改 → 弹“是否保存修改？”并显示保存/放弃按钮。</td></tr>
+<tr class='auto'><td class='no'>216</td><td class='src'>        save_then_back = true;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>true</code> 赋给 <code>save_then_back</code>。</td></tr>
+<tr class='auto'><td class='no'>217</td><td class='src'>        ui_dialog_show("是否保存修改？", true);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>ui_dialog_show()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>218</td><td class='src'>        lv_label_set_text(lv_obj_get_child(dialog_buttons[0], 0), "保存");</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>lv_label_set_text()</code>：设置 LVGL 文本标签显示的内容（LVGL 会重绘该标签）。</td></tr>
+<tr class='auto'><td class='no'>219</td><td class='src'>        lv_obj_set_hidden(dialog_buttons[1], false);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_obj_set_hidden()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>220</td><td class='src'>    } else {</td><td class='exp'>没有修改直接返回。</td></tr>
+<tr class='auto'><td class='no'>221</td><td class='src'>        ui_go_back();</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>ui_go_back()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>222</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>223</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>224</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>225</td><td class='src'>/* 主页面按钮将目标页编号放在 user_data 中，点击后压栈进入子页面。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>226</td><td class='src'>static void ui_open_cb(lv_event_t *event)</td><td class='exp'><b>ui_open_cb</b>：主页面入口按钮回调——user_data 里放目标页编号，压栈进入。</td></tr>
+<tr class=''><td class='no'>227</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>228</td><td class='src'>    UiPage page = (UiPage)(uintptr_t)lv_event_get_user_data(event);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>(UiPage)(uintptr_t)lv_event_get_user_data(event)</code> 赋给 <code>UiPage page</code>。</td></tr>
+<tr class='auto'><td class='no'>229</td><td class='src'>    ui_push_page(page);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>ui_push_page()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>230</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>231</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>232</td><td class='src'>/* 瓦片切换只请求改变模式，电机输出由系统任务决定。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>233</td><td class='src'>static void ui_tile_changed_cb(lv_event_t *event)</td><td class='exp'><b>ui_tile_changed_cb</b>：主 Tileview 换瓦片回调——只请求模式切换，电机输出由系统任务决定。</td></tr>
+<tr class=''><td class='no'>234</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>235</td><td class='src'>    (void)event;</td><td class='exp'><span class='auto-tag'>自动</span>执行一条函数调用语句。</td></tr>
+<tr class='auto'><td class='no'>236</td><td class='src'>    App_System_RequestMode(lv_tileview_get_tile_active(tileview) == auto_tile</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>237</td><td class='src'>        ? APP_MODE_AUTO : APP_MODE_MANUAL);</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>238</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>239</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>240</td><td class='src'>/* 按下和长按时持续发送方向命令，松开或触摸取消时立刻停止。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>241</td><td class='src'>/* 显示的目标速度取当前已生效参数，不使用写死的出厂速度。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>242</td><td class='src'>static void ui_direction_cb(lv_event_t *event)</td><td class='exp'><b>ui_direction_cb</b>：方向键事件处理（按下/长按/松开/丢失/取消五种事件共用）。</td></tr>
+<tr class=''><td class='no'>243</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>244</td><td class='src'>    lv_event_code_t code = lv_event_get_code(event);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>lv_event_get_code(event)</code> 赋给 <code>lv_event_code_t code</code>。</td></tr>
+<tr class='auto'><td class='no'>245</td><td class='src'>    AppManualDirection direction = (AppManualDirection)(uintptr_t)lv_event_get_user_data(event);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>(AppManualDirection)(uintptr_t)lv_event_get_user_data(event)</code> 赋给 <code>AppManualDirection direction</code>。</td></tr>
+<tr class=''><td class='no'>246</td><td class='src'>    if (code == LV_EVENT_PRESSED) {</td><td class='exp'>按下：发方向命令 + 显示“方向：X 目标：N°/s”（速度取当前生效参数）。</td></tr>
+<tr class='auto'><td class='no'>247</td><td class='src'>        static const char *const names[4] = {"上", "下", "左", "右"};</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>{"上", "下", "左", "右"}</code> 赋给 <code>static const char *const names[4]</code>。</td></tr>
+<tr class='auto'><td class='no'>248</td><td class='src'>        manual_direction = direction;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>direction</code> 赋给 <code>manual_direction</code>。</td></tr>
+<tr class='auto'><td class='no'>249</td><td class='src'>        App_ManualControl_Send(direction);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>App_ManualControl_Send()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>250</td><td class='src'>        AppParameters active = App_Parameters_Get();</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>App_Parameters_Get()</code> 赋给 <code>AppParameters active</code>。</td></tr>
+<tr class='auto'><td class='no'>251</td><td class='src'>        lv_label_set_text_fmt(direction_label, "方向：%s  目标：%u°/s",</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>252</td><td class='src'>                              names[direction - APP_MANUAL_UP], active.values[APP_PARAM_MANUAL_SPEED]);</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>253</td><td class='src'>    } else if (code == LV_EVENT_PRESSING &amp;&amp; manual_direction == direction) {</td><td class='exp'>长按持续（PRESSING）：持续续发同一方向（系统任务靠 200ms 超时判松手）。</td></tr>
+<tr class='auto'><td class='no'>254</td><td class='src'>        App_ManualControl_Send(direction);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>App_ManualControl_Send()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>255</td><td class='src'>    } else if ((code == LV_EVENT_RELEASED || code == LV_EVENT_PRESS_LOST</td><td class='exp'>松开/触摸丢失/取消：发停止命令并复位标签。</td></tr>
+<tr class='auto'><td class='no'>256</td><td class='src'>                || code == LV_EVENT_CANCEL) &amp;&amp; manual_direction == direction) {</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>257</td><td class='src'>        manual_direction = APP_MANUAL_STOP;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>APP_MANUAL_STOP</code> 赋给 <code>manual_direction</code>。</td></tr>
+<tr class='auto'><td class='no'>258</td><td class='src'>        App_ManualControl_Send(APP_MANUAL_STOP);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>App_ManualControl_Send()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>259</td><td class='src'>        lv_label_set_text(direction_label, "方向：未按下");</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>lv_label_set_text()</code>：设置 LVGL 文本标签显示的内容（LVGL 会重绘该标签）。</td></tr>
+<tr class=''><td class='no'>260</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>261</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>262</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>263</td><td class='src'>/* 根据草稿刷新指定参数的数字；Kp 以两位小数显示，内部仍按百分之一存储。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>264</td><td class='src'>/* 亮度同步到滑块时使用 param_refreshing 防止触发“用户修改”回调。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>265</td><td class='src'>static void ui_param_refresh(uint8_t index)</td><td class='exp'><b>ui_param_refresh</b>：按草稿刷新指定参数显示。</td></tr>
+<tr class=''><td class='no'>266</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>267</td><td class='src'>    if (index == APP_PARAM_AUTO_KP)</td><td class='exp'>Kp 用两位小数显示（内部按百分之一存储）。</td></tr>
+<tr class='auto'><td class='no'>268</td><td class='src'>        lv_label_set_text_fmt(param_labels[index], "%ld.%02ld",</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>269</td><td class='src'>                              (long)(demo_params[index] / 100), (long)(demo_params[index] % 100));</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>270</td><td class='src'>    else</td><td class='exp'><span class='auto-tag'>自动</span>否则分支：上面所有条件都不满足时执行这里。</td></tr>
+<tr class='auto'><td class='no'>271</td><td class='src'>        lv_label_set_text_fmt(param_labels[index], "%ld", (long)demo_params[index]);</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>272</td><td class='src'>    if (index == APP_PARAM_BRIGHTNESS &amp;&amp; param_slider != NULL</td><td class='exp'>亮度同步滑块：先置 param_refreshing 再 set_value，防止触发 ui_brightness_cb 把程序动作当成用户修改。</td></tr>
+<tr class='auto'><td class='no'>273</td><td class='src'>        &amp;&amp; lv_slider_get_value(param_slider) != demo_params[index]) {</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>274</td><td class='src'>        param_refreshing = true;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>true</code> 赋给 <code>param_refreshing</code>。</td></tr>
+<tr class='auto'><td class='no'>275</td><td class='src'>        lv_slider_set_value(param_slider, demo_params[index], LV_ANIM_OFF);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_slider_set_value()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>276</td><td class='src'>        param_refreshing = false;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>false</code> 赋给 <code>param_refreshing</code>。</td></tr>
+<tr class=''><td class='no'>277</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>278</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>279</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>280</td><td class='src'>/* 加减按钮用 user_data 的低位区分方向，其余位表示参数下标。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>281</td><td class='src'>/* 单击或长按重复事件每次调整一个整数单位，达到上下限后保持边界值。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>282</td><td class='src'>static void ui_param_change_cb(lv_event_t *event)</td><td class='exp'><b>ui_param_change_cb</b>：加减按钮回调。</td></tr>
+<tr class=''><td class='no'>283</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>284</td><td class='src'>    uintptr_t code = (uintptr_t)lv_event_get_user_data(event);</td><td class='exp'>user_data 编码：低位=方向(+1/−1)，其余位=参数下标（i*2 或 i*2+1）。</td></tr>
+<tr class='auto'><td class='no'>285</td><td class='src'>    uint8_t index = (uint8_t)(code / 2U);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>(uint8_t)(code / 2U)</code> 赋给 <code>uint8_t index</code>。</td></tr>
+<tr class='auto'><td class='no'>286</td><td class='src'>    int32_t delta = (code &amp; 1U) ? 1 : -1;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>(code & 1U) ? 1 : -1</code> 赋给 <code>int32_t delta</code>。</td></tr>
+<tr class='auto'><td class='no'>287</td><td class='src'>    int32_t value = demo_params[index] + delta;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>demo_params[index] + delta</code> 赋给 <code>int32_t value</code>。</td></tr>
+<tr class=''><td class='no'>288</td><td class='src'>    if (value &lt; App_Parameters_Min(index)) value = App_Parameters_Min(index);</td><td class='exp'>按范围表限幅。</td></tr>
+<tr class='auto'><td class='no'>289</td><td class='src'>    if (value &gt; App_Parameters_Max(index)) value = App_Parameters_Max(index);</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class=''><td class='no'>290</td><td class='src'>    demo_params[index] = value;</td><td class='exp'>更新草稿并标脏。</td></tr>
+<tr class='auto'><td class='no'>291</td><td class='src'>    params_dirty = true;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>true</code> 赋给 <code>params_dirty</code>。</td></tr>
+<tr class='auto'><td class='no'>292</td><td class='src'>    ui_param_refresh(index);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>ui_param_refresh()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>293</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>294</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>295</td><td class='src'>/* 用户拖动亮度滑块时更新草稿，实际 PWM 在保存成功后由系统任务应用。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>296</td><td class='src'>static void ui_brightness_cb(lv_event_t *event)</td><td class='exp'><b>ui_brightness_cb</b>：滑块拖动回调——更新草稿。实际 PWM 在保存成功后由系统任务应用。</td></tr>
+<tr class=''><td class='no'>297</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>298</td><td class='src'>    if (param_refreshing) return;</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='auto'><td class='no'>299</td><td class='src'>    demo_params[APP_PARAM_BRIGHTNESS] = lv_slider_get_value(lv_event_get_target(event));</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>lv_slider_get_value(lv_event_get_target(event))</code> 赋给 <code>demo_params[APP_PARAM_BRIGHTNESS]</code>。</td></tr>
+<tr class='auto'><td class='no'>300</td><td class='src'>    params_dirty = true;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>true</code> 赋给 <code>params_dirty</code>。</td></tr>
+<tr class='auto'><td class='no'>301</td><td class='src'>    ui_param_refresh(APP_PARAM_BRIGHTNESS);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>ui_param_refresh()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>302</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+</table><div class='summary'><b>小总结（参数编辑流）：</b>草稿(demo_params)与快照(entry_params)分离：进入页面装载快照，加减/滑块只改草稿；保存走 App_Parameters_Save（含读回确认）成功才同步快照；放弃则恢复快照。param_refreshing 标志防止程序设滑块时误触发用户回调——LVGL 事件回环的经典陷阱的解法。</div><table class='code'><tr><th>行号</th><th>代码（Core/ui/user_home.c）</th><th>逐行讲解</th></tr>
+<tr class='blank'><td class='no'>303</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>304</td><td class='src'>/* 把九项草稿写入用户双槽；底层读回成功后运行时参数立即生效。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>305</td><td class='src'>/* 保存失败保留草稿供重试；从返回弹窗保存成功则先退页再提示成功。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>306</td><td class='src'>static void ui_save_parameters(void)</td><td class='exp'><b>ui_save_parameters</b>：保存九项草稿。</td></tr>
+<tr class=''><td class='no'>307</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>308</td><td class='src'>    AppParameters changed;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>changed</code>（类型 <code>AppParameters</code>）。</td></tr>
+<tr class='auto'><td class='no'>309</td><td class='src'>    for (uint8_t i = 0; i &lt; UI_PARAM_COUNT; i++) changed.values[i] = (uint16_t)demo_params[i];</td><td class='exp'><span class='auto-tag'>自动</span>for 循环：按 初始化;条件;步进 三段式重复执行循环体。</td></tr>
+<tr class=''><td class='no'>310</td><td class='src'>    if (App_Parameters_Save(&amp;changed) != HAL_OK) {</td><td class='exp'>App_Parameters_Save 失败 → 弹“保存失败，请重试”，草稿保留供重试。</td></tr>
+<tr class='auto'><td class='no'>311</td><td class='src'>        save_then_back = false;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>false</code> 赋给 <code>save_then_back</code>。</td></tr>
+<tr class='auto'><td class='no'>312</td><td class='src'>        ui_dialog_show("保存失败，请重试", false);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>ui_dialog_show()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>313</td><td class='src'>        return;</td><td class='exp'><span class='auto-tag'>自动</span>函数到此直接返回（无返回值）。</td></tr>
+<tr class=''><td class='no'>314</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='auto'><td class='no'>315</td><td class='src'>    params_dirty = false;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>false</code> 赋给 <code>params_dirty</code>。</td></tr>
+<tr class=''><td class='no'>316</td><td class='src'>    for (uint8_t i = 0; i &lt; UI_PARAM_COUNT; i++) entry_params[i] = demo_params[i];</td><td class='exp'>成功：脏标志清除，快照同步。</td></tr>
+<tr class=''><td class='no'>317</td><td class='src'>    if (save_then_back) {</td><td class='exp'>从返回弹窗进来的：先退页再提示成功。</td></tr>
+<tr class='auto'><td class='no'>318</td><td class='src'>        ui_go_back();</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>ui_go_back()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>319</td><td class='src'>        save_then_back = false;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>false</code> 赋给 <code>save_then_back</code>。</td></tr>
+<tr class=''><td class='no'>320</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='auto'><td class='no'>321</td><td class='src'>    ui_dialog_show("保存成功", false);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>ui_dialog_show()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>322</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>323</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>324</td><td class='src'>/* 固定“保存”按钮直接保存当前草稿，保存后继续停留在参数页。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>325</td><td class='src'>static void ui_save_cb(lv_event_t *event)</td><td class='exp'><b>ui_save_cb</b>：固定保存按钮回调。</td></tr>
+<tr class=''><td class='no'>326</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>327</td><td class='src'>    (void)event;</td><td class='exp'><span class='auto-tag'>自动</span>执行一条函数调用语句。</td></tr>
+<tr class='auto'><td class='no'>328</td><td class='src'>    save_then_back = false;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>false</code> 赋给 <code>save_then_back</code>。</td></tr>
+<tr class='auto'><td class='no'>329</td><td class='src'>    ui_save_parameters();</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>ui_save_parameters()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>330</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>331</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>332</td><td class='src'>/* 弹窗“确定”：按 dialog_action 保存草稿、恢复出厂或回归旧版。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>333</td><td class='src'>/* 恢复操作成功后重新读取已生效参数，刷新两页显示和草稿快照。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>334</td><td class='src'>static void ui_confirm_save_cb(lv_event_t *event)</td><td class='exp'><b>ui_confirm_save_cb</b>：弹窗“确定”：按 dialog_action 分别执行保存/恢复出厂/回归旧版。</td></tr>
+<tr class=''><td class='no'>335</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>336</td><td class='src'>    (void)event;</td><td class='exp'><span class='auto-tag'>自动</span>执行一条函数调用语句。</td></tr>
+<tr class='auto'><td class='no'>337</td><td class='src'>    if (dialog_action == 0U) {</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='auto'><td class='no'>338</td><td class='src'>        ui_save_parameters();</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>ui_save_parameters()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>339</td><td class='src'>        return;</td><td class='exp'><span class='auto-tag'>自动</span>函数到此直接返回（无返回值）。</td></tr>
+<tr class=''><td class='no'>340</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='auto'><td class='no'>341</td><td class='src'>    HAL_StatusTypeDef status = dialog_action == 1U</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>342</td><td class='src'>        ? App_Parameters_RestoreFactory() : App_Parameters_RestorePrevious();</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>343</td><td class='src'>    if (status == HAL_OK) {</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class=''><td class='no'>344</td><td class='src'>        AppParameters active = App_Parameters_Get();</td><td class='exp'>恢复成功后重读生效参数并刷新全部显示。</td></tr>
+<tr class='auto'><td class='no'>345</td><td class='src'>        for (uint8_t i = 0; i &lt; UI_PARAM_COUNT; i++) {</td><td class='exp'><span class='auto-tag'>自动</span>for 循环：按 初始化;条件;步进 三段式重复执行循环体。</td></tr>
+<tr class='auto'><td class='no'>346</td><td class='src'>            demo_params[i] = active.values[i];</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>active.values[i]</code> 赋给 <code>demo_params[i]</code>。</td></tr>
+<tr class='auto'><td class='no'>347</td><td class='src'>            entry_params[i] = active.values[i];</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>active.values[i]</code> 赋给 <code>entry_params[i]</code>。</td></tr>
+<tr class='auto'><td class='no'>348</td><td class='src'>            ui_param_refresh(i);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>ui_param_refresh()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>349</td><td class='src'>        }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='auto'><td class='no'>350</td><td class='src'>        params_dirty = false;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>false</code> 赋给 <code>params_dirty</code>。</td></tr>
+<tr class='auto'><td class='no'>351</td><td class='src'>        ui_dialog_show("已保存并生效", false);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>ui_dialog_show()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>352</td><td class='src'>    } else {</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>353</td><td class='src'>        ui_dialog_show(status == HAL_BUSY ? "旧版本不可用" : "操作失败，请重试", false);</td><td class='exp'>HAL_BUSY 显示“旧版本不可用”。</td></tr>
+<tr class=''><td class='no'>354</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>355</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>356</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>357</td><td class='src'>/* 恢复按钮只打开确定/取消弹窗；真正的 Flash 操作留给确认回调执行。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>358</td><td class='src'>static void ui_restore_cb(lv_event_t *event)</td><td class='exp'><b>ui_restore_cb</b>：恢复出厂/回归旧版按钮——先弹确认框，Flash 操作留给确认回调。</td></tr>
+<tr class=''><td class='no'>359</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>360</td><td class='src'>    uint8_t action = (uint8_t)(uintptr_t)lv_event_get_user_data(event);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>(uint8_t)(uintptr_t)lv_event_get_user_data(event)</code> 赋给 <code>uint8_t action</code>。</td></tr>
+<tr class='auto'><td class='no'>361</td><td class='src'>    ui_dialog_show(action == 1U ? "恢复出厂设置并保存？" : "回归旧版本并保存？", true);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>ui_dialog_show()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>362</td><td class='src'>    dialog_action = action;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>action</code> 赋给 <code>dialog_action</code>。</td></tr>
+<tr class='auto'><td class='no'>363</td><td class='src'>    lv_label_set_text(lv_obj_get_child(dialog_buttons[0], 0), "确定");</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>lv_label_set_text()</code>：设置 LVGL 文本标签显示的内容（LVGL 会重绘该标签）。</td></tr>
+<tr class='auto'><td class='no'>364</td><td class='src'>    lv_obj_set_hidden(dialog_buttons[1], true);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_obj_set_hidden()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>365</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>366</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>367</td><td class='src'>/* 参数 Tileview 横向切页时更新固定角标，显示当前页/总页数。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>368</td><td class='src'>static void ui_param_tile_cb(lv_event_t *event)</td><td class='exp'><b>ui_param_tile_cb</b>：参数 Tileview 换页 → 更新页码 1/2 或 2/2。</td></tr>
+<tr class=''><td class='no'>369</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>370</td><td class='src'>    (void)event;</td><td class='exp'><span class='auto-tag'>自动</span>执行一条函数调用语句。</td></tr>
+<tr class='auto'><td class='no'>371</td><td class='src'>    lv_obj_t *tile = lv_tileview_get_tile_active(param_tileview);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>lv_tileview_get_tile_active(param_tileview)</code> 赋给 <code>lv_obj_t *tile</code>。</td></tr>
+<tr class='auto'><td class='no'>372</td><td class='src'>    lv_label_set_text(param_page_label, lv_obj_get_index(tile) == 0 ? "1/2" : "2/2");</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>lv_label_set_text()</code>：设置 LVGL 文本标签显示的内容（LVGL 会重绘该标签）。</td></tr>
+<tr class=''><td class='no'>373</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>374</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>375</td><td class='src'>/* 返回弹窗中选择“放弃”时恢复进入页面前的快照，再退出参数页。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>376</td><td class='src'>static void ui_discard_cb(lv_event_t *event)</td><td class='exp'><b>ui_discard_cb</b>：返回弹窗选“放弃”→ 恢复进入页面前的快照再退页。</td></tr>
+<tr class=''><td class='no'>377</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>378</td><td class='src'>    (void)event;</td><td class='exp'><span class='auto-tag'>自动</span>执行一条函数调用语句。</td></tr>
+<tr class='auto'><td class='no'>379</td><td class='src'>    for (uint8_t i = 0; i &lt; UI_PARAM_COUNT; i++) {</td><td class='exp'><span class='auto-tag'>自动</span>for 循环：按 初始化;条件;步进 三段式重复执行循环体。</td></tr>
+<tr class='auto'><td class='no'>380</td><td class='src'>        demo_params[i] = entry_params[i];</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>entry_params[i]</code> 赋给 <code>demo_params[i]</code>。</td></tr>
+<tr class='auto'><td class='no'>381</td><td class='src'>        ui_param_refresh(i);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>ui_param_refresh()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>382</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='auto'><td class='no'>383</td><td class='src'>    params_dirty = false;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>false</code> 赋给 <code>params_dirty</code>。</td></tr>
+<tr class='auto'><td class='no'>384</td><td class='src'>    save_then_back = false;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>false</code> 赋给 <code>save_then_back</code>。</td></tr>
+<tr class='auto'><td class='no'>385</td><td class='src'>    ui_dialog_hide();</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>ui_dialog_hide()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>386</td><td class='src'>    ui_go_back();</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>ui_go_back()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>387</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>388</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>389</td><td class='src'>/* 产品说明页保留的异常弹窗预览入口，不主动触发电机故障。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>390</td><td class='src'>static void ui_error_preview_cb(lv_event_t *event)</td><td class='exp'><b>ui_error_preview_cb</b>：说明页的弹窗预览（不真触发电机故障）。</td></tr>
+<tr class=''><td class='no'>391</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>392</td><td class='src'>    (void)event;</td><td class='exp'><span class='auto-tag'>自动</span>执行一条函数调用语句。</td></tr>
+<tr class='auto'><td class='no'>393</td><td class='src'>    ui_dialog_show("设备异常（弹窗预览）", false);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>ui_dialog_show()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>394</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>395</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>396</td><td class='src'>/* 从采样队列取最新一帧，计算均值、总差和两轴差值并刷新固定底栏。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>397</td><td class='src'>/* 队列为空时沿用上次显示，不把旧采样误当成新的传感器读数。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>398</td><td class='src'>static void ui_adc_timer_cb(lv_timer_t *timer)</td><td class='exp'><b>ui_adc_timer_cb</b>：200ms 定时器——底栏光敏数据刷新。</td></tr>
+<tr class=''><td class='no'>399</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>400</td><td class='src'>    SmaplingData_t sample;</td><td class='exp'><span class='auto-tag'>自动</span>声明变量 <code>sample</code>（类型 <code>SmaplingData_t</code>）。</td></tr>
+<tr class='auto'><td class='no'>401</td><td class='src'>    bool received = false;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>false</code> 赋给 <code>bool received</code>。</td></tr>
+<tr class='auto'><td class='no'>402</td><td class='src'>    (void)timer;</td><td class='exp'><span class='auto-tag'>自动</span>执行一条函数调用语句。</td></tr>
+<tr class='auto'><td class='no'>403</td><td class='src'>    if (SmaplingHandle == NULL) return;</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class=''><td class='no'>404</td><td class='src'>    while (osMessageQueueGet(SmaplingHandle, &amp;sample, NULL, 0U) == osOK) {</td><td class='exp'>排空 Smapling 队列取最新一帧（队列空沿用上次显示，不把旧数据当新读数）。</td></tr>
+<tr class='auto'><td class='no'>405</td><td class='src'>        received = true;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>true</code> 赋给 <code>received</code>。</td></tr>
+<tr class=''><td class='no'>406</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='auto'><td class='no'>407</td><td class='src'>    if (!received) return;</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='blank'><td class='no'>408</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>409</td><td class='src'>    uint16_t max = sample.left_top;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>sample.left_top</code> 赋给 <code>uint16_t max</code>。</td></tr>
+<tr class='auto'><td class='no'>410</td><td class='src'>    uint16_t min = sample.left_top;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>sample.left_top</code> 赋给 <code>uint16_t min</code>。</td></tr>
+<tr class='auto'><td class='no'>411</td><td class='src'>    uint16_t values[4] = {sample.left_top, sample.left_bottom,</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>412</td><td class='src'>                          sample.right_top, sample.right_bottom};</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>413</td><td class='src'>    uint32_t sum = 0;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>0</code> 赋给 <code>uint32_t sum</code>。</td></tr>
+<tr class=''><td class='no'>414</td><td class='src'>    for (uint8_t i = 0; i &lt; 4; i++) {</td><td class='exp'>计算四路最大/最小/总和。</td></tr>
+<tr class='auto'><td class='no'>415</td><td class='src'>        if (values[i] &gt; max) max = values[i];</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='auto'><td class='no'>416</td><td class='src'>        if (values[i] &lt; min) min = values[i];</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='auto'><td class='no'>417</td><td class='src'>        sum += values[i];</td><td class='exp'><span class='auto-tag'>自动</span>把 <code>sum</code> 与 <code>values[i]</code> 做相加运算后写回 <code>sum</code>。</td></tr>
+<tr class=''><td class='no'>418</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>419</td><td class='src'>    int32_t x_diff = (int32_t)values[0] + values[1] - values[2] - values[3];</td><td class='exp'>左右差 = 左上+左下−右上−右下。</td></tr>
+<tr class=''><td class='no'>420</td><td class='src'>    int32_t y_diff = (int32_t)values[0] + values[2] - values[1] - values[3];</td><td class='exp'>上下差 = 左上+右上−左下−右下。</td></tr>
+<tr class=''><td class='no'>421</td><td class='src'>    lv_label_set_text_fmt(adc_labels[0], "左上%u", (unsigned int)values[0]);</td><td class='exp'>刷新 8 个底栏标签与自动页两个标签（lv_label_set_text_fmt 格式化）。</td></tr>
+<tr class='auto'><td class='no'>422</td><td class='src'>    lv_label_set_text_fmt(adc_labels[1], "左下%u", (unsigned int)values[1]);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_label_set_text_fmt()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>423</td><td class='src'>    lv_label_set_text_fmt(adc_labels[2], "右上%u", (unsigned int)values[2]);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_label_set_text_fmt()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>424</td><td class='src'>    lv_label_set_text_fmt(adc_labels[3], "右下%u", (unsigned int)values[3]);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_label_set_text_fmt()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>425</td><td class='src'>    lv_label_set_text_fmt(adc_labels[4], "均%lu", (unsigned long)(sum / 4U));</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_label_set_text_fmt()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>426</td><td class='src'>    lv_label_set_text_fmt(adc_labels[5], "差%u", (unsigned int)(max - min));</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_label_set_text_fmt()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>427</td><td class='src'>    lv_label_set_text_fmt(adc_labels[6], "左右差%ld", (long)x_diff);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_label_set_text_fmt()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>428</td><td class='src'>    lv_label_set_text_fmt(adc_labels[7], "上下差%ld", (long)y_diff);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_label_set_text_fmt()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>429</td><td class='src'>    lv_label_set_text_fmt(auto_avg_label, "平均光照：%lu", (unsigned long)(sum / 4U));</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_label_set_text_fmt()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>430</td><td class='src'>    lv_label_set_text_fmt(auto_diff_label, "光照总差：%u", (unsigned int)(max - min));</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_label_set_text_fmt()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>431</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>432</td><td class='src'> </td><td class='exp'></td></tr>
+</table><div class='summary'><b>小总结（数据底栏）：</b>200ms 的 lv_timer 从 Smapling 队列取最新帧，计算均值/总差/两轴差并刷新 8 个标签。队列空时沿用上次显示——不把旧采样误当新读数。LVGL 定时器跑在 UI 任务里，天然与渲染同线程，无并发问题。</div><table class='code'><tr><th>行号</th><th>代码（Core/ui/user_home.c）</th><th>逐行讲解</th></tr>
+<tr class='comment'><td class='no'>433</td><td class='src'>/* 创建手动/自动主瓦片、参数双页、固定光敏底栏及全屏弹窗。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>434</td><td class='src'>/* 参数页每页最多五项；保存、恢复出厂和回归旧版按钮创建在瓦片外。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>435</td><td class='src'>void user_home_create(void)</td><td class='exp'><b>user_home_create</b>：构建整个界面（App_Ui_Init 调用）。</td></tr>
+<tr class=''><td class='no'>436</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>437</td><td class='src'>    lv_obj_t *screen = lv_screen_active();</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>lv_screen_active()</code> 赋给 <code>lv_obj_t *screen</code>。</td></tr>
+<tr class=''><td class='no'>438</td><td class='src'>    lv_obj_clean(screen);</td><td class='exp'>取当前屏幕。</td></tr>
+<tr class=''><td class='no'>439</td><td class='src'> </td><td class='exp'>lv_obj_clean 清空屏幕（重入安全）。</td></tr>
+<tr class=''><td class='no'>440</td><td class='src'>    tileview = lv_tileview_create(screen);</td><td class='exp'>创建主 Tileview。</td></tr>
+<tr class='auto'><td class='no'>441</td><td class='src'>    lv_obj_set_pos(tileview, 0, 0);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>lv_obj_set_pos()</code>：设置 LVGL 对象在父容器中的 x/y 坐标。</td></tr>
+<tr class='auto'><td class='no'>442</td><td class='src'>    lv_obj_set_size(tileview, UI_SCREEN_W, UI_CONTENT_H);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>lv_obj_set_size()</code>：设置 LVGL 对象的宽度和高度。</td></tr>
+<tr class=''><td class='no'>443</td><td class='src'>    manual_tile = lv_tileview_add_tile(tileview, 0, 0, LV_DIR_BOTTOM);</td><td class='exp'>手动瓦片（只能向下滑）。</td></tr>
+<tr class=''><td class='no'>444</td><td class='src'>    auto_tile = lv_tileview_add_tile(tileview, 0, 1, LV_DIR_TOP);</td><td class='exp'>自动瓦片（只能向上滑）。</td></tr>
+<tr class=''><td class='no'>445</td><td class='src'>    lv_obj_add_event_cb(tileview, ui_tile_changed_cb, LV_EVENT_VALUE_CHANGED, NULL);</td><td class='exp'>绑定换瓦片回调。</td></tr>
+<tr class=''><td class='no'>446</td><td class='src'>    lv_obj_set_style_pad_all(manual_tile, 0, 0);</td><td class='exp'>两个瓦片边距清零、禁止内部滚动。</td></tr>
+<tr class='auto'><td class='no'>447</td><td class='src'>    lv_obj_set_style_pad_all(auto_tile, 0, 0);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_obj_set_style_pad_all()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>448</td><td class='src'>    lv_obj_set_scrollable(manual_tile, false);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_obj_set_scrollable()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>449</td><td class='src'>    lv_obj_set_scrollable(auto_tile, false);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_obj_set_scrollable()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='comment'><td class='no'>450</td><td class='src'>    /* 手动标题缩短，右侧留给最后五秒的统一倒计时。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>451</td><td class='src'>    ui_label(manual_tile, "手动模式", 8, 9, 100);</td><td class='exp'>手动页标题（缩短给倒计时留位）。</td></tr>
+<tr class=''><td class='no'>452</td><td class='src'>    recovery_button = ui_button(manual_tile, "恢复电机", 160, 5, 72, 29,</td><td class='exp'>创建“恢复电机”按钮，默认隐藏。</td></tr>
+<tr class='auto'><td class='no'>453</td><td class='src'>                                ui_recovery_cb, NULL);</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>454</td><td class='src'>    lv_obj_set_hidden(recovery_button, true);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_obj_set_hidden()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>455</td><td class='src'>    ui_label(manual_tile, "上滑切换自动", 8, 236, 224);</td><td class='exp'>上滑提示。</td></tr>
+<tr class=''><td class='no'>456</td><td class='src'>    ui_button(manual_tile, "手动控制", 16, 42, 208, 40, ui_open_cb, (void *)(uintptr_t)UI_PAGE_CONTROL);</td><td class='exp'>四个入口按钮（手动控制/参数调节/产品说明/App 观测），user_data 传页面编号。</td></tr>
+<tr class='auto'><td class='no'>457</td><td class='src'>    ui_button(manual_tile, "参数调节", 16, 90, 208, 40, ui_open_cb, (void *)(uintptr_t)UI_PAGE_PARAMS);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>ui_button()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>458</td><td class='src'>    ui_button(manual_tile, "产品说明", 16, 138, 208, 40, ui_open_cb, (void *)(uintptr_t)UI_PAGE_ABOUT);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>ui_button()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>459</td><td class='src'>    ui_button(manual_tile, "手机 App 观测", 16, 186, 208, 40, ui_open_cb, (void *)(uintptr_t)UI_PAGE_APP);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>ui_button()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='blank'><td class='no'>460</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>461</td><td class='src'>    ui_label(auto_tile, "自动模式  下滑返回手动", 8, 9, 224);</td><td class='exp'>自动页标题与信息标签。</td></tr>
+<tr class='auto'><td class='no'>462</td><td class='src'>    auto_avg_label = ui_label(auto_tile, "平均光照：--", 12, 48, 216);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>ui_label(auto_tile, "平均光照：--", 12, 48, 216)</code> 赋给 <code>auto_avg_label</code>。</td></tr>
+<tr class='auto'><td class='no'>463</td><td class='src'>    auto_diff_label = ui_label(auto_tile, "光照总差：--", 12, 78, 216);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>ui_label(auto_tile, "光照总差：--", 12, 78, 216)</code> 赋给 <code>auto_diff_label</code>。</td></tr>
+<tr class='auto'><td class='no'>464</td><td class='src'>    ui_label(auto_tile, "进入自动后等待 3 s\n光差平衡时保持位置\n低光判断已接入", 12, 120, 216);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>ui_label()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>465</td><td class='src'>    ui_label(auto_tile, "光强差控制已接入", 12, 225, 216);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>ui_label()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='blank'><td class='no'>466</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>467</td><td class='src'>    pages[UI_PAGE_CONTROL] = ui_subpage("手动控制");</td><td class='exp'>创建手动控制子页：返回按钮、提示、上下左右四键。</td></tr>
+<tr class='auto'><td class='no'>468</td><td class='src'>    ui_button(pages[UI_PAGE_CONTROL], "返回", 180, 5, 52, 29, ui_back_cb, NULL);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>ui_button()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>469</td><td class='src'>    ui_label(pages[UI_PAGE_CONTROL], "长按方向键，松开保持", 8, 48, 224);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>ui_label()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>470</td><td class='src'>    lv_obj_t *directions[4];</td><td class='exp'><span class='auto-tag'>自动</span>声明指针变量 <code>directions</code>（类型 <code>lv_obj_t</code>，数组）。</td></tr>
+<tr class='auto'><td class='no'>471</td><td class='src'>    directions[0] = ui_button(pages[UI_PAGE_CONTROL], "上", 94, 78, 52, 42, NULL, NULL);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>ui_button(pages[UI_PAGE_CONTROL], "上", 94, 78, 52, 42, NULL, NULL)</code> 赋给 <code>directions[0]</code>。</td></tr>
+<tr class='auto'><td class='no'>472</td><td class='src'>    directions[1] = ui_button(pages[UI_PAGE_CONTROL], "下", 94, 174, 52, 42, NULL, NULL);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>ui_button(pages[UI_PAGE_CONTROL], "下", 94, 174, 52, 42, NULL, NULL)</code> 赋给 <code>directions[1]</code>。</td></tr>
+<tr class='auto'><td class='no'>473</td><td class='src'>    directions[2] = ui_button(pages[UI_PAGE_CONTROL], "左", 28, 126, 52, 42, NULL, NULL);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>ui_button(pages[UI_PAGE_CONTROL], "左", 28, 126, 52, 42, NULL, NULL)</code> 赋给 <code>directions[2]</code>。</td></tr>
+<tr class='auto'><td class='no'>474</td><td class='src'>    directions[3] = ui_button(pages[UI_PAGE_CONTROL], "右", 160, 126, 52, 42, NULL, NULL);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>ui_button(pages[UI_PAGE_CONTROL], "右", 160, 126, 52, 42, NULL, NULL)</code> 赋给 <code>directions[3]</code>。</td></tr>
+<tr class=''><td class='no'>475</td><td class='src'>    for (uint8_t i = 0; i &lt; 4; i++) {</td><td class='exp'>四个方向键各绑 5 种事件（按下/长按续发/松开/丢失/取消），user_data 传方向枚举值。</td></tr>
+<tr class='auto'><td class='no'>476</td><td class='src'>        void *direction = (void *)(uintptr_t)(APP_MANUAL_UP + i);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>(void *)(uintptr_t)(APP_MANUAL_UP + i)</code> 赋给 <code>void *direction</code>。</td></tr>
+<tr class='auto'><td class='no'>477</td><td class='src'>        lv_obj_add_event_cb(directions[i], ui_direction_cb, LV_EVENT_PRESSED, direction);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>lv_obj_add_event_cb()</code>：为 LVGL 对象注册事件回调：指定事件（如点击）发生时执行对应函数。</td></tr>
+<tr class='auto'><td class='no'>478</td><td class='src'>        lv_obj_add_event_cb(directions[i], ui_direction_cb, LV_EVENT_PRESSING, direction);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>lv_obj_add_event_cb()</code>：为 LVGL 对象注册事件回调：指定事件（如点击）发生时执行对应函数。</td></tr>
+<tr class='auto'><td class='no'>479</td><td class='src'>        lv_obj_add_event_cb(directions[i], ui_direction_cb, LV_EVENT_RELEASED, direction);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>lv_obj_add_event_cb()</code>：为 LVGL 对象注册事件回调：指定事件（如点击）发生时执行对应函数。</td></tr>
+<tr class='auto'><td class='no'>480</td><td class='src'>        lv_obj_add_event_cb(directions[i], ui_direction_cb, LV_EVENT_PRESS_LOST, direction);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>lv_obj_add_event_cb()</code>：为 LVGL 对象注册事件回调：指定事件（如点击）发生时执行对应函数。</td></tr>
+<tr class='auto'><td class='no'>481</td><td class='src'>        lv_obj_add_event_cb(directions[i], ui_direction_cb, LV_EVENT_CANCEL, direction);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>lv_obj_add_event_cb()</code>：为 LVGL 对象注册事件回调：指定事件（如点击）发生时执行对应函数。</td></tr>
+<tr class=''><td class='no'>482</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='auto'><td class='no'>483</td><td class='src'>    direction_label = ui_label(pages[UI_PAGE_CONTROL], "方向：未按下", 8, 230, 224);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>ui_label(pages[UI_PAGE_CONTROL], "方向：未按下", 8, 230, 224)</code> 赋给 <code>direction_label</code>。</td></tr>
+<tr class='blank'><td class='no'>484</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>485</td><td class='src'>    pages[UI_PAGE_PARAMS] = ui_subpage("参数调节");</td><td class='exp'>创建参数调节子页：返回按钮、页码、内嵌双页 Tileview。</td></tr>
+<tr class='auto'><td class='no'>486</td><td class='src'>    ui_button(pages[UI_PAGE_PARAMS], "返回", 180, 5, 52, 29, ui_back_cb, NULL);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>ui_button()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>487</td><td class='src'>    param_page_label = ui_label(pages[UI_PAGE_PARAMS], "1/2", 142, 11, 35);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>ui_label(pages[UI_PAGE_PARAMS], "1/2", 142, 11, 35)</code> 赋给 <code>param_page_label</code>。</td></tr>
+<tr class='comment'><td class='no'>488</td><td class='src'>    /* 参数 Tileview 只占页面中段，左右滑动不会移动标题、页码和底部操作按钮。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>489</td><td class='src'>    param_tileview = lv_tileview_create(pages[UI_PAGE_PARAMS]);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>lv_tileview_create(pages[UI_PAGE_PARAMS])</code> 赋给 <code>param_tileview</code>。</td></tr>
+<tr class='auto'><td class='no'>490</td><td class='src'>    lv_obj_set_pos(param_tileview, 0, 39);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>lv_obj_set_pos()</code>：设置 LVGL 对象在父容器中的 x/y 坐标。</td></tr>
+<tr class='auto'><td class='no'>491</td><td class='src'>    lv_obj_set_size(param_tileview, 240, 160);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>lv_obj_set_size()</code>：设置 LVGL 对象的宽度和高度。</td></tr>
+<tr class='auto'><td class='no'>492</td><td class='src'>    lv_obj_set_style_pad_all(param_tileview, 0, 0);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_obj_set_style_pad_all()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>493</td><td class='src'>    lv_obj_add_event_cb(param_tileview, ui_param_tile_cb, LV_EVENT_VALUE_CHANGED, NULL);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>lv_obj_add_event_cb()</code>：为 LVGL 对象注册事件回调：指定事件（如点击）发生时执行对应函数。</td></tr>
+<tr class='auto'><td class='no'>494</td><td class='src'>    lv_obj_t *param_tiles[2];</td><td class='exp'><span class='auto-tag'>自动</span>声明指针变量 <code>param_tiles</code>（类型 <code>lv_obj_t</code>，数组）。</td></tr>
+<tr class='auto'><td class='no'>495</td><td class='src'>    param_tiles[0] = lv_tileview_add_tile(param_tileview, 0, 0, LV_DIR_RIGHT);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>lv_tileview_add_tile(param_tileview, 0, 0, LV_DIR_RIGHT)</code> 赋给 <code>param_tiles[0]</code>。</td></tr>
+<tr class='auto'><td class='no'>496</td><td class='src'>    param_tiles[1] = lv_tileview_add_tile(param_tileview, 1, 0, LV_DIR_LEFT);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>lv_tileview_add_tile(param_tileview, 1, 0, LV_DIR_LEFT)</code> 赋给 <code>param_tiles[1]</code>。</td></tr>
+<tr class='auto'><td class='no'>497</td><td class='src'>    for (uint8_t i = 0; i &lt; 2; i++) {</td><td class='exp'><span class='auto-tag'>自动</span>for 循环：按 初始化;条件;步进 三段式重复执行循环体。</td></tr>
+<tr class='auto'><td class='no'>498</td><td class='src'>        lv_obj_set_style_pad_all(param_tiles[i], 0, 0);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_obj_set_style_pad_all()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>499</td><td class='src'>        lv_obj_set_scrollable(param_tiles[i], false);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_obj_set_scrollable()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>500</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='comment'><td class='no'>501</td><td class='src'>    /* 枚举下标决定瓦片和行号；亮度为滑块，其余参数用加减按钮调节。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>502</td><td class='src'>    for (uint8_t i = 0; i &lt; UI_PARAM_COUNT; i++) {</td><td class='exp'>循环创建 9 个参数行：第 0 项亮度用滑块，其余用 −/数值/+ 布局；加减按钮同时绑定单击与长按重复事件（LONG_PRESSED_REPEAT 长按连续调整）。</td></tr>
+<tr class='auto'><td class='no'>503</td><td class='src'>        lv_obj_t *tile = param_tiles[i / UI_PARAMS_PER_TILE];</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>param_tiles[i / UI_PARAMS_PER_TILE]</code> 赋给 <code>lv_obj_t *tile</code>。</td></tr>
+<tr class='auto'><td class='no'>504</td><td class='src'>        int32_t y = (i % UI_PARAMS_PER_TILE) * 31;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>(i % UI_PARAMS_PER_TILE) * 31</code> 赋给 <code>int32_t y</code>。</td></tr>
+<tr class='auto'><td class='no'>505</td><td class='src'>        ui_label(tile, param_names[i], 2, y + 5, 130);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>ui_label()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>506</td><td class='src'>        if (i == APP_PARAM_BRIGHTNESS) {</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class='auto'><td class='no'>507</td><td class='src'>            param_slider = lv_slider_create(tile);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>lv_slider_create(tile)</code> 赋给 <code>param_slider</code>。</td></tr>
+<tr class='auto'><td class='no'>508</td><td class='src'>            lv_obj_set_pos(param_slider, 125, y + 10);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>lv_obj_set_pos()</code>：设置 LVGL 对象在父容器中的 x/y 坐标。</td></tr>
+<tr class='auto'><td class='no'>509</td><td class='src'>            lv_obj_set_size(param_slider, 72, 10);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>lv_obj_set_size()</code>：设置 LVGL 对象的宽度和高度。</td></tr>
+<tr class='auto'><td class='no'>510</td><td class='src'>            lv_slider_set_range(param_slider, App_Parameters_Min(i), App_Parameters_Max(i));</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_slider_set_range()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>511</td><td class='src'>            lv_obj_add_event_cb(param_slider, ui_brightness_cb, LV_EVENT_VALUE_CHANGED, NULL);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>lv_obj_add_event_cb()</code>：为 LVGL 对象注册事件回调：指定事件（如点击）发生时执行对应函数。</td></tr>
+<tr class='auto'><td class='no'>512</td><td class='src'>            param_labels[i] = ui_label(tile, "100", 202, y + 5, 36);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>ui_label(tile, "100", 202, y + 5, 36)</code> 赋给 <code>param_labels[i]</code>。</td></tr>
+<tr class='auto'><td class='no'>513</td><td class='src'>        } else {</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>514</td><td class='src'>            lv_obj_t *minus = ui_button(tile, "-", 131, y, 25, 28,</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>515</td><td class='src'>                                        ui_param_change_cb, (void *)(uintptr_t)(i * 2U));</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>516</td><td class='src'>            param_labels[i] = ui_label(tile, "0", 158, y + 5, 48);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>ui_label(tile, "0", 158, y + 5, 48)</code> 赋给 <code>param_labels[i]</code>。</td></tr>
+<tr class='auto'><td class='no'>517</td><td class='src'>            lv_obj_t *plus = ui_button(tile, "+", 209, y, 25, 28,</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>518</td><td class='src'>                                       ui_param_change_cb, (void *)(uintptr_t)(i * 2U + 1U));</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>519</td><td class='src'>            lv_obj_add_event_cb(minus, ui_param_change_cb, LV_EVENT_LONG_PRESSED_REPEAT,</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>520</td><td class='src'>                                (void *)(uintptr_t)(i * 2U));</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>521</td><td class='src'>            lv_obj_add_event_cb(plus, ui_param_change_cb, LV_EVENT_LONG_PRESSED_REPEAT,</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>522</td><td class='src'>                                (void *)(uintptr_t)(i * 2U + 1U));</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class=''><td class='no'>523</td><td class='src'>        }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>524</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class=''><td class='no'>525</td><td class='src'>    ui_button(pages[UI_PAGE_PARAMS], "保存", 5, 207, 70, 42, ui_save_cb, NULL);</td><td class='exp'>保存/恢复出厂/回归旧版三按钮固定在瓦片外（横向滑动不移动它们）。</td></tr>
+<tr class='auto'><td class='no'>526</td><td class='src'>    ui_button(pages[UI_PAGE_PARAMS], "恢复出厂\n设置", 79, 207, 78, 42,</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>527</td><td class='src'>              ui_restore_cb, (void *)(uintptr_t)1U);</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='auto'><td class='no'>528</td><td class='src'>    ui_button(pages[UI_PAGE_PARAMS], "回归旧\n版本", 161, 207, 74, 42,</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>529</td><td class='src'>              ui_restore_cb, (void *)(uintptr_t)2U);</td><td class='exp'><span class='auto-tag'>自动</span>上一条语句跨行书写，本行是它的参数/表达式延续部分，与上一行合并理解。</td></tr>
+<tr class='blank'><td class='no'>530</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>531</td><td class='src'>    pages[UI_PAGE_ABOUT] = ui_subpage("产品说明");</td><td class='exp'>产品说明页与 App 观测页。</td></tr>
+<tr class='auto'><td class='no'>532</td><td class='src'>    ui_button(pages[UI_PAGE_ABOUT], "返回", 180, 5, 52, 29, ui_back_cb, NULL);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>ui_button()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>533</td><td class='src'>    ui_label(pages[UI_PAGE_ABOUT], "监控夜间光场自动锁定跟踪平台\n\n四路光敏电阻采集光照，\n双轴云台自动锁定跟踪。", 14, 48, 212);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>ui_label()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>534</td><td class='src'>    ui_button(pages[UI_PAGE_ABOUT], "预览异常提示", 35, 202, 170, 38, ui_error_preview_cb, NULL);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>ui_button()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='blank'><td class='no'>535</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>536</td><td class='src'>    pages[UI_PAGE_APP] = ui_subpage("手机 App 观测");</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>ui_subpage("手机 App 观测")</code> 赋给 <code>pages[UI_PAGE_APP]</code>。</td></tr>
+<tr class='auto'><td class='no'>537</td><td class='src'>    ui_button(pages[UI_PAGE_APP], "返回", 180, 5, 52, 29, ui_back_cb, NULL);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>ui_button()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='blank'><td class='no'>538</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>539</td><td class='src'>    lv_obj_t *footer = lv_obj_create(screen);</td><td class='exp'>固定底栏（光敏数据）。</td></tr>
+<tr class='auto'><td class='no'>540</td><td class='src'>    lv_obj_set_pos(footer, 0, UI_CONTENT_H);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>lv_obj_set_pos()</code>：设置 LVGL 对象在父容器中的 x/y 坐标。</td></tr>
+<tr class='auto'><td class='no'>541</td><td class='src'>    lv_obj_set_size(footer, UI_SCREEN_W, UI_FOOTER_H);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>lv_obj_set_size()</code>：设置 LVGL 对象的宽度和高度。</td></tr>
+<tr class='auto'><td class='no'>542</td><td class='src'>    lv_obj_set_style_pad_all(footer, 0, 0);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_obj_set_style_pad_all()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>543</td><td class='src'>    lv_obj_set_scrollable(footer, false);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_obj_set_scrollable()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='comment'><td class='no'>544</td><td class='src'>    /* 三行标签均继承同一字体；左右差为左减右，上下差为上减下。 */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>545</td><td class='src'>    adc_labels[0] = ui_label(footer, "左上--", 3, 3, 77);</td><td class='exp'>8 个数据标签布局。</td></tr>
+<tr class='auto'><td class='no'>546</td><td class='src'>    adc_labels[1] = ui_label(footer, "左下--", 80, 3, 77);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>ui_label(footer, "左下--", 80, 3, 77)</code> 赋给 <code>adc_labels[1]</code>。</td></tr>
+<tr class='auto'><td class='no'>547</td><td class='src'>    adc_labels[2] = ui_label(footer, "右上--", 157, 3, 80);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>ui_label(footer, "右上--", 157, 3, 80)</code> 赋给 <code>adc_labels[2]</code>。</td></tr>
+<tr class='auto'><td class='no'>548</td><td class='src'>    adc_labels[3] = ui_label(footer, "右下--", 3, 21, 77);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>ui_label(footer, "右下--", 3, 21, 77)</code> 赋给 <code>adc_labels[3]</code>。</td></tr>
+<tr class='auto'><td class='no'>549</td><td class='src'>    adc_labels[4] = ui_label(footer, "均--", 80, 21, 77);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>ui_label(footer, "均--", 80, 21, 77)</code> 赋给 <code>adc_labels[4]</code>。</td></tr>
+<tr class='auto'><td class='no'>550</td><td class='src'>    adc_labels[5] = ui_label(footer, "差--", 157, 21, 80);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>ui_label(footer, "差--", 157, 21, 80)</code> 赋给 <code>adc_labels[5]</code>。</td></tr>
+<tr class='auto'><td class='no'>551</td><td class='src'>    adc_labels[6] = ui_label(footer, "左右差--", 3, 39, 115);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>ui_label(footer, "左右差--", 3, 39, 115)</code> 赋给 <code>adc_labels[6]</code>。</td></tr>
+<tr class='auto'><td class='no'>552</td><td class='src'>    adc_labels[7] = ui_label(footer, "上下差--", 120, 39, 117);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>ui_label(footer, "上下差--", 120, 39, 117)</code> 赋给 <code>adc_labels[7]</code>。</td></tr>
+<tr class='blank'><td class='no'>553</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>554</td><td class='src'>    dialog_layer = lv_obj_create(screen);</td><td class='exp'>全屏半透明黑色遮罩 + 弹窗主体 + 文本 + X 关闭按钮 + 三个操作按钮。</td></tr>
+<tr class='auto'><td class='no'>555</td><td class='src'>    lv_obj_set_pos(dialog_layer, 0, 0);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>lv_obj_set_pos()</code>：设置 LVGL 对象在父容器中的 x/y 坐标。</td></tr>
+<tr class='auto'><td class='no'>556</td><td class='src'>    lv_obj_set_size(dialog_layer, UI_SCREEN_W, UI_CONTENT_H + UI_FOOTER_H);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>lv_obj_set_size()</code>：设置 LVGL 对象的宽度和高度。</td></tr>
+<tr class='auto'><td class='no'>557</td><td class='src'>    lv_obj_set_style_pad_all(dialog_layer, 0, 0);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_obj_set_style_pad_all()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>558</td><td class='src'>    lv_obj_set_style_border_width(dialog_layer, 0, 0);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_obj_set_style_border_width()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>559</td><td class='src'>    lv_obj_set_style_bg_color(dialog_layer, lv_color_black(), 0);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_obj_set_style_bg_color()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>560</td><td class='src'>    lv_obj_set_style_bg_opa(dialog_layer, LV_OPA_50, 0);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_obj_set_style_bg_opa()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>561</td><td class='src'>    lv_obj_set_scrollable(dialog_layer, false);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_obj_set_scrollable()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>562</td><td class='src'>    dialog = lv_obj_create(dialog_layer);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>lv_obj_create(dialog_layer)</code> 赋给 <code>dialog</code>。</td></tr>
+<tr class='auto'><td class='no'>563</td><td class='src'>    lv_obj_set_pos(dialog, 10, 84);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>lv_obj_set_pos()</code>：设置 LVGL 对象在父容器中的 x/y 坐标。</td></tr>
+<tr class='auto'><td class='no'>564</td><td class='src'>    lv_obj_set_size(dialog, 220, 151);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>lv_obj_set_size()</code>：设置 LVGL 对象的宽度和高度。</td></tr>
+<tr class='auto'><td class='no'>565</td><td class='src'>    lv_obj_set_style_pad_all(dialog, 0, 0);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_obj_set_style_pad_all()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>566</td><td class='src'>    lv_obj_set_scrollable(dialog, false);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_obj_set_scrollable()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>567</td><td class='src'>    dialog_text = ui_label(dialog, "", 10, 16, 175);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>ui_label(dialog, "", 10, 16, 175)</code> 赋给 <code>dialog_text</code>。</td></tr>
+<tr class='auto'><td class='no'>568</td><td class='src'>    ui_button(dialog, "X", 185, 5, 28, 28, ui_close_dialog_cb, NULL);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>ui_button()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>569</td><td class='src'>    dialog_buttons[0] = ui_button(dialog, "保存", 5, 100, 66, 37, ui_confirm_save_cb, NULL);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>ui_button(dialog, "保存", 5, 100, 66, 37, ui_confirm_save_cb, NULL)</code> 赋给 <code>dialog_buttons[0]</code>。</td></tr>
+<tr class='auto'><td class='no'>570</td><td class='src'>    dialog_buttons[1] = ui_button(dialog, "放弃", 77, 100, 66, 37, ui_discard_cb, NULL);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>ui_button(dialog, "放弃", 77, 100, 66, 37, ui_discard_cb, NULL)</code> 赋给 <code>dialog_buttons[1]</code>。</td></tr>
+<tr class='auto'><td class='no'>571</td><td class='src'>    dialog_buttons[2] = ui_button(dialog, "取消", 149, 100, 66, 37, ui_close_dialog_cb, NULL);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>ui_button(dialog, "取消", 149, 100, 66, 37, ui_close_dialog_cb, NULL)</code> 赋给 <code>dialog_buttons[2]</code>。</td></tr>
+<tr class='auto'><td class='no'>572</td><td class='src'>    lv_obj_set_hidden(dialog_layer, true);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_obj_set_hidden()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='blank'><td class='no'>573</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>574</td><td class='src'>    current_page = UI_PAGE_MAIN;</td><td class='exp'>初始状态：主页面、方向停止、Tileview 定位手动瓦片。</td></tr>
+<tr class='auto'><td class='no'>575</td><td class='src'>    manual_direction = APP_MANUAL_STOP;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>APP_MANUAL_STOP</code> 赋给 <code>manual_direction</code>。</td></tr>
+<tr class='auto'><td class='no'>576</td><td class='src'>    lv_tileview_set_tile(tileview, manual_tile, LV_ANIM_OFF);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_tileview_set_tile()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>577</td><td class='src'>    lv_timer_create(ui_adc_timer_cb, UI_ADC_REFRESH_MS, NULL);</td><td class='exp'>lv_timer_create 注册 200ms 底栏刷新定时器。</td></tr>
+<tr class=''><td class='no'>578</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+</table><div class='summary'><b>小总结（界面构建全景）：</b>user_home_create 用三个区域组织界面：主 Tileview（手动/自动纵向滑动切换模式）、四个子页面（栈式导航）、固定底栏（数据监视）+全屏弹窗。所有按钮回调都只“发请求”——模式/方向/保存/恢复最终都由系统任务或参数模块裁决，UI 层不直接碰电机和 Flash。</div><table class='code'><tr><th>行号</th><th>代码（Core/ui/user_home.c）</th><th>逐行讲解</th></tr>
+</table>
+<div class='summary'><h4>本文件小总结</h4><b>user_home.c 全文总结：</b>产品界面全部实现：Tileview 模式切换、方向键长按控制、参数双页编辑（草稿/快照/保存确认）、光敏数据底栏、异常与恢复弹窗。核心设计：UI 只发请求不执行动作；LVGL 只在 UI 任务中操作；草稿-快照分离让“放弃修改”可无损回退。</div>
+</div>
+<div class='section'>
+<h2><span class='filepath'>Core/ui/ui.h</span> <span class='pill'>0 行</span></h2>
+<div class='filedesc'>练习模块声明。</div>
+<table class='code'>
+<tr><th>行号</th><th>代码（Core/ui/ui.h）</th><th>逐行讲解</th></tr>
+<tr class='auto'><td class='no'>1</td><td class='src'>#ifndef __UI_H__</td><td class='exp'><span class='auto-tag'>自动</span>条件编译入口（ifndef）：满足条件才编译下面的内容，不满足则整段跳过。</td></tr>
+<tr class='auto'><td class='no'>2</td><td class='src'>#define __UI_H__</td><td class='exp'><span class='auto-tag'>自动</span>定义宏 <code>__UI_H__</code>：编译前做纯文本替换，详见对应头文件小总结。</td></tr>
+<tr class='blank'><td class='no'>3</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>4</td><td class='src'>#include "lvgl.h"</td><td class='exp'>包含 LVGL。</td></tr>
+<tr class='auto'><td class='no'>5</td><td class='src'>#include "stdio.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "stdio.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='auto'><td class='no'>6</td><td class='src'>#include "stdlib.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "stdlib.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='auto'><td class='no'>7</td><td class='src'>#include "mylist.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "mylist.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='blank'><td class='no'>8</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>9</td><td class='src'>void ui_init(void);</td><td class='exp'>ui_init 声明（练习代码入口）。</td></tr>
+<tr class='blank'><td class='no'>10</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>11</td><td class='src'>#endif /* __UI_H__ */</td><td class='exp'><span class='auto-tag'>自动</span>结束一个条件编译块。</td></tr>
+</table>
+<div class='summary'><h4>本文件小总结</h4><b>ui.h 总结：</b>LVGL 学习练习模块的声明，主界面未使用。</div>
+</div>
+<div class='section'>
+<h2><span class='filepath'>Core/ui/ui.c</span> <span class='pill'>0 行</span></h2>
+<div class='filedesc'>LVGL 控件学习练习：事件回调、布局、滚动、网格等示例（大部分为注释形式的教程笔记）。</div>
+<table class='code'>
+<tr><th>行号</th><th>代码（Core/ui/ui.c）</th><th>逐行讲解</th></tr>
+<tr class='auto'><td class='no'>1</td><td class='src'>#include "ui.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "ui.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='auto'><td class='no'>2</td><td class='src'>#include "com_Debug.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "com_Debug.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='blank'><td class='no'>3</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>4</td><td class='src'>//按钮回调函数</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>5</td><td class='src'>static void btn_callback(lv_event_t * e)</td><td class='exp'><b>btn_callback</b>：按钮点击回调示例。</td></tr>
+<tr class=''><td class='no'>6</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>7</td><td class='src'>    //获取由lv_obj_add_event_cb函数传进来的user_data（"hello"）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>8</td><td class='src'>    char * str = lv_event_get_user_data(e);</td><td class='exp'>取 user_data（创建事件时传入的 "hello"）。</td></tr>
+<tr class='blank'><td class='no'>9</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>10</td><td class='src'>    //获取触发事件的对象(哪个对象触发了回调函数)（例如是按钮btn1）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>11</td><td class='src'>    lv_obj_t * btn1 = lv_event_get_target(e);</td><td class='exp'>取触发事件的对象（哪个按钮）。</td></tr>
+<tr class='blank'><td class='no'>12</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>13</td><td class='src'>    printf("btn_callback: %s\n", str);</td><td class='exp'>打印 user_data（printf 已重定向到串口）。</td></tr>
+<tr class='blank'><td class='no'>14</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>15</td><td class='src'>    //获取父类</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>16</td><td class='src'>    lv_obj_t * parent = lv_obj_get_parent(btn1);</td><td class='exp'>取按钮的父对象。</td></tr>
+<tr class='comment'><td class='no'>17</td><td class='src'>    //从父类中获取一个滑块孩子</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>18</td><td class='src'>    lv_obj_t * slider = lv_obj_get_child(parent, 1);//第二个参数意义是获取父类的第几个孩子，0是第一个孩子，1是第二个孩子，2是第三个孩子</td><td class='exp'>取父对象的第 1 个孩子（下标从 0 开始）。</td></tr>
+<tr class='comment'><td class='no'>19</td><td class='src'>    //修改滑块的值（不是修改0-100范围）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>20</td><td class='src'>    lv_slider_set_value(slider,lv_slider_get_value(slider)+1,LV_ANIM_ON);//获取滑块的当前值+1作为新的滑块的值，LV_ANIM_ON表示动画效果</td><td class='exp'>滑块当前值 +1（带动画）。</td></tr>
+<tr class='comment'><td class='no'>21</td><td class='src'>    //手动发送事件函数（把更改进行实际部署）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>22</td><td class='src'>    lv_obj_send_event(slider, LV_EVENT_VALUE_CHANGED, NULL);//手动发送滑块的值发生变化事件，触发滑块的回调函数，LV_EVENT_VALUE_CHANGED是值发生变化的事件,必须对应lv_obj_add_event_cb的参数</td><td class='exp'>手动发送 VALUE_CHANGED 事件——触发滑块自己的回调。</td></tr>
+<tr class='comment'><td class='no'>23</td><td class='src'>    //由于lv_obj_send_event手动发生的事滑块的LV_EVENT_VALUE_CHANGED事件，所以必须是LV_EVENT_VALUE_CHANGED的滑块lv_obj_add_event_cb对应的回调函数才会被执行</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>24</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>25</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>26</td><td class='src'>//滑块的回调函数</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>27</td><td class='src'>static void slider_callback(lv_event_t * e)</td><td class='exp'><b>slider_callback</b>：滑块值变化回调示例。</td></tr>
+<tr class=''><td class='no'>28</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>29</td><td class='src'>    //获取触发事件的对象(哪个对象触发了回调函数)（例如是滑块slider）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>30</td><td class='src'>    lv_obj_t * slider = lv_event_get_target(e);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>lv_event_get_target(e)</code> 赋给 <code>lv_obj_t * slider</code>。</td></tr>
+<tr class=''><td class='no'>31</td><td class='src'>    int32_t value = lv_slider_get_value(slider);//默认范围0-100</td><td class='exp'>读滑块值（默认 0~100）。</td></tr>
+<tr class='auto'><td class='no'>32</td><td class='src'>    printf("slider_callback: %d\n", value);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>printf()</code>：标准库格式化打印——本工程已重定向到 USART1 串口输出（见第 19 章）。</td></tr>
+<tr class=''><td class='no'>33</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>34</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='blank'><td class='no'>35</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>36</td><td class='src'>static void scroll_callback(lv_event_t * e)</td><td class='exp'><b>scroll_callback</b>：滚动结束回调示例，比较上次位置算滚动方向与距离。</td></tr>
+<tr class=''><td class='no'>37</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>38</td><td class='src'>    //精准获取当前一次滚动=&gt;滚动的方向和距离</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>39</td><td class='src'>    lv_obj_t * scroll = lv_event_get_target(e);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>lv_event_get_target(e)</code> 赋给 <code>lv_obj_t * scroll</code>。</td></tr>
+<tr class='blank'><td class='no'>40</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>41</td><td class='src'>    //保存上次滚动位置</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>42</td><td class='src'>    static int32_t last_x = 0;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>0</code> 赋给 <code>static int32_t last_x</code>。</td></tr>
+<tr class='auto'><td class='no'>43</td><td class='src'>    static int32_t last_y = 0;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>0</code> 赋给 <code>static int32_t last_y</code>。</td></tr>
+<tr class='blank'><td class='no'>44</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>45</td><td class='src'>    //获取当前滚动位置</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>46</td><td class='src'>    uint32_t current_x = lv_obj_get_scroll_x(scroll);</td><td class='exp'>读当前滚动 X/Y。</td></tr>
+<tr class='auto'><td class='no'>47</td><td class='src'>    uint32_t current_y = lv_obj_get_scroll_y(scroll);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>lv_obj_get_scroll_y(scroll)</code> 赋给 <code>uint32_t current_y</code>。</td></tr>
+<tr class='blank'><td class='no'>48</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>49</td><td class='src'>    int32_t diff_x = current_x - last_x;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>current_x - last_x</code> 赋给 <code>int32_t diff_x</code>。</td></tr>
+<tr class='auto'><td class='no'>50</td><td class='src'>    int32_t diff_y = current_y - last_y;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>current_y - last_y</code> 赋给 <code>int32_t diff_y</code>。</td></tr>
+<tr class='blank'><td class='no'>51</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>52</td><td class='src'>    if (diff_x &gt; 0)</td><td class='exp'>差值>0 向右滚动，<0 向左；Y 同理上下。</td></tr>
+<tr class=''><td class='no'>53</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>54</td><td class='src'>        printf("scroll right: %d\n", diff_x);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>printf()</code>：标准库格式化打印——本工程已重定向到 USART1 串口输出（见第 19 章）。</td></tr>
+<tr class=''><td class='no'>55</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='auto'><td class='no'>56</td><td class='src'>    else if(diff_x &lt; 0)</td><td class='exp'><span class='auto-tag'>自动</span>否则若括号内条件成立，进入本分支（前面的条件都不满足时才会到这里）。</td></tr>
+<tr class=''><td class='no'>57</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>58</td><td class='src'>        printf("scroll left: %d\n", diff_x);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>printf()</code>：标准库格式化打印——本工程已重定向到 USART1 串口输出（见第 19 章）。</td></tr>
+<tr class=''><td class='no'>59</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>60</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>61</td><td class='src'>    if (diff_y &gt; 0)</td><td class='exp'><span class='auto-tag'>自动</span>条件判断：括号内条件为真才执行分支体。</td></tr>
+<tr class=''><td class='no'>62</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>63</td><td class='src'>        printf("scroll down: %d\n", diff_y);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>printf()</code>：标准库格式化打印——本工程已重定向到 USART1 串口输出（见第 19 章）。</td></tr>
+<tr class=''><td class='no'>64</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='auto'><td class='no'>65</td><td class='src'>    else if(diff_y &lt; 0)</td><td class='exp'><span class='auto-tag'>自动</span>否则若括号内条件成立，进入本分支（前面的条件都不满足时才会到这里）。</td></tr>
+<tr class=''><td class='no'>66</td><td class='src'>    {</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>67</td><td class='src'>        printf("scroll up: %d\n", -diff_y);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>printf()</code>：标准库格式化打印——本工程已重定向到 USART1 串口输出（见第 19 章）。</td></tr>
+<tr class=''><td class='no'>68</td><td class='src'>    }</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>69</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>70</td><td class='src'>    //更新上次滚动位置</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>71</td><td class='src'>    last_x = current_x;</td><td class='exp'>更新上次位置。</td></tr>
+<tr class='auto'><td class='no'>72</td><td class='src'>    last_y = current_y;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>current_y</code> 赋给 <code>last_y</code>。</td></tr>
+<tr class='blank'><td class='no'>73</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='blank'><td class='no'>74</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>75</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>76</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='blank'><td class='no'>77</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='blank'><td class='no'>78</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='blank'><td class='no'>79</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='blank'><td class='no'>80</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>81</td><td class='src'>void ui_init(void)</td><td class='exp'><b>ui_init</b>：练习入口——主体是 10 段注释形式的 LVGL 教程笔记。</td></tr>
+<tr class=''><td class='no'>82</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class=''><td class='no'>83</td><td class='src'>    /*一、初始属性介绍</td><td class='exp'>笔记一：屏幕/子屏幕/按钮/滑块的创建与属性设置。</td></tr>
+<tr class='comment'><td class='no'>84</td><td class='src'>    //自定义页面设备</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>85</td><td class='src'>    //1.先获取当前硬件的整个屏幕(是获取已有的屏幕保存在一个变量中。不是生成一个屏幕)</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>86</td><td class='src'>    lv_obj_t * scr = lv_screen_active();//指针类型函数，可跳转</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>87</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>88</td><td class='src'>    //2.在屏幕上创建一个子屏幕，并保存在obj变量中</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>89</td><td class='src'>    lv_obj_t *obj = lv_obj_create(scr);//在当前屏幕上创建一个子屏幕（默认大小100x100）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>90</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>91</td><td class='src'>    //3.创建一个按钮</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>92</td><td class='src'>    lv_obj_t *btn = lv_btn_create(obj);//在子屏幕内创建一个按钮（组件都有默认值）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>93</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>94</td><td class='src'>    //3.1设置按钮的位置和大小  x,y坐标,x向右为正，y向下为正</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>95</td><td class='src'>    lv_obj_set_pos(btn, 30,30);//按键左上角那个点位置</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>96</td><td class='src'>    lv_obj_set_size(btn, 40, 40);//大小</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>97</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>98</td><td class='src'>    //4.创建一个滑块</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>99</td><td class='src'>    //类似lv_obj_t *slider不推荐将组件设置为全局变量</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>100</td><td class='src'>    lv_obj_t *slider = lv_slider_create(obj);//在子屏幕内创建一个滑块</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>101</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>102</td><td class='src'>    //4.1设置滑块的位置和大小(通用属性)</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>103</td><td class='src'>    lv_obj_set_pos(slider, 10, 80);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>104</td><td class='src'>    lv_obj_set_size(slider, 60, 10);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>105</td><td class='src'>    60&gt;10 所以滑块的宽度大于高度，所以滑块是横着的，参数调换：10&lt;60，滑块是竖着的</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>106</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>107</td><td class='src'>    //4.2设置滑块的独有属性</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>108</td><td class='src'>    lv_slider_set_range(slider, 0, 5);//设置滑块的范围5</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>109</td><td class='src'>    lv_slider_set_value(slider, 4, LV_ANIM_ON);//设置滑块的初始值,LV_ANIM_ON表示动画效果(刚加载成功瞬间会有动画效果动到4)</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>110</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>111</td><td class='src'>    //5.延时删除滑块</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>112</td><td class='src'>    lv_obj_delete_delayed(slider,3000);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>113</td><td class='src'>    */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>114</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>115</td><td class='src'>    /*二、父级与子级图层关系</td><td class='exp'>笔记二：父级与子级图层关系、下标查找、移动与交换。</td></tr>
+<tr class='comment'><td class='no'>116</td><td class='src'>    //1.获取当前屏幕(父级 根)</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>117</td><td class='src'>    lv_obj_t * scr = lv_screen_active();</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>118</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>119</td><td class='src'>    //2.创建一个子屏幕(第一个孩子) 下标为0</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>120</td><td class='src'>    lv_obj_t * obj = lv_obj_create(scr);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>121</td><td class='src'>    lv_obj_set_pos(obj, 20, 20);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>122</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>123</td><td class='src'>    //3.创建第二个孩子 下标为1</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>124</td><td class='src'>    lv_obj_t * obj2 = lv_obj_create(scr);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>125</td><td class='src'>    lv_obj_set_pos(obj2, 30, 30);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>126</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>127</td><td class='src'>    //4.创建第三个孩子 下标为2</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>128</td><td class='src'>    lv_obj_t * obj3 = lv_obj_create(scr);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>129</td><td class='src'>    lv_obj_set_pos(obj3, 40, 40);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>130</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>131</td><td class='src'>    //显示默认父级在下面，子级在上面</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>132</td><td class='src'>    //尽量不要给组件set_name(),很占用内存，可以用下标的方式查找</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>133</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>134</td><td class='src'>    //5.如何获取3个子级的中间屏幕</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>135</td><td class='src'>    lv_obj_t * child = lv_obj_get_child(scr, 1);//获取父级scr的下标为1的孩子（由于是get_child，此时长子obj下标为0）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>136</td><td class='src'>    //lv_obj_get_parent(child);//获取父级scr,很少用，一般都是父亲找孩子</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>137</td><td class='src'>    lv_obj_set_size(child, 50, 50);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>138</td><td class='src'>    //这个适合在其他文件忘记第二个孩子叫obj2的情况下，直接获取下标为1的孩子，进行操作</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>139</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>140</td><td class='src'>    //只移动obj3到最下层的位置</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>141</td><td class='src'>    lv_obj_move_to_index(obj3, 0);//将obj3移动到下标为0的位置，obj3在最下面，其他正常排序不变-&gt;obj在中间，obj2在最上面</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>142</td><td class='src'>    lv_obj_swap(obj, obj3);//交换obj和obj2的位置，obj在最上面，obj2在中间，obj3在最下面</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>143</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>144</td><td class='src'>    */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>145</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>146</td><td class='src'>    /*三、组件特性 位置和大小</td><td class='exp'>笔记三：位置、大小、边框、圆角、内边距、对齐、百分比尺寸。</td></tr>
+<tr class='comment'><td class='no'>147</td><td class='src'>    //1.获取当前屏幕(父级 根)</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>148</td><td class='src'>    lv_obj_t * scr = lv_screen_active();</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>149</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>150</td><td class='src'>    //2.创建一个子屏幕</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>151</td><td class='src'>    lv_obj_t * obj = lv_obj_create(scr);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>152</td><td class='src'>    lv_obj_set_pos(obj, 30, 30);//设置子屏幕的位置</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>153</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>154</td><td class='src'>    //2.1修改子屏幕的边框大小</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>155</td><td class='src'>    lv_obj_set_style_border_width(obj, 0, LV_PART_MAIN);//设置边框宽度</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>156</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>157</td><td class='src'>    //2.2修改屏幕的圆角大小</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>158</td><td class='src'>    lv_obj_set_style_radius(obj, 0, LV_PART_MAIN);//设置圆角大小</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>159</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>160</td><td class='src'>    //2.3修改屏幕内边距（设置子屏幕与按键之间的距离）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>161</td><td class='src'>    lv_obj_set_style_pad_all(obj, 0, LV_PART_MAIN);//设置内边距大小，LV_PART_MAIN是屏幕，LV_PART_SCROLLABLE_PART是滚动条等</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>162</td><td class='src'>    //不是所有的东西都有第三个参数里面全部的属性</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>163</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='blank'><td class='no'>164</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>165</td><td class='src'>    //3.创建一个按钮</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>166</td><td class='src'>    lv_obj_t * btn = lv_btn_create(obj);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>167</td><td class='src'>    //lv_obj_set_pos(btn, 10, 20);//子元素的位置是相对于父元素的 不是绝对的坐标（上方可以设置内边距调整(0,0)的坐标位置）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>168</td><td class='src'>    //当按键屏幕大小放不下按钮的位置时，例如屏幕大小为100，按键位置为120，实际运行后往下拉屏幕就能找到</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>169</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>170</td><td class='src'>    //lv_obj_set_x(btn, 10);//只设置x坐标</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>171</td><td class='src'>    //lv_obj_set_y(btn, 10);//只设置y坐标</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>172</td><td class='src'>    //坐标可以是负数（但是此时不能拖拉屏幕展示全部）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>173</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>174</td><td class='src'>    //相对位置</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>175</td><td class='src'>    //lv_obj_align(btn,  LV_ALIGN_CENTER, 0, 0);//按钮居中对齐，x,y偏移量为0</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>176</td><td class='src'>    lv_obj_align(btn, LV_ALIGN_TOP_MID, 0, 10);//按钮父级的中间的最上边，然后y轴往下移10元素</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>177</td><td class='src'>    //lv_obj_align(btn, LV_ALIGN_CENTER, 0, 0);//按钮居中对齐，x,y偏移量为0</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>178</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>179</td><td class='src'>    //lv_obj_set_size(btn, 40, 40);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>180</td><td class='src'>    // lv_obj_set_size也可以设置百分比大小（相对于上一父级）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>181</td><td class='src'>    lv_obj_set_size(btn, LV_PCT(50),LV_PCT(50));//LV_PCT(50)表示50%的父级大小，不常用</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>182</td><td class='src'>    //常用点在：不同大小的屏幕（例如不同尺寸的手机看抖音），看到的都是与手机尺寸大小适配的视频页面</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>183</td><td class='src'>    */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>184</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>185</td><td class='src'>    /*四、组件特性 部件和特性</td><td class='exp'>笔记四：部件（PART_MAIN/SCROLLBAR/INDICATOR/KNOB）与状态样式。</td></tr>
+<tr class='comment'><td class='no'>186</td><td class='src'>    //1.获取当前屏幕(父级 根)</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>187</td><td class='src'>    lv_obj_t * scr = lv_screen_active();</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>188</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>189</td><td class='src'>    //2.创建一个子屏幕</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>190</td><td class='src'>    lv_obj_t * obj = lv_obj_create(scr);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>191</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>192</td><td class='src'>    //2.1修改不同屏幕部件的颜色   背景绿色 滚动条红色</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>193</td><td class='src'>    lv_obj_set_style_bg_color(obj, lv_palette_main(LV_PALETTE_GREEN), LV_PART_MAIN);//设置背景颜色</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>194</td><td class='src'>    lv_obj_set_style_bg_color(obj, lv_palette_main(LV_PALETTE_RED), LV_PART_SCROLLBAR);//设置滚动条颜色</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>195</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>196</td><td class='src'>    //2.2创建一个超出范围的按键，使得滚动条出现</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>197</td><td class='src'>    lv_obj_t * btn = lv_btn_create(obj);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>198</td><td class='src'>    lv_obj_set_pos(btn, 200, 200);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>199</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>200</td><td class='src'>    //3.创建一个滑块</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>201</td><td class='src'>    //在最底层的屏幕上创建一个滑块</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>202</td><td class='src'>    lv_obj_t * slider = lv_slider_create(scr);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>203</td><td class='src'>    lv_obj_set_pos(slider, 200, 200);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>204</td><td class='src'>    lv_obj_set_size(slider, 100, 10);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>205</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>206</td><td class='src'>    //3.1修改一个部件不同颜色</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>207</td><td class='src'>    lv_obj_set_style_bg_color(slider, lv_palette_main(LV_PALETTE_GREEN), LV_PART_MAIN);//设置滑块未占据颜色</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>208</td><td class='src'>    lv_obj_set_style_bg_color(slider, lv_palette_main(LV_PALETTE_RED), LV_PART_INDICATOR);//设置滑块占据颜色</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>209</td><td class='src'>    lv_obj_set_style_bg_color(slider, lv_palette_main(LV_PALETTE_BLUE), LV_PART_KNOB);//设置滑块按钮颜色</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>210</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>211</td><td class='src'>    //3.2同一个部件不同状态下颜色也可以设置不同（例如按键按下和松开时颜色不一样）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>212</td><td class='src'>    lv_obj_t * btn2 = lv_btn_create(scr);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>213</td><td class='src'>    lv_obj_set_pos(btn2, 60, 60);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>214</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>215</td><td class='src'>    lv_obj_set_style_bg_color(btn2, lv_palette_main(LV_PALETTE_BLUE), LV_PART_MAIN);//设置默认状态颜色 LV_STATE_DEFAULT和LV_PART_MAIN在这里是一样的</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>216</td><td class='src'>    lv_obj_set_style_bg_color(btn2, lv_palette_main(LV_PALETTE_RED), LV_STATE_PRESSED);//设置按下状态颜色</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>217</td><td class='src'>    //也可以合成下面一句：</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>218</td><td class='src'>    //lv_obj_set_style_bg_color(btn2, lv_palette_main(LV_PALETTE_BLUE), LV_PART_MAIN | LV_STATE_PRESSED);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>219</td><td class='src'>    //但是前提是两者颜色相同都是蓝色</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>220</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>221</td><td class='src'>    */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>222</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>223</td><td class='src'>    /*五、组件特性 动画</td><td class='exp'>笔记五：样式过渡动画（transition_dsc）。</td></tr>
+<tr class='blank'><td class='no'>224</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>225</td><td class='src'>    //1.获取当前屏幕(父级 根)</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>226</td><td class='src'>    lv_obj_t * scr = lv_screen_active();</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>227</td><td class='src'>    //2.创建一个按钮</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>228</td><td class='src'>    lv_obj_t * btn = lv_btn_create(scr);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>229</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>230</td><td class='src'>    //修改两种状态下按钮的颜色</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>231</td><td class='src'>    lv_obj_set_style_bg_color(btn, lv_palette_main(LV_PALETTE_BLUE), LV_PART_MAIN);//设置默认状态颜色</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>232</td><td class='src'>    lv_obj_set_style_bg_color(btn, lv_palette_main(LV_PALETTE_RED), LV_STATE_PRESSED);//设置按下状态颜色</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>233</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='blank'><td class='no'>234</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>235</td><td class='src'>    //begin官方网站复制过来</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>236</td><td class='src'>    static const lv_style_prop_t trans_props[] = {</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>237</td><td class='src'>                                                LV_STYLE_BG_OPA,//背景不透明度</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>238</td><td class='src'>                                                LV_STYLE_BG_COLOR,//背景颜色</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>239</td><td class='src'>                                                0,</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>240</td><td class='src'>    };</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>241</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>242</td><td class='src'>    static lv_style_transition_dsc_t trans1;//声明一个静态的lv_style_transition_dsc_t类型的变量trans1</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>243</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>244</td><td class='src'>    //初始化,(1)存储过渡效果的结构体，（2）存过渡效果的数组，（3）实现过渡的函数，（4）过渡效果的持续时间，（5）过渡效果的延时时间 ,（6）过渡函数的参数（可选）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>245</td><td class='src'>    lv_style_transition_dsc_init(&amp;trans1, trans_props, lv_anim_path_ease_out, 5000, 1000,NULL);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>246</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>247</td><td class='src'>    static lv_style_t style1;//声明一个静态的lv_style_t类型的变量style1</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>248</td><td class='src'>    lv_style_init(&amp;style1);//初始化style1</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>249</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>250</td><td class='src'>    //添加过渡效果给到样式</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>251</td><td class='src'>    lv_style_set_transition(&amp;style1, &amp;trans1);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>252</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>253</td><td class='src'>    //将样式添加到按钮中 =》 从其他状态进入到默认状态时，按钮的背景颜色和不透明度会有过渡效果</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>254</td><td class='src'>    lv_obj_add_style(btn, &amp;style1, LV_PART_MAIN);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>255</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>256</td><td class='src'>    //end官方网站复制过来</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>257</td><td class='src'>    */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>258</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>259</td><td class='src'>    /*六、组件特性 事件 (按钮触发)</td><td class='exp'>笔记六：事件系统（CLICKED/VALUE_CHANGED 与 user_data）。</td></tr>
+<tr class='comment'><td class='no'>260</td><td class='src'>    //1.获取当前屏幕(父级 根)</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>261</td><td class='src'>    lv_obj_t * scr = lv_screen_active();</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>262</td><td class='src'>    //2.创建一个按钮</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>263</td><td class='src'>    lv_obj_t * btn1 = lv_btn_create(scr);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>264</td><td class='src'>    lv_obj_set_pos(btn1, 100, 100);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>265</td><td class='src'>    lv_obj_set_size(btn1, 40, 40);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>266</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>267</td><td class='src'>    //添加点击事件</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>268</td><td class='src'>    lv_obj_add_event_cb(btn1,</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>269</td><td class='src'>        btn_callback,//函数事件名，在本文件上方定义一个事件函数</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>270</td><td class='src'>        LV_EVENT_CLICKED,</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>271</td><td class='src'>        "hello");//传入的参数，传入的参数可以是任意类型的指针，传入的参数可以在回调函数中获取，也可以是NULL</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>272</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>273</td><td class='src'>    //3.创建一个滑块</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>274</td><td class='src'>    lv_obj_t * slider = lv_slider_create(scr);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>275</td><td class='src'>    lv_obj_set_pos(slider, 50, 200);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>276</td><td class='src'>    lv_obj_set_size(slider, 100, 10);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>277</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>278</td><td class='src'>    //添加滑块事件（值发生变化的回调）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>279</td><td class='src'>    lv_obj_add_event_cb(slider, slider_callback, LV_EVENT_VALUE_CHANGED, slider);//传入的参数是滑块本身的指针，LV_EVENT_VALUE_CHANGED连续更新最新值</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>280</td><td class='src'>    //lv_obj_add_event_cb(slider, slider_callback, LV_EVENT_CLICKED, slider);//传入的参数是滑块本身的指针，LV_EVENT_RELEASED或LV_EVENT_CLICKED只在松开时触发一次</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>281</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>282</td><td class='src'>    //创建mylist</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>283</td><td class='src'>    mylist_t * mylist = lv_mylist_create(scr);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>284</td><td class='src'>    mylist_t * mylist2 = lv_mylist_create(scr);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>285</td><td class='src'>    lv_mylist_set_pos(mylist, 100, 0);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>286</td><td class='src'>    */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>287</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>288</td><td class='src'>    /*七、展示弹性布局</td><td class='exp'>笔记七：弹性布局（flex：主轴/交叉轴对齐、grow 加权、新轨道）。</td></tr>
+<tr class='blank'><td class='no'>289</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>290</td><td class='src'>    //1.设置屏幕为弹性布局的容器</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>291</td><td class='src'>    lv_obj_t *scr = lv_screen_active();</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>292</td><td class='src'>    lv_obj_set_layout(scr, LV_LAYOUT_FLEX);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>293</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>294</td><td class='src'>    //2.弹性布局</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>295</td><td class='src'>    //lv_obj_set_flex_flow(scr, LV_FLEX_FLOW_ROW);//设置为横向排列，不换行(官方网站有详细解释)</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>296</td><td class='src'>    lv_obj_set_flex_flow(scr, LV_FLEX_FLOW_ROW_WRAP);//设置为横向排列，换行(官方网站有详细解释)</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>297</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>298</td><td class='src'>    //3.对齐</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>299</td><td class='src'>    lv_obj_set_flex_align(scr, LV_FLEX_ALIGN_END, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);//设置为左对齐或上对齐</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>300</td><td class='src'>    //第二个参数是主轴对齐方式（横向排列时主轴是X轴，此时START是左对齐，END是右对齐，CENTER是居中对齐 反之）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>301</td><td class='src'>    //第三个参数是交叉轴(与主轴垂直)对齐方式，逻辑同上，横向排列时，START是上对齐，END是下对齐，CENTER是居中对齐</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>302</td><td class='src'>    //第四个参数是交叉轴的轨道对齐方式，START代表是顶部对齐，END是底部对齐，CENTER是居中对齐，是多行多列时这些内容时在顶部还是底部</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>303</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>304</td><td class='src'>    //4.修改边距（一般不建议改）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>305</td><td class='src'>    lv_obj_set_style_pad_all(scr, 15, LV_PART_MAIN);//设置所有边距（屏幕边距）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>306</td><td class='src'>    lv_obj_set_style_pad_row(scr, 5, LV_PART_MAIN);//设置行间距（组件之间边距）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>307</td><td class='src'>    lv_obj_set_style_pad_column(scr, 5, LV_PART_MAIN);//设置列间距（组件之间边距）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>308</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>309</td><td class='src'>    //5.创建按钮进行布局</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>310</td><td class='src'>    // for(uint8_t i = 0; i &lt; 20; i++)</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>311</td><td class='src'>    // {</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>312</td><td class='src'>    //     // 创建按钮并添加到弹性布局容器中</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>313</td><td class='src'>    //     lv_obj_t *btn = lv_btn_create(scr);//弹性按钮不需要设置位置，它会自己找适当位置布局</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>314</td><td class='src'>    //     lv_obj_set_size(btn, (i+1)*2, (i+1)*2);//设置按钮大小，随着i的增加，按钮越来越大</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>315</td><td class='src'>    // }</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>316</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>317</td><td class='src'>    lv_obj_t *btn = lv_btn_create(scr);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>318</td><td class='src'>    lv_obj_set_flex_grow(btn, 1);//设置为1，1为加权数</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>319</td><td class='src'>    lv_obj_t *btn1 = lv_btn_create(scr);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>320</td><td class='src'>    lv_obj_set_flex_grow(btn1, 2);//设置为2，2为加权数（占比权重）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>321</td><td class='src'>    //上述代码中，btn1的加权数是btn的两倍，所以btn1的大小是btn的两倍，且btn在btn1的前面</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>322</td><td class='src'>    lv_obj_t *btn2 = lv_btn_create(scr);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>323</td><td class='src'>    lv_obj_set_flex_grow(btn2, 3);//设置为3，3为加权数（占比权重）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>324</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>325</td><td class='src'>    //强制将btn2添加到新的轨道</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>326</td><td class='src'>    lv_obj_add_flag(btn2, LV_OBJ_FLAG_FLEX_IN_NEW_TRACK);//强制将btn2添加到新的轨道，btn2在btn1的下面</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>327</td><td class='src'>    //后面再添加新组件都会到新轨道内</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>328</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>329</td><td class='src'>    */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>330</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>331</td><td class='src'>    /*八、展示网格布局</td><td class='exp'>笔记八：网格布局（grid：行列描述、FR 比例、格子占据、嵌套网格）。</td></tr>
+<tr class='blank'><td class='no'>332</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>333</td><td class='src'>    //1.网格布局</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>334</td><td class='src'>    lv_obj_t *scr = lv_screen_active();</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>335</td><td class='src'>    //创建一个屏幕</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>336</td><td class='src'>    lv_obj_t *obj = lv_obj_create(scr);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>337</td><td class='src'>    //设置屏幕为网格布局的容器</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>338</td><td class='src'>    lv_obj_set_layout(obj, LV_LAYOUT_GRID);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>339</td><td class='src'>    //修改大小</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>340</td><td class='src'>    lv_obj_set_size(obj, 300, 400);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>341</td><td class='src'>    //去除边距</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>342</td><td class='src'>    lv_obj_set_style_pad_all(obj, 0, LV_PART_MAIN);//设置所有边距（屏幕边距）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>343</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>344</td><td class='src'>    //2.设置网格行列数</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>345</td><td class='src'>    //static int32_t column_dsc[] = {LV_GRID_CONTENT,LV_GRID_CONTENT , LV_GRID_TEMPLATE_LAST};//两个参数代表两列（数字大小代表下一列间距）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>346</td><td class='src'>    //static int32_t row_dsc[] = {LV_GRID_CONTENT,LV_GRID_CONTENT ,LV_GRID_CONTENT , LV_GRID_TEMPLATE_LAST};//三个参数代表三行（数字大小代表与下一行间距）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>347</td><td class='src'>    static int32_t column_dsc[] = {LV_GRID_FR(1),LV_GRID_FR(2) , LV_GRID_TEMPLATE_LAST};//按比例划分1:4，（下面的lv_obj_set_grid_cell的LV_GRID_ALIGN_START代表从左边开始划分）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>348</td><td class='src'>    static int32_t row_dsc[] = {LV_GRID_FR(1),LV_GRID_FR(2) ,LV_GRID_FR(3) , LV_GRID_TEMPLATE_LAST};</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>349</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='blank'><td class='no'>350</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>351</td><td class='src'>    //设置网格是两列三行的网格布局</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>352</td><td class='src'>    lv_obj_set_grid_dsc_array(obj, column_dsc, row_dsc);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>353</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>354</td><td class='src'>    //两列三行一共六个格子，一个组件可以占据多个格子，这里统一只占一个</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>355</td><td class='src'>    // for(uint8_t i = 0; i &lt; 6; i++)</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>356</td><td class='src'>    // {</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>357</td><td class='src'>    //     lv_obj_t *btn = lv_btn_create(obj);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>358</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>359</td><td class='src'>    //     //（1）子组件 （2）列对齐-&gt;左右对齐 （3） 哪一列 （4）占几列 （5）行对齐-&gt;上下对齐 （6）哪一行 （7）占几行</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>360</td><td class='src'>    //     lv_obj_set_grid_cell(btn, LV_GRID_ALIGN_START, i % 2, 1, LV_GRID_ALIGN_START, i / 2, 1);//设置按钮在网格中的位置和占据的格子数</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>361</td><td class='src'>    // }</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>362</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='blank'><td class='no'>363</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='blank'><td class='no'>364</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>365</td><td class='src'>    for(uint8_t i = 0; i &lt; 2; i++)</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>366</td><td class='src'>    {</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>367</td><td class='src'>        lv_obj_t *btn = lv_btn_create(obj);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>368</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>369</td><td class='src'>        //（1）子组件 （2）列对齐-&gt;左右对齐 （3） 哪一列 （4）占几列 （5）行对齐-&gt;上下对齐 （6）哪一行 （7）占几行</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>370</td><td class='src'>        lv_obj_set_grid_cell(btn, LV_GRID_ALIGN_START, i % 2, 1, LV_GRID_ALIGN_START, i / 2, 1);//设置按钮在网格中的位置和占据的格子数</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>371</td><td class='src'>    }</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>372</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>373</td><td class='src'>    //创建一个屏幕（代码编写占剩下四个格子的网格）（上面两个按键的代码已经占了两个格子）（一共六个格子）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>374</td><td class='src'>    lv_obj_t *obj1 = lv_obj_create(obj);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>375</td><td class='src'>    lv_obj_set_grid_cell(obj1, LV_GRID_ALIGN_CENTER, 0, 2, LV_GRID_ALIGN_CENTER, 1, 2);//设置按钮在网格中的位置和占据的格子数</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>376</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>377</td><td class='src'>    //将子网格设置为网格布局</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>378</td><td class='src'>    lv_obj_set_layout(obj1, LV_LAYOUT_GRID);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>379</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>380</td><td class='src'>    //设置子网格的行列数为NULL，表示子网格的行列数由父网格的行列数决定</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>381</td><td class='src'>    lv_obj_set_grid_dsc_array(obj1, NULL, NULL);//子网格的行列数由子网格的子组件决定</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>382</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>383</td><td class='src'>    //修改行列边距</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>384</td><td class='src'>    lv_obj_set_style_pad_all(obj1, 0, LV_PART_MAIN);//设置所有边距（屏幕边距）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>385</td><td class='src'>    lv_obj_set_style_pad_column(obj1, 0, LV_PART_MAIN);//设置列边距</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>386</td><td class='src'>    lv_obj_set_style_pad_row(obj1, 0, LV_PART_MAIN);//设置行边距</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>387</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>388</td><td class='src'>    for(uint8_t i = 0; i &lt; 4; i++)</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>389</td><td class='src'>    {</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>390</td><td class='src'>        lv_obj_t *btn = lv_btn_create(obj1);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>391</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>392</td><td class='src'>        //（1）子组件 （2）列对齐-&gt;左右对齐 （3） 哪一列 （4）占几列 （5）行对齐-&gt;上下对齐 （6）哪一行 （7）占几行</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>393</td><td class='src'>        lv_obj_set_grid_cell(btn, LV_GRID_ALIGN_START, i % 2, 1, LV_GRID_ALIGN_START, i / 2, 1);//设置按钮在网格中的位置和占据的格子数</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>394</td><td class='src'>        //子网格继承父网格的行列数和比例，所以子网格的按钮也会按比例划分</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>395</td><td class='src'>        //LV_GRID_ALIGN_STRETCH表示组件铺满整个网格</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>396</td><td class='src'>    }</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>397</td><td class='src'>    */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>398</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>399</td><td class='src'>    /*九、滚动基础</td><td class='exp'>笔记九：滚动基础（动量、弹性、滚动条模式、scroll_to）。</td></tr>
+<tr class='blank'><td class='no'>400</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>401</td><td class='src'>    //展示布局 网格布局</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>402</td><td class='src'>    lv_obj_t *scr = lv_screen_active();</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>403</td><td class='src'>    //创建一个屏幕</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>404</td><td class='src'>    lv_obj_t *obj = lv_obj_create(scr);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>405</td><td class='src'>    lv_obj_set_size(obj, 200, 200);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>406</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>407</td><td class='src'>    //关闭父屏幕的滚动动量</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>408</td><td class='src'>    lv_obj_remove_flag(obj, LV_OBJ_FLAG_SCROLL_MOMENTUM);//关闭父屏幕的滚动动量，LV_OBJ_FLAG_SCROLL_MOMENTUM是滚动动量的标志位</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>409</td><td class='src'>    //滚动动量：当用户快速滑动并松开手指后，内容会继续惯性滑动一段距离，然后慢慢减速停止，类似智能手机的滚动效果。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>410</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>411</td><td class='src'>    //重新开启父屏幕的滚动动量</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>412</td><td class='src'>    //lv_obj_add_flag(obj, LV_OBJ_FLAG_SCROLL_MOMENTUM);//重新开启（默认是开启的，但关闭需要手动）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>413</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>414</td><td class='src'>    //关闭父屏幕的弹性滚动（弹性滚动是滚动条到头之后继续拉动下去会反弹回来，有一个反弹效果）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>415</td><td class='src'>    lv_obj_remove_flag(obj, LV_OBJ_FLAG_SCROLL_ELASTIC);//关闭父屏幕的弹性滚动，LV_OBJ_FLAG_SCROLL_ELASTIC是弹性滚动的标志位</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>416</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>417</td><td class='src'>    //重新开启父屏幕的弹性滚动</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>418</td><td class='src'>    //lv_obj_add_flag(obj, LV_OBJ_FLAG_SCROLL_ELASTIC);//重新开启（默认是开启的，但关闭需要手动）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>419</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>420</td><td class='src'>    //创建一个子屏幕(触发链式滚动，父子屏幕都可以滚动)</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>421</td><td class='src'>    lv_obj_t *obj1 = lv_obj_create(obj);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>422</td><td class='src'>    lv_obj_set_pos(obj1, 200, 200);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>423</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>424</td><td class='src'>    // //创建按钮(层层嵌套会导致刚运行时就会滚动一下，影响后面lv_obj_scroll_to_x的判断，要先注释掉这个再测试lv_obj_scroll_to_x)</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>425</td><td class='src'>    //lv_obj_scroll_to_x(obj, 0, LV_ANIM_ON);也可以强制不让进度条一开始就自动滚动</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>426</td><td class='src'>    lv_obj_t *btn = lv_btn_create(obj1);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>427</td><td class='src'>    lv_obj_set_pos(btn, 200, 200);//触发滚动屏幕</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>428</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>429</td><td class='src'>    //不显示滚动条</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>430</td><td class='src'>    //lv_obj_set_scrollbar_mode(obj, LV_SCROLLBAR_MODE_OFF);//不显示滚动条(只是不显示，但是可以滚动，仍然有对应的功能)</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>431</td><td class='src'>    lv_obj_set_scrollbar_mode(obj, LV_SCROLLBAR_MODE_ON);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>432</td><td class='src'>    //LV_SCROLLBAR_MODE_AUTO（默认，超出屏幕时才显示滚动条），LV_SCROLLBAR_MODE_ACTIVE（只有滚动的时候才显示滚动条）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>433</td><td class='src'>    //LV_SCROLLBAR_MODE_ON（一直显示滚动条）， LV_SCROLLBAR_MODE_OFF（不显示滚动条）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>434</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>435</td><td class='src'>    //修改滚动条样式</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>436</td><td class='src'>    lv_obj_set_style_bg_color(obj, lv_palette_main(LV_PALETTE_RED), LV_PART_SCROLLBAR);//设置水平滚动条背景颜色(LV_PART_SCROLLBAR是滚动条的部件，LV_PART_MAIN是背景的部件)</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>437</td><td class='src'>    //水平滚动条函数：lv_obj_set_style_bg_color(obj, lv_palette_main(LV_PALETTE_RED), LV_PART_SCROLLBAR | LV_STATE_HORIZONTAL);//设置水平滚动条背景颜色</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>438</td><td class='src'>    //垂直滚动条函数：lv_obj_set_style_bg_color(obj, lv_palette_main(LV_PALETTE_RED), LV_PART_SCROLLBAR | LV_STATE_VERTICAL);//设置垂直滚动条背景颜色</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>439</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>440</td><td class='src'>    //添加滚动结束的回调函数</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>441</td><td class='src'>    lv_obj_add_event_cb(obj, scroll_callback, LV_EVENT_SCROLL_END, NULL);//传入的参数是滑块本身的指针，LV_EVENT_SCROLL_END只在滚动结束时触发一次</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>442</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>443</td><td class='src'>    //手动调用一些滚动函数</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>444</td><td class='src'>    lv_obj_scroll_to_x(obj, 100, LV_ANIM_ON);//滚动到x轴100的位置</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>445</td><td class='src'>    lv_obj_scroll_to_y(obj, 100, LV_ANIM_ON);//滚动到y轴100的位置</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>446</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>447</td><td class='src'>    */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>448</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>449</td><td class='src'>    /*十、滚动吸附（重要）</td><td class='exp'>笔记十：滚动吸附（SNAPPABLE 居中吸附、SCROLL_ONE）。</td></tr>
+<tr class='comment'><td class='no'>450</td><td class='src'>    //展示布局 网格布局</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>451</td><td class='src'>    lv_obj_t *scr = lv_screen_active();</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>452</td><td class='src'>    //创建一个屏幕</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>453</td><td class='src'>    lv_obj_t *obj = lv_obj_create(scr);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>454</td><td class='src'>    lv_obj_set_size(obj, 200, 200);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>455</td><td class='src'>    lv_obj_set_pos(obj, 60, 100);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>456</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>457</td><td class='src'>    //设置为弹性布局</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>458</td><td class='src'>    lv_obj_set_layout(obj, LV_LAYOUT_FLEX);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>459</td><td class='src'>    //水平布局（不换行）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>460</td><td class='src'>    lv_obj_set_flex_flow(obj, LV_FLEX_FLOW_ROW);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>461</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>462</td><td class='src'>    for(uint8_t i = 0; i &lt; 10; i++)</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>463</td><td class='src'>    {</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>464</td><td class='src'>        lv_obj_t *btn = lv_btn_create(obj);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>465</td><td class='src'>        lv_obj_set_size(btn, 160, 160);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>466</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>467</td><td class='src'>        //添加吸附的标签(让按钮带吸附功能)，，标记某个子对象为“可吸附”的锚点。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>468</td><td class='src'>        lv_obj_add_flag(btn,LV_OBJ_FLAG_SNAPPABLE);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>469</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>470</td><td class='src'>        //设置x轴上每次滚动完之后都保持按钮在中间，，设置容器的x轴吸附模式为“居中吸附”。</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>471</td><td class='src'>        lv_obj_set_scroll_snap_x(obj,LV_SCROLL_SNAP_CENTER);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>472</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>473</td><td class='src'>        //添加只滚动一次的功能</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>474</td><td class='src'>        lv_obj_add_flag(obj,LV_OBJ_FLAG_SCROLL_ONE);</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>475</td><td class='src'>    }</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>476</td><td class='src'>    */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='blank'><td class='no'>477</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='blank'><td class='no'>478</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>479</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+</table>
+<div class='summary'><h4>本文件小总结</h4><b>ui.c 总结：</b>LVGL 用法练习集：两个真实回调（按钮→改滑块、滑块→打印）+大量中文注释教程笔记，覆盖 LVGL 9 的控件/样式/布局/事件/滚动五大主题。学习价值高，产品未调用。</div>
+</div>
+<div class='section'>
+<h2><span class='filepath'>Core/ui/mylist.h</span> <span class='pill'>0 行</span></h2>
+<div class='filedesc'>自定义控件 mylist 的结构声明。</div>
+<table class='code'>
+<tr><th>行号</th><th>代码（Core/ui/mylist.h）</th><th>逐行讲解</th></tr>
+<tr class='auto'><td class='no'>1</td><td class='src'>#ifndef MYLIST_H</td><td class='exp'><span class='auto-tag'>自动</span>条件编译入口（ifndef）：满足条件才编译下面的内容，不满足则整段跳过。</td></tr>
+<tr class='auto'><td class='no'>2</td><td class='src'>#define MYLIST_H</td><td class='exp'><span class='auto-tag'>自动</span>定义宏 <code>MYLIST_H</code>：编译前做纯文本替换，详见对应头文件小总结。</td></tr>
+<tr class='blank'><td class='no'>3</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>4</td><td class='src'>#include "lvgl.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "lvgl.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='auto'><td class='no'>5</td><td class='src'>#include "stdio.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "stdio.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='blank'><td class='no'>6</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>7</td><td class='src'>typedef struct {</td><td class='exp'>mylist_t 结构体：自定义“控件”的数据容器。</td></tr>
+<tr class=''><td class='no'>8</td><td class='src'>    lv_obj_t * btn;//按钮</td><td class='exp'>btn：底层 LVGL 对象指针。</td></tr>
+<tr class=''><td class='no'>9</td><td class='src'>    uint32_t count;//值</td><td class='exp'>count：点击计数。</td></tr>
+<tr class='auto'><td class='no'>10</td><td class='src'>} mylist_t;</td><td class='exp'><span class='auto-tag'>自动</span>结束该结构体/枚举/联合的定义，并声明类型名 <code>mylist_t</code>。</td></tr>
+<tr class='blank'><td class='no'>11</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>12</td><td class='src'>/**</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>13</td><td class='src'> * @brief 创建一个mylist</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>14</td><td class='src'> *</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>15</td><td class='src'> * @param parent</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>16</td><td class='src'> * @return lv_obj_t*</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>17</td><td class='src'> */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>18</td><td class='src'>mylist_t * lv_mylist_create(lv_obj_t * parent);</td><td class='exp'>创建函数声明。</td></tr>
+<tr class='blank'><td class='no'>19</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>20</td><td class='src'>/**</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>21</td><td class='src'> * @brief 删除mylist</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>22</td><td class='src'> * @param mylist</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>23</td><td class='src'> */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>24</td><td class='src'>void lv_mylist_delete(mylist_t * mylist);</td><td class='exp'>删除、32/40：设置大小、设置位置。</td></tr>
+<tr class='blank'><td class='no'>25</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>26</td><td class='src'>/**</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>27</td><td class='src'> * @brief 设置大小</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>28</td><td class='src'> * @param mylist</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>29</td><td class='src'> * @param width</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>30</td><td class='src'> * @param height</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>31</td><td class='src'> */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>32</td><td class='src'>void lv_mylist_set_size(mylist_t * mylist, int32_t width, int32_t height);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_mylist_set_size()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='blank'><td class='no'>33</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>34</td><td class='src'>/**</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>35</td><td class='src'> * @brief 设置位置</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>36</td><td class='src'> * @param mylist</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>37</td><td class='src'> * @param x</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>38</td><td class='src'> * @param y</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>39</td><td class='src'> */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>40</td><td class='src'>void lv_mylist_set_pos(mylist_t * mylist, int32_t x, int32_t y);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_mylist_set_pos()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='blank'><td class='no'>41</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>42</td><td class='src'>#endif /* MYLIST_H */</td><td class='exp'><span class='auto-tag'>自动</span>结束一个条件编译块。</td></tr>
+</table>
+<div class='summary'><h4>本文件小总结</h4><b>mylist.h 总结：</b>演示“LVGL 自定义控件”的标准模式：数据结构体 + 底层对象指针 + 增删改接口。</div>
+</div>
+<div class='section'>
+<h2><span class='filepath'>Core/ui/mylist.c</span> <span class='pill'>0 行</span></h2>
+<div class='filedesc'>自定义控件实现：创建/删除/设尺寸/设位置。</div>
+<table class='code'>
+<tr><th>行号</th><th>代码（Core/ui/mylist.c）</th><th>逐行讲解</th></tr>
+<tr class='auto'><td class='no'>1</td><td class='src'>#include "mylist.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "mylist.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='auto'><td class='no'>2</td><td class='src'>#include "com_Debug.h"</td><td class='exp'><span class='auto-tag'>自动</span>包含项目头文件 "com_Debug.h"：引入其中声明的类型、宏与函数接口。</td></tr>
+<tr class='blank'><td class='no'>3</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>4</td><td class='src'>static void mylist_callback(lv_event_t * e)</td><td class='exp'><b>mylist_callback</b>：控件内部点击回调。</td></tr>
+<tr class=''><td class='no'>5</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>6</td><td class='src'>    //获取由lv_obj_add_event_cb函数传进来的user_data（mylist本身的指针）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>7</td><td class='src'>    mylist_t * mylist = lv_event_get_user_data(e);</td><td class='exp'>取 user_data（mylist 自身指针）。</td></tr>
+<tr class='blank'><td class='no'>8</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>9</td><td class='src'>    //获取触发事件的对象(哪个对象触发了回调函数)（例如是按钮btn1）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>10</td><td class='src'>    lv_obj_t * btn1 = lv_event_get_target(e);</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>lv_event_get_target(e)</code> 赋给 <code>lv_obj_t * btn1</code>。</td></tr>
+<tr class='blank'><td class='no'>11</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>12</td><td class='src'>    //累加（每次点击它都会进入这个函数然后+1）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>13</td><td class='src'>    mylist-&gt;count++;</td><td class='exp'>点击计数 +1。</td></tr>
+<tr class='blank'><td class='no'>14</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>15</td><td class='src'>    printf("mylist_callback: count=%d\n", mylist-&gt;count);</td><td class='exp'>打印计数。</td></tr>
+<tr class='blank'><td class='no'>16</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>17</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>18</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='blank'><td class='no'>19</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='blank'><td class='no'>20</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>21</td><td class='src'>/**</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>22</td><td class='src'> * @brief 创建一个mylist=&gt;类型一个按钮=&gt;实现累加功能</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>23</td><td class='src'> *</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>24</td><td class='src'> * @param parent</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>25</td><td class='src'> * @return lv_obj_t*</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>26</td><td class='src'> */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>27</td><td class='src'>mylist_t * lv_mylist_create(lv_obj_t * parent)</td><td class='exp'><b>lv_mylist_create</b>：创建控件。</td></tr>
+<tr class=''><td class='no'>28</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='comment'><td class='no'>29</td><td class='src'>    //1.创建一个mylist_t结构体</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>30</td><td class='src'>    mylist_t * mylist = lv_malloc_zeroed(sizeof(mylist_t));</td><td class='exp'>lv_malloc_zeroed 分配控件数据结构（清零）。</td></tr>
+<tr class='blank'><td class='no'>31</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>32</td><td class='src'>    //创建一个底层的结构体 =》屏幕</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>33</td><td class='src'>    lv_obj_t * obj = lv_obj_create(parent);</td><td class='exp'>创建底层对象（一个通用 obj 当按钮底座）。</td></tr>
+<tr class='blank'><td class='no'>34</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>35</td><td class='src'>    //2.根据按钮需要的样式修改</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>36</td><td class='src'>    //2.1删除边框</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>37</td><td class='src'>    lv_obj_set_style_border_width(obj, 0, LV_PART_MAIN);</td><td class='exp'>删边框。</td></tr>
+<tr class='comment'><td class='no'>38</td><td class='src'>    //2.2修改颜色</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>39</td><td class='src'>    lv_obj_set_style_bg_color(obj, lv_palette_main(LV_PALETTE_BLUE), LV_PART_MAIN);//设置背景颜色</td><td class='exp'>蓝色背景。</td></tr>
+<tr class='comment'><td class='no'>40</td><td class='src'>    //2.3设置默认大小和位置（默认值，后续可以通过下面的函数来更改）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>41</td><td class='src'>    lv_obj_set_size(obj, 40, 20);</td><td class='exp'>默认大小 40×20。</td></tr>
+<tr class='auto'><td class='no'>42</td><td class='src'>    lv_obj_set_pos(obj, 0, 0);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>lv_obj_set_pos()</code>：设置 LVGL 对象在父容器中的 x/y 坐标。</td></tr>
+<tr class='blank'><td class='no'>43</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>44</td><td class='src'>    //添加阴影</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>45</td><td class='src'>    lv_obj_set_style_shadow_color(obj, lv_palette_main(LV_PALETTE_GREY), LV_PART_MAIN);</td><td class='exp'>阴影样式四件套（颜色/宽度/XY 偏移）。</td></tr>
+<tr class='auto'><td class='no'>46</td><td class='src'>    lv_obj_set_style_shadow_width(obj, 5, LV_PART_MAIN);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>lv_obj_set_style_shadow_width()</code>：设置 LVGL 对象的阴影宽度样式。</td></tr>
+<tr class='auto'><td class='no'>47</td><td class='src'>    lv_obj_set_style_shadow_offset_x(obj, 2, LV_PART_MAIN);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_obj_set_style_shadow_offset_x()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='auto'><td class='no'>48</td><td class='src'>    lv_obj_set_style_shadow_offset_y(obj, 2, LV_PART_MAIN);</td><td class='exp'><span class='auto-tag'>自动</span>调用函数 <code>lv_obj_set_style_shadow_offset_y()</code>——本行的具体效果结合上下文与所在函数的小总结理解。</td></tr>
+<tr class='blank'><td class='no'>49</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>50</td><td class='src'>    //添加标志：可点击（屏幕变按键）</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>51</td><td class='src'>    lv_obj_add_flag(obj, LV_OBJ_FLAG_CLICKABLE);</td><td class='exp'>加 CLICKABLE 标志——通用 obj 默认不可点，必须显式开启。</td></tr>
+<tr class='comment'><td class='no'>52</td><td class='src'>    //生成事件</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>53</td><td class='src'>    lv_obj_add_event_cb(obj, mylist_callback, LV_EVENT_CLICKED, mylist);//点击事件回调函数，传入的参数是mylist本身的指针</td><td class='exp'>绑定点击事件，user_data 传 mylist 自身。</td></tr>
+<tr class='blank'><td class='no'>54</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>55</td><td class='src'>    mylist-&gt;btn = obj;</td><td class='exp'>保存对象指针与初始计数。</td></tr>
+<tr class='auto'><td class='no'>56</td><td class='src'>    mylist-&gt;count = 0;</td><td class='exp'><span class='auto-tag'>自动</span>把右侧表达式的值 <code>0</code> 赋给 <code>mylist->count</code>。</td></tr>
+<tr class='blank'><td class='no'>57</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='auto'><td class='no'>58</td><td class='src'>    return mylist;</td><td class='exp'><span class='auto-tag'>自动</span>函数返回值 <code>mylist</code>，本函数调用结束。</td></tr>
+<tr class='blank'><td class='no'>59</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>60</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>61</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>62</td><td class='src'>/**</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>63</td><td class='src'> * @brief 删除mylist</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>64</td><td class='src'> * @param mylist</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>65</td><td class='src'> */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>66</td><td class='src'>void lv_mylist_delete(mylist_t * mylist)</td><td class='exp'><b>lv_mylist_delete</b>：异步删对象 + free 数据结构。</td></tr>
+<tr class=''><td class='no'>67</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='blank'><td class='no'>68</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>69</td><td class='src'>    //删除按钮对象</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>70</td><td class='src'>    lv_obj_delete_async(mylist-&gt;btn);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>lv_obj_delete_async()</code>：请求 LVGL 在下一帧安全地删除对象（不能在回调中直接删，异步删除避免内存错误）。</td></tr>
+<tr class='blank'><td class='no'>71</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>72</td><td class='src'>    //释放mylist结构体内存</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>73</td><td class='src'>    lv_free(mylist);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>lv_free()</code>：释放之前用 LVGL 内存分配器申请的内存。</td></tr>
+<tr class='blank'><td class='no'>74</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class=''><td class='no'>75</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>76</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>77</td><td class='src'>/**</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>78</td><td class='src'> * @brief 设置大小</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>79</td><td class='src'> * @param mylist</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>80</td><td class='src'> */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class=''><td class='no'>81</td><td class='src'>void lv_mylist_set_size(mylist_t * mylist, int32_t width, int32_t height)</td><td class='exp'><b>lv_mylist_set_size/pos</b>：转发到底层对象。</td></tr>
+<tr class=''><td class='no'>82</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>83</td><td class='src'>    lv_obj_set_size(mylist-&gt;btn, width, height);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>lv_obj_set_size()</code>：设置 LVGL 对象的宽度和高度。</td></tr>
+<tr class=''><td class='no'>84</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+<tr class='blank'><td class='no'>85</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='blank'><td class='no'>86</td><td class='src'> </td><td class='exp'></td></tr>
+<tr class='comment'><td class='no'>87</td><td class='src'>/**</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>88</td><td class='src'> * @brief 设置位置</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>89</td><td class='src'> * @param mylist</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>90</td><td class='src'> * @param x</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>91</td><td class='src'> * @param y</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='comment'><td class='no'>92</td><td class='src'> */</td><td class='exp'>（注释行，无需解析）</td></tr>
+<tr class='auto'><td class='no'>93</td><td class='src'>void lv_mylist_set_pos(mylist_t * mylist, int32_t x, int32_t y)</td><td class='exp'><span class='auto-tag'>自动</span>简单代码行：作用结合上下文与所在函数的小总结理解。</td></tr>
+<tr class=''><td class='no'>94</td><td class='src'>{</td><td class='exp'>进入代码块（函数体 / 分支体开始）。</td></tr>
+<tr class='auto'><td class='no'>95</td><td class='src'>    lv_obj_set_pos(mylist-&gt;btn, x, y);</td><td class='exp'><span class='auto-tag'>自动</span>调用 <code>lv_obj_set_pos()</code>：设置 LVGL 对象在父容器中的 x/y 坐标。</td></tr>
+<tr class=''><td class='no'>96</td><td class='src'>}</td><td class='exp'>代码块结束（函数体或分支到此为止）。</td></tr>
+</table>
+<div class='summary'><h4>本文件小总结</h4><b>mylist.c 总结：</b>最小可用的 LVGL 自定义控件范例：数据结构+底座对象+样式+事件+生命周期接口。核心套路：user_data 挂控件自身指针，回调里取回。</div>
+</div>
+<div class='summary'><h4>本章总结</h4><b>本章总结：</b>产品 UI 的三条铁律：①LVGL 只在 UiTask 中操作；②回调只发请求（队列/接口），不直接执行；③草稿与生效值分离。ui.c/mylist.c 是学习 LVGL 的极佳中文笔记：控件创建、样式、flex/grid 布局、滚动吸附、自定义控件全覆盖。</div>
+</div></body></html>
