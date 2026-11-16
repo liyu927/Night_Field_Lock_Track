@@ -7,14 +7,14 @@
 #define APP_PARAMETER_COUNT 9U
 /* 以下数值是编译进固件的出厂值，上电时会同步到 W25Q64 的出厂扇区。 */
 #define APP_BRIGHTNESS_DEFAULT 100U          /* 背光 PWM 占空比，单位为百分比。 */
-#define APP_MANUAL_SLEEP_DEFAULT 15U         /* 手动模式无触摸后熄屏并进入低功耗的秒数。 */
+#define APP_MANUAL_SLEEP_DEFAULT 20U         /* 手动模式无触摸后熄屏并进入低功耗的秒数。 */
 #define APP_AUTO_SLEEP_DEFAULT 15U           /* 自动模式熄屏及满足低功耗条件的等待秒数。 */
 #define APP_HORIZONTAL_BAND_DEFAULT 50U      /* 左右光差的停转范围，单位为 ADC 差值。 */
 #define APP_VERTICAL_BAND_DEFAULT 100U       /* 上下光差的停转范围，单位为 ADC 差值。 */
 #define APP_LOW_POWER_LIGHT_DEFAULT 1800U    /* 四路 ADC 平均值高于此值时视为偏暗。 */
-#define APP_WAKE_INTERVAL_DEFAULT 3U         /* 自动低功耗期间定时唤醒采光的秒数。 */
-#define APP_MANUAL_SPEED_DEFAULT 15U         /* 手动控制目标速度，单位为度每秒。 */
-#define APP_AUTO_KP_HUNDREDTHS_DEFAULT 10U   /* 自动追光比例系数的百分之一单位，10 表示 0.10。 */
+#define APP_WAKE_INTERVAL_DEFAULT 5U         /* 自动低功耗期间定时唤醒采光的秒数。 */
+#define APP_MANUAL_SPEED_DEFAULT 60U         /* 手动控制目标速度，单位为度每秒。 */
+#define APP_AUTO_KP_HUNDREDTHS_DEFAULT 12U   /* 自动追光比例系数的百分之一单位，10 表示 0.10。 */
 
 /* 数组下标与界面顺序、默认值顺序、范围表顺序一致，不能单独调整其中一处。 */
 typedef enum

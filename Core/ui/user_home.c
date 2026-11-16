@@ -29,6 +29,7 @@ typedef enum {
 /* 主 Tileview 在手动/自动模式间纵向切换；参数 Tileview 在两页参数间横向切换。 */
 static lv_obj_t *tileview;
 static lv_obj_t *manual_tile;
+static lv_obj_t *recovery_button;
 /* 自动模式瓦片用于识别用户的模式切换。 */
 static lv_obj_t *auto_tile;
 static lv_obj_t *pages[UI_PAGE_APP + 1];
@@ -175,7 +176,29 @@ static void ui_dialog_show(const char *text, bool confirm)
 /* 使用屏幕根对象上的遮罩层，当前页面无论显示什么都能弹出。 */
 void user_home_show_error(void)
 {
+    ui_show_page(UI_PAGE_MAIN);
+    page_stack_size = 0U;
+    params_dirty = false;
+    save_then_back = false;
+    lv_tileview_set_tile(tileview, manual_tile, LV_ANIM_OFF);
+    lv_obj_remove_state(recovery_button, LV_STATE_DISABLED);
+    lv_obj_set_hidden(recovery_button, false);
     ui_dialog_show("设备异常，电机已停止", false);
+}
+
+void user_home_show_recovery_result(uint8_t result)
+{
+    if (result == 1U) lv_obj_set_hidden(recovery_button, true);
+    else lv_obj_remove_state(recovery_button, LV_STATE_DISABLED);
+    ui_dialog_show(result == 1U ? "恢复成功，一切恢复正常" : "保存失败", false);
+}
+
+/* 恢复按钮只登记请求，检查和故障清除分别由电机任务、系统任务执行。 */
+static void ui_recovery_cb(lv_event_t *event)
+{
+    (void)event;
+    App_System_RequestRecovery();
+    lv_obj_add_state(recovery_button, LV_STATE_DISABLED);
 }
 
 /* 点击关闭或取消后收起弹窗，保留当前页面状态。 */
@@ -426,6 +449,9 @@ void user_home_create(void)
     lv_obj_set_scrollable(auto_tile, false);
     /* 手动标题缩短，右侧留给最后五秒的统一倒计时。 */
     ui_label(manual_tile, "手动模式", 8, 9, 100);
+    recovery_button = ui_button(manual_tile, "恢复电机", 160, 5, 72, 29,
+                                ui_recovery_cb, NULL);
+    lv_obj_set_hidden(recovery_button, true);
     ui_label(manual_tile, "上滑切换自动", 8, 236, 224);
     ui_button(manual_tile, "手动控制", 16, 42, 208, 40, ui_open_cb, (void *)(uintptr_t)UI_PAGE_CONTROL);
     ui_button(manual_tile, "参数调节", 16, 90, 208, 40, ui_open_cb, (void *)(uintptr_t)UI_PAGE_PARAMS);

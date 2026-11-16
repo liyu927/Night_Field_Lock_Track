@@ -9,4 +9,7 @@ void user_home_create(void);
 /* 仅由 UI 任务调用，在当前任意页面显示设备异常弹窗。 */
 void user_home_show_error(void);
 
+/* 电机复查完成后显示结果，并在成功时隐藏手动页恢复按钮。 */
+void user_home_show_recovery_result(uint8_t result);
+
 #endif

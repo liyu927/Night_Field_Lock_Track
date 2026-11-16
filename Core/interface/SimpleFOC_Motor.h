@@ -103,6 +103,11 @@ uint8_t MotorPosition_HoldCurrent(SimpleFOC_MotorAxis axis);
 /* 停止指定轴的速度控制，并由电机任务关闭驱动使能。 */
 void MotorSpeed_Stop(SimpleFOC_MotorAxis axis);
 
+/* 异常模式下请求电机任务重新检查两轴；返回 1 表示请求已受理。 */
+uint8_t SimpleFOC_Motor_RequestRecovery(void);
+/* 读取一次恢复结果：0 为未完成，1 为检查通过，2 为检查失败。 */
+uint8_t SimpleFOC_Motor_TakeRecoveryResult(void);
+
 /* 长期运行入口：准备两轴；NONE 模式保持停车，等待后续命令。 */
 /* 位置模式的目标单位度，速度模式的目标单位圈/秒；任务上下文调用后不返回。 */
 void SimpleFOC_Motor_RunTask(SimpleFOC_ControlMode initial_mode, float initial_target);

@@ -51,9 +51,9 @@
 #define MOTOR_SPEED_KP                   0.18f  /* 速度误差生成 q 轴电压的比例系数。 */
 #define MOTOR_SPEED_KI                   4.47f  /* 速度误差的积分系数，用于减小稳态速度误差。 */
 #define MOTOR_SPEED_FILTER_S             0.02f  /* 速度反馈低通滤波时间常数，单位秒；越大越平稳但滞后越大。 */
-#define MOTOR_MAX_Q_VOLTAGE              3.5f   /* q 轴电压指令的绝对值上限，单位伏；不是电流上限。 */
-#define MOTOR_Q_SLEW_VPS                 30.0f   /* q 轴电压指令每秒允许变化的最大值，单位伏/秒。 */
-#define MOTOR_MAX_STEP_DEG               8.0f   /* 驱动运行期间相邻两次角度变化上限；空闲时不检查。 */
+#define MOTOR_MAX_Q_VOLTAGE              5.5f   /* q 轴电压指令的绝对值上限，单位伏；不是电流上限。 */
+#define MOTOR_Q_SLEW_VPS                 20.0f   /* q 轴电压指令每秒允许变化的最大值，单位伏/秒。 */
+#define MOTOR_MAX_STEP_DEG               12.0f   /* 驱动运行期间相邻两次角度变化上限；空闲时不检查。 */
 #define MOTOR_MAX_OVERSHOOT_DEG         10.0f   /* 沿指令方向越过目标角度的容许量，超出则故障停机。 */
 #define MOTOR_MAX_COMMAND_DEG          360.0f   /* 单次相对转角指令的绝对值上限，超出则拒绝指令。 */
 #define MOTOR_MAX_SPEED_RPS             (MOTOR_MAX_SPEED_DPS / 360.0f)
@@ -102,6 +102,7 @@ typedef struct
 } MotorPositionState;
 
 static MotorPositionState g_motor_state[2];
+static uint8_t recovery_state;
 static uint32_t g_command_sequence[2]; /* 每条新命令更新一次，供控制任务重设位置零点。 */
 
 //*******************************************************************************************************
@@ -455,6 +456,33 @@ void MotorSpeed_Stop(SimpleFOC_MotorAxis axis)
     taskEXIT_CRITICAL();
 }
 
+/* UI 只登记请求，避免在 UI 或系统任务中直接操作电机硬件。 */
+uint8_t SimpleFOC_Motor_RequestRecovery(void)
+{
+    uint8_t accepted = 0U;
+    taskENTER_CRITICAL();
+    if (recovery_state == 0U)
+    {
+        recovery_state = 1U;
+        accepted = 1U;
+    }
+    taskEXIT_CRITICAL();
+    return accepted;
+}
+
+uint8_t SimpleFOC_Motor_TakeRecoveryResult(void)
+{
+    uint8_t result = 0U;
+    taskENTER_CRITICAL();
+    if (recovery_state > 1U)
+    {
+        result = recovery_state == 2U ? 1U : 2U;
+        recovery_state = 0U;
+    }
+    taskEXIT_CRITICAL();
+    return result;
+}
+
 /* 将相邻两次绝对角度的差值限制到 -π 至 π，跨越 0 度时保持连续。 */
 static float motor_angle_difference(float current, float previous)
 {
@@ -702,6 +730,48 @@ static void motor_fault(SimpleFOC_MotorAxis axis)
     App_System_ReportFault();
 }
 
+/* 两轴均通过存储记录和编码器检查后才重新开放命令；检查期间保持 EN 关闭。 */
+static uint8_t motor_try_recover(MotorOffsetRecord *record,
+                                 uint8_t driver_enabled[2], uint8_t offset_ready[2],
+                                 SimpleFOC_ControlMode previous_mode[2])
+{
+    MotorOffsetRecord checked_record;
+    MotorControl_t checked[2];
+    SimpleFOC_Motor_Disable(SIMPLEFOC_AXIS_VERTICAL);
+    SimpleFOC_Motor_Disable(SIMPLEFOC_AXIS_HORIZONTAL);
+    driver_enabled[0] = driver_enabled[1] = 0U;
+    if (W25Q64_Init() != HAL_OK
+        || W25Q64_LoadParameters(&checked_record, sizeof(checked_record)) != HAL_OK
+        || checked_record.signature != MOTOR_OFFSET_SIGNATURE
+        || checked_record.config != MOTOR_OFFSET_CONFIG
+        || (checked_record.valid_flags & (MOTOR_OFFSET_TIM1_VALID | MOTOR_OFFSET_TIM8_VALID))
+            != (MOTOR_OFFSET_TIM1_VALID | MOTOR_OFFSET_TIM8_VALID)) return 0U;
+
+    motor_control_init(&checked[0], SIMPLEFOC_AXIS_VERTICAL, &hi2c1);
+    motor_control_init(&checked[1], SIMPLEFOC_AXIS_HORIZONTAL, &hi2c3);
+    if (motor_prepare(&checked[0], &checked_record, 0U) != HAL_OK
+        || motor_prepare(&checked[1], &checked_record, 0U) != HAL_OK) return 0U;
+
+    *record = checked_record;
+    for (uint32_t i = 0U; i < 2U; ++i)
+    {
+        g_motor_control[i] = checked[i];
+        offset_ready[i] = 1U;
+        previous_mode[i] = SIMPLEFOC_CONTROL_NONE;
+        taskENTER_CRITICAL();
+        g_motor_state[i].target_deg = 0.0f;
+        g_motor_state[i].actual_deg = 0.0f;
+        g_motor_state[i].target_speed_rps = 0.0f;
+        g_motor_state[i].mode = SIMPLEFOC_CONTROL_NONE;
+        g_motor_state[i].ready = 1U;
+        g_motor_state[i].calibrated = 1U;
+        g_motor_state[i].fault = 0U;
+        ++g_command_sequence[i];
+        taskEXIT_CRITICAL();
+    }
+    return 1U;
+}
+
 /* 每个周期按同一逻辑处理指定电机。 */
 static void motor_run_axis(SimpleFOC_MotorAxis axis, float interval_s,
                            uint32_t command_sequence[2],
@@ -875,6 +945,15 @@ void SimpleFOC_Motor_RunTask(SimpleFOC_ControlMode initial_mode, float initial_t
         previous_tick += elapsed_ms;
         if (elapsed_ms == 0U) continue;
         if (elapsed_ms > 20U) elapsed_ms = 20U;
+        if (recovery_state == 1U)
+        {
+            uint8_t recovered = motor_try_recover(&record, driver_enabled,
+                                                   offset_ready, previous_mode);
+            taskENTER_CRITICAL();
+            recovery_state = recovered != 0U ? 2U : 3U;
+            taskEXIT_CRITICAL();
+            continue;
+        }
         /* 在本电机任务中只取最新自动角度，避免追赶过时光照。 */
         if (SmapSystemToMotorHandle != NULL)
         {

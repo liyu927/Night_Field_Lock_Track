@@ -13,7 +13,7 @@ typedef enum
     APP_MANUAL_RIGHT
 } AppManualDirection;
 
-/* 手动、自动与复位前不可退出的异常模式。 */
+/* 手动、自动与等待人工请求恢复的异常模式。 */
 typedef enum
 {
     APP_MODE_MANUAL = 0,
@@ -41,6 +41,11 @@ void App_System_ReportFault(void);
 
 /* UI 任务领取首次进入异常模式的弹窗通知。 */
 uint8_t App_System_TakeErrorPopup(void);
+
+/* UI 请求检查电机并尝试退出异常模式；结果由 UI 任务稍后领取。 */
+void App_System_RequestRecovery(void);
+/* 返回 0 表示未完成，1 表示恢复成功，2 表示恢复失败。 */
+uint8_t App_System_TakeRecoveryResult(void);
 
 /* UI 投递手动方向或停止请求；按住事件持续续发，超时则由系统任务转入位置保持。 */
 void App_ManualControl_Send(AppManualDirection direction);
