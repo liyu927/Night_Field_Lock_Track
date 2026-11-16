@@ -117,9 +117,11 @@ static uint32_t pending_sequence;
 static AppMode pending_mode = APP_MODE_MANUAL;
 static uint32_t pending_mode_sequence;
 static AppMode current_mode = APP_MODE_MANUAL;
-/* 故障请求与一次性弹窗通知，异常模式锁存到复位。 */
+/* 故障请求与一次性弹窗通知；人工复查通过后才解除异常锁存。 */
 static uint8_t fault_requested;
 static uint8_t error_popup_pending;
+static uint8_t recovery_in_progress;
+static uint8_t recovery_result_pending;
 /* CubeMX 创建的采样队列和自动角度命令队列。 */
 extern osMessageQueueId_t SmapToSystemHandle;
 extern osMessageQueueId_t SmapSystemToMotorHandle;
@@ -166,6 +168,35 @@ uint8_t App_System_TakeErrorPopup(void)
     error_popup_pending = 0U;
     taskEXIT_CRITICAL();
     return pending;
+}
+
+void App_System_RequestRecovery(void)
+{
+    uint8_t accepted = 0U;
+    taskENTER_CRITICAL();
+    if (current_mode == APP_MODE_ERROR && recovery_in_progress == 0U)
+    {
+        recovery_in_progress = 1U;
+        accepted = 1U;
+    }
+    taskEXIT_CRITICAL();
+    if (accepted != 0U && SimpleFOC_Motor_RequestRecovery() == 0U)
+    {
+        taskENTER_CRITICAL();
+        recovery_in_progress = 0U;
+        recovery_result_pending = 2U;
+        taskEXIT_CRITICAL();
+    }
+}
+
+uint8_t App_System_TakeRecoveryResult(void)
+{
+    uint8_t result;
+    taskENTER_CRITICAL();
+    result = recovery_result_pending;
+    recovery_result_pending = 0U;
+    taskEXIT_CRITICAL();
+    return result;
 }
 
 /* 电机任务读取系统任务发布的当前模式。 */
@@ -542,6 +573,39 @@ void StartSystemStateTask(void *argument)
             MotorSpeed_Stop(SIMPLEFOC_AXIS_HORIZONTAL);
             active = APP_MANUAL_STOP;
             auto_counting = 0U;
+            /* 故障发生在黑屏或 STOP 退出时，也要唤醒 UI 供用户查看并操作恢复按钮。 */
+            last_touch_tick = now;
+            power_screen_set(1U);
+        }
+
+        if (current_mode == APP_MODE_ERROR && recovery_in_progress != 0U)
+        {
+            uint8_t result = SimpleFOC_Motor_TakeRecoveryResult();
+            if (result != 0U)
+            {
+                taskENTER_CRITICAL();
+                recovery_in_progress = 0U;
+                recovery_result_pending = result;
+                if (result == 1U)
+                {
+                    fault_requested = 0U;
+                    current_mode = APP_MODE_MANUAL;
+                    pending_mode = APP_MODE_MANUAL;
+                    ++pending_mode_sequence;
+                    pending_direction = APP_MANUAL_STOP;
+                    ++pending_sequence;
+                }
+                taskEXIT_CRITICAL();
+                if (result == 1U)
+                {
+                    if (SmapSystemToMotorHandle != NULL)
+                        (void)osMessageQueueReset(SmapSystemToMotorHandle);
+                    active = APP_MANUAL_STOP;
+                    auto_counting = 0U;
+                    last_touch_tick = now;
+                }
+                continue;
+            }
         }
 
         if (current_mode != APP_MODE_ERROR && mode_sequence != seen_mode_sequence)
